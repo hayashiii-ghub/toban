@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RotateCw, RotateCcw, Printer, Settings, X,
@@ -367,25 +368,28 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ===== 設定モーダル ===== */}
-      <AnimatePresence>
-        {showSettings && (
-          <SettingsModal
-            groups={groups}
-            members={members}
-            onSave={(newGroups, newMembers) => {
-              setState((prev) => ({
-                ...prev,
-                groups: newGroups,
-                members: newMembers,
-                rotation: prev.rotation % newMembers.length,
-              }));
-              setShowSettings(false);
-            }}
-            onClose={() => setShowSettings(false)}
-          />
-        )}
-      </AnimatePresence>
+      {/* ===== 設定モーダル（Portal経由でbody直下にレンダリング） ===== */}
+      {createPortal(
+        <AnimatePresence>
+          {showSettings && (
+            <SettingsModal
+              groups={groups}
+              members={members}
+              onSave={(newGroups, newMembers) => {
+                setState((prev) => ({
+                  ...prev,
+                  groups: newGroups,
+                  members: newMembers,
+                  rotation: prev.rotation % newMembers.length,
+                }));
+                setShowSettings(false);
+              }}
+              onClose={() => setShowSettings(false)}
+            />
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
