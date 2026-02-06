@@ -1,10 +1,8 @@
-Screenshot check:
-- Header: "CLEANING ROTATION" + "掃除当番表" + subtitle visible
-- Yellow control bar with rotation counter (0), "戻す" and "次へ回す" buttons
-- 田中 card (blue): 床（掃除機）, クイックルワイパー - visible and styled
-- 松丸 card (orange): partially visible with トイレ/加湿器
-- Need to scroll to see 山下 card and rotation table
-- Neo-brutalism style applied: thick borders, offset shadows, rounded corners
-- Font M PLUS Rounded 1c loaded correctly
-- Overall looks good, cream background applied
-- Emoji rendering correctly for each task
+Screenshot check v2 (circular wheel):
+- Circular wheel renders correctly with 3 outer sectors (tasks) and 3 inner sectors (members)
+- Outer ring: クイックルワイパー/事務所掃除機 (blue-ish), トイレ/加湿器/水回り (green-ish), 床(掃除機)/ゴミ捨て (orange-ish)
+- Inner ring: 田中, 松丸, 山下 with rotation animation
+- Issue: When rotated, inner text rotates with the circle making it hard to read (text is sideways/upside down)
+- Need to counter-rotate the text labels so they always remain upright
+- Control bar and assignment list working correctly
+- Neo-brutalism styling applied well
