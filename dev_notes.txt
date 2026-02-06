@@ -1,9 +1,8 @@
-Screenshot check v5 - horizontal text approach:
-- All text is now horizontal and readable in every position
-- Right sector: "クイックル/ワイパー" and "事務所掃除機" - text slightly outside the donut ring on the right
-- Left sector: "床（掃除機）" and "ゴミ捨て" - also slightly outside on the left
-- Bottom sector: "トイレ/加湿器/水回り" - fits well within the ring
-- The issue is that the text midpoint is at the center of the donut ring, but the text extends beyond the ring boundary on the sides
-- Need to either: reduce font size, or adjust text position to account for text width, or clip to the donut area
-- Color distinction is good - outer is muted beige, inner is vivid blue/orange/green with darker borders
-- Overall much improved from before
+Screenshot check v2 (circular wheel):
+- Circular wheel renders correctly with 3 outer sectors (tasks) and 3 inner sectors (members)
+- Outer ring: クイックルワイパー/事務所掃除機 (blue-ish), トイレ/加湿器/水回り (green-ish), 床(掃除機)/ゴミ捨て (orange-ish)
+- Inner ring: 田中, 松丸, 山下 with rotation animation
+- Issue: When rotated, inner text rotates with the circle making it hard to read (text is sideways/upside down)
+- Need to counter-rotate the text labels so they always remain upright
+- Control bar and assignment list working correctly
+- Neo-brutalism styling applied well
