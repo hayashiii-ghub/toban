@@ -1001,23 +1001,24 @@ function SettingsModal({
         </div>
 
         {/* タブ */}
-        <div className="flex" style={{ borderBottom: "3px solid #1a1a1a" }}>
+        <div className="grid grid-cols-2" style={{ borderBottom: "3px solid #1a1a1a" }}>
           <button
-            className="flex-1 py-3 text-sm font-bold transition-colors"
+            className="py-3 text-sm font-bold transition-colors"
             style={{
               backgroundColor: activeTab === "tasks" ? "#FBBF24" : "transparent",
               color: "#1a1a1a",
+              borderRight: "1.5px solid #1a1a1a",
             }}
             onClick={() => setActiveTab("tasks")}
           >
             タスク
           </button>
           <button
-            className="flex-1 py-3 text-sm font-bold transition-colors"
+            className="py-3 text-sm font-bold transition-colors"
             style={{
               backgroundColor: activeTab === "members" ? "#FBBF24" : "transparent",
               color: "#1a1a1a",
-              borderLeft: "3px solid #1a1a1a",
+              borderLeft: "1.5px solid #1a1a1a",
             }}
             onClick={() => setActiveTab("members")}
           >
