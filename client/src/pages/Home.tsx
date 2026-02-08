@@ -14,8 +14,8 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RotateCw, RotateCcw, Printer, Settings, X,
-  Plus, Trash2, GripVertical, Save, Sparkles,
-  ChevronDown,  FileText, Edit3,} from "lucide-react";
+  Plus, Trash2, GripVertical, Save,
+  ChevronDown, FileText, Edit3,} from "lucide-react";
 
 // ===== 型定義 =====
 interface TaskGroup {
@@ -371,14 +371,6 @@ export default function Home() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="inline-flex items-center gap-2 mb-2 no-print">
-              <Sparkles className="w-5 h-5 text-yellow-500" />
-              <span className="text-xs font-bold tracking-wider uppercase" style={{ color: "#888" }}>
-                Rotation Schedule
-              </span>
-              <Sparkles className="w-5 h-5 text-yellow-500" />
-            </div>
-
             {/* 当番表名（クリックで編集） */}
             {editingName ? (
               <div className="flex items-center justify-center gap-2">
