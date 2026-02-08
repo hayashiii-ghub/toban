@@ -147,3 +147,18 @@
     transform: translate(-2px, -2px);
   }
 }
+
+/* Focus visible ring for keyboard navigation */
+@layer base {
+  button:focus-visible,
+  input:focus-visible,
+  [role="tab"]:focus-visible {
+    outline: 3px solid #FBBF24;
+    outline-offset: 2px;
+  }
+
+  /* Disabled button visual feedback */
+  button:disabled {
+    cursor: not-allowed;
+  }
+}

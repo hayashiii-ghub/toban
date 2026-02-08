@@ -1,5 +1,0 @@
-ユーザーのビジュアル編集分析:
-- 374行目の要素: <div className="inline-flex items-center gap-2 mb-2 no-print">
-- 内容: ✨ Rotation Schedule ✨ （ヘッダーの「掃除当番」タイトルの上にある小さなサブテキスト）
-- ユーザーのコメント: "これいらない"
-- アクション: この要素を削除する
