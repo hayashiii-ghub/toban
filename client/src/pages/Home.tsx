@@ -290,12 +290,47 @@ export default function Home() {
     <div className="min-h-screen" style={{ backgroundColor: "#FFF8E7" }}>
       {/* ===== 印刷用スタイル ===== */}
       <style>{`
+        @page {
+          size: A4 landscape;
+          margin: 0;
+        }
         @media print {
-          body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          html, body {
+            width: 297mm;
+            height: 210mm;
+            margin: 0;
+            padding: 0;
+            background: white !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            color-adjust: exact;
+            overflow: hidden;
+          }
           .no-print { display: none !important; }
           .print-only { display: block !important; }
-          .print-card { break-inside: avoid; page-break-inside: avoid; box-shadow: none !important; border: 2px solid #333 !important; }
-          .print-header { border: 2px solid #333 !important; box-shadow: none !important; }
+          .print-card {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            box-shadow: none !important;
+            border: 2px solid #333 !important;
+          }
+          .print-header {
+            border: none !important;
+            box-shadow: none !important;
+          }
+          .min-h-screen {
+            min-height: auto !important;
+            width: 297mm;
+            height: 210mm;
+            padding: 8mm 12mm !important;
+            box-sizing: border-box;
+            overflow: hidden;
+          }
+          .print-card-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+            gap: 12px !important;
+          }
         }
         @media screen { .print-only { display: none; } }
       `}</style>
