@@ -13,7 +13,7 @@ export const DEFAULT_APP_STATE: AppState = {
       rotation: 0,
       groups: [
         { id: "g1", tasks: ["クイックルワイパー", "事務所掃除機"], emoji: "🧹" },
-        { id: "g2", tasks: ["トイレ", "加湿器", "水回り"], emoji: "🚿" },
+        { id: "g2", tasks: ["トイレ", "加湿器"], emoji: "🚿" },
         { id: "g3", tasks: ["床（掃除機）", "ゴミ捨て"], emoji: "🗑️" },
       ],
       members: [
