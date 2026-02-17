@@ -1,49 +1,43 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Home } from "lucide-react";
+import { Home, AlertCircle } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function NotFound() {
   const [, setLocation] = useLocation();
 
-  const handleGoHome = () => {
-    setLocation("/");
-  };
-
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-      <Card className="w-full max-w-lg mx-4 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="pt-8 pb-8 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-red-100 rounded-full animate-pulse" />
-              <AlertCircle className="relative h-16 w-16 text-red-500" />
-            </div>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: "#FFF8E7" }}>
+      <div
+        className="brutal-border brutal-shadow w-full max-w-md p-8 text-center"
+        style={{ borderRadius: "16px", backgroundColor: "#fff" }}
+      >
+        <div className="flex justify-center mb-6">
+          <div
+            className="brutal-border w-16 h-16 flex items-center justify-center"
+            style={{ borderRadius: "50%", backgroundColor: "#FEE2E2" }}
+          >
+            <AlertCircle className="w-8 h-8" style={{ color: "#DC2626" }} aria-hidden="true" />
           </div>
+        </div>
 
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">404</h1>
+        <h1 className="text-3xl font-extrabold mb-2" style={{ color: "#1a1a1a" }}>
+          404
+        </h1>
+        <h2 className="text-lg font-bold mb-4" style={{ color: "#444" }}>
+          ページが見つかりません
+        </h2>
+        <p className="text-sm mb-8" style={{ color: "#666" }}>
+          お探しのページは存在しないか、移動した可能性があります。
+        </p>
 
-          <h2 className="text-xl font-semibold text-slate-700 mb-4">
-            Page Not Found
-          </h2>
-
-          <p className="text-slate-600 mb-8 leading-relaxed">
-            Sorry, the page you are looking for doesn't exist.
-            <br />
-            It may have been moved or deleted.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button
-              onClick={handleGoHome}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Go Home
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <button
+          onClick={() => setLocation("/")}
+          className="brutal-border brutal-shadow-sm inline-flex items-center justify-center gap-2 px-6 py-3 font-bold text-sm text-white transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px]"
+          style={{ backgroundColor: "#1a1a1a", borderRadius: "10px" }}
+        >
+          <Home className="w-4 h-4" aria-hidden="true" />
+          ホームへ
+        </button>
+      </div>
     </div>
   );
 }

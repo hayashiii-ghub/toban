@@ -1,4 +1,3 @@
-import { cn } from "@/lib/utils";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { Component, ReactNode } from "react";
 
@@ -24,31 +23,43 @@ class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center min-h-screen p-8 bg-background">
-          <div className="flex flex-col items-center w-full max-w-2xl p-8">
-            <AlertTriangle
-              size={48}
-              className="text-destructive mb-6 flex-shrink-0"
-            />
-
-            <h2 className="text-xl mb-4">An unexpected error occurred.</h2>
-
-            <div className="p-4 w-full rounded bg-muted overflow-auto mb-6">
-              <pre className="text-sm text-muted-foreground whitespace-break-spaces">
-                {this.state.error?.stack}
-              </pre>
+        <div
+          className="min-h-screen flex items-center justify-center p-6"
+          style={{ backgroundColor: "#FFF8E7" }}
+        >
+          <div
+            className="brutal-border brutal-shadow w-full max-w-xl p-8 flex flex-col items-center"
+            style={{ borderRadius: "16px", backgroundColor: "#fff" }}
+          >
+            <div
+              className="brutal-border w-14 h-14 flex items-center justify-center mb-6"
+              style={{ borderRadius: "50%", backgroundColor: "#FEE2E2" }}
+            >
+              <AlertTriangle className="w-7 h-7" style={{ color: "#DC2626" }} aria-hidden="true" />
             </div>
+
+            <h2 className="text-xl font-extrabold mb-4" style={{ color: "#1a1a1a" }}>
+              予期しないエラーが発生しました
+            </h2>
+
+            {this.state.error && (
+              <div
+                className="w-full p-4 mb-6 overflow-auto text-left text-xs font-medium rounded-lg"
+                style={{ backgroundColor: "#F5F5F5", color: "#555" }}
+              >
+                <pre className="whitespace-pre-wrap break-all">
+                  {this.state.error.stack}
+                </pre>
+              </div>
+            )}
 
             <button
               onClick={() => window.location.reload()}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg",
-                "bg-primary text-primary-foreground",
-                "hover:opacity-90 cursor-pointer"
-              )}
+              className="brutal-border brutal-shadow-sm inline-flex items-center gap-2 px-5 py-2.5 font-bold text-sm text-white transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px]"
+              style={{ borderRadius: "10px", backgroundColor: "#1a1a1a" }}
             >
-              <RotateCcw size={16} />
-              Reload Page
+              <RotateCcw className="w-4 h-4" aria-hidden="true" />
+              再読み込み
             </button>
           </div>
         </div>

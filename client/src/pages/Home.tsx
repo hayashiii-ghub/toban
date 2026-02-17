@@ -17,198 +17,24 @@ import {
   Plus, Trash2, GripVertical, Save,
   FileText, Edit3, ArrowRight,
 } from "lucide-react";
-
-// ===== 定数 =====
-const ANIMATION_DURATION_MS = 500;
-const CARD_STAGGER_DELAY = 0.08;
-const TASK_STAGGER_DELAY = 0.06;
-
-// ===== 型定義 =====
-interface TaskGroup {
-  id: string;
-  tasks: string[];
-  emoji: string;
-}
-
-interface Member {
-  id: string;
-  name: string;
-  color: string;
-  bgColor: string;
-  textColor: string;
-}
-
-interface Schedule {
-  id: string;
-  name: string;
-  rotation: number;
-  groups: TaskGroup[];
-  members: Member[];
-}
-
-interface AppState {
-  schedules: Schedule[];
-  activeScheduleId: string;
-}
-
-// ===== テンプレート =====
-interface ScheduleTemplate {
-  name: string;
-  emoji: string;
-  groups: TaskGroup[];
-  members: Member[];
-}
-
-const TEMPLATES: ScheduleTemplate[] = [
-  {
-    name: "掃除当番",
-    emoji: "🧹",
-    groups: [
-      { id: "g1", tasks: ["クイックルワイパー", "事務所掃除機"], emoji: "🧹" },
-      { id: "g2", tasks: ["トイレ", "加湿器", "水回り"], emoji: "🚿" },
-      { id: "g3", tasks: ["床（掃除機）", "ゴミ捨て"], emoji: "🗑️" },
-    ],
-    members: [
-      { id: "m1", name: "田中", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" },
-      { id: "m2", name: "松丸", color: "#F97316", bgColor: "#FED7AA", textColor: "#7C2D12" },
-      { id: "m3", name: "山下", color: "#10B981", bgColor: "#D1FAE5", textColor: "#064E3B" },
-    ],
-  },
-  {
-    name: "給食当番",
-    emoji: "🍽️",
-    groups: [
-      { id: "g1", tasks: ["配膳"], emoji: "🍚" },
-      { id: "g2", tasks: ["片付け", "台拭き"], emoji: "🧽" },
-      { id: "g3", tasks: ["牛乳配り", "ストロー配り"], emoji: "🥛" },
-    ],
-    members: [
-      { id: "m1", name: "1班", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" },
-      { id: "m2", name: "2班", color: "#F97316", bgColor: "#FED7AA", textColor: "#7C2D12" },
-      { id: "m3", name: "3班", color: "#10B981", bgColor: "#D1FAE5", textColor: "#064E3B" },
-    ],
-  },
-  {
-    name: "日直",
-    emoji: "📋",
-    groups: [
-      { id: "g1", tasks: ["朝の会", "帰りの会"], emoji: "🎤" },
-      { id: "g2", tasks: ["黒板消し", "日誌記入"], emoji: "📝" },
-    ],
-    members: [
-      { id: "m1", name: "Aさん", color: "#8B5CF6", bgColor: "#EDE9FE", textColor: "#4C1D95" },
-      { id: "m2", name: "Bさん", color: "#EC4899", bgColor: "#FCE7F3", textColor: "#831843" },
-    ],
-  },
-  {
-    name: "受付当番",
-    emoji: "🏢",
-    groups: [
-      { id: "g1", tasks: ["午前受付", "電話対応"], emoji: "📞" },
-      { id: "g2", tasks: ["午後受付", "来客対応"], emoji: "🤝" },
-      { id: "g3", tasks: ["郵便物", "備品管理"], emoji: "📦" },
-    ],
-    members: [
-      { id: "m1", name: "佐藤", color: "#14B8A6", bgColor: "#CCFBF1", textColor: "#134E4A" },
-      { id: "m2", name: "鈴木", color: "#EAB308", bgColor: "#FEF9C3", textColor: "#713F12" },
-      { id: "m3", name: "高橋", color: "#6366F1", bgColor: "#E0E7FF", textColor: "#312E81" },
-    ],
-  },
-  {
-    name: "カスタム（空白）",
-    emoji: "✨",
-    groups: [
-      { id: "g1", tasks: ["タスク1"], emoji: "📌" },
-    ],
-    members: [
-      { id: "m1", name: "メンバー1", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" },
-    ],
-  },
-];
-
-const MEMBER_PRESETS = [
-  { color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" },
-  { color: "#F97316", bgColor: "#FED7AA", textColor: "#7C2D12" },
-  { color: "#10B981", bgColor: "#D1FAE5", textColor: "#064E3B" },
-  { color: "#8B5CF6", bgColor: "#EDE9FE", textColor: "#4C1D95" },
-  { color: "#EC4899", bgColor: "#FCE7F3", textColor: "#831843" },
-  { color: "#14B8A6", bgColor: "#CCFBF1", textColor: "#134E4A" },
-  { color: "#EAB308", bgColor: "#FEF9C3", textColor: "#713F12" },
-  { color: "#6366F1", bgColor: "#E0E7FF", textColor: "#312E81" },
-];
-
-const STORAGE_KEY = "rotation-schedule-app-state";
-
-// ===== ユーティリティ =====
-function generateId(prefix: string): string {
-  return `${prefix}${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-}
-
-function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
-}
-
-// ===== ローカルストレージ =====
-function isValidSchedule(s: unknown): s is Schedule {
-  if (!s || typeof s !== "object") return false;
-  const obj = s as Record<string, unknown>;
-  return (
-    typeof obj.id === "string" &&
-    typeof obj.name === "string" &&
-    typeof obj.rotation === "number" &&
-    Array.isArray(obj.groups) &&
-    obj.groups.length > 0 &&
-    Array.isArray(obj.members) &&
-    obj.members.length > 0
-  );
-}
-
-function loadState(): AppState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && Array.isArray(parsed.schedules)) {
-        const validSchedules = parsed.schedules.filter(isValidSchedule);
-        if (validSchedules.length > 0) {
-          const activeId = validSchedules.some((s: Schedule) => s.id === parsed.activeScheduleId)
-            ? parsed.activeScheduleId
-            : validSchedules[0].id;
-          return { schedules: validSchedules, activeScheduleId: activeId };
-        }
-      }
-    }
-  } catch { /* ignore corrupted data */ }
-  // デフォルト初期状態: 「掃除当番」＋「カスタム（空白）」の2つ
-  const defaultSchedule = createScheduleFromTemplate(TEMPLATES[0]);
-  const customSchedule = createScheduleFromTemplate(TEMPLATES[TEMPLATES.length - 1]);
-  return { schedules: [defaultSchedule, customSchedule], activeScheduleId: defaultSchedule.id };
-}
-
-function saveState(state: AppState) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch { /* storage full or unavailable */ }
-}
-
-function createScheduleFromTemplate(template: ScheduleTemplate): Schedule {
-  return {
-    id: generateId("s"),
-    name: template.name,
-    rotation: 0,
-    groups: deepClone(template.groups),
-    members: deepClone(template.members),
-  };
-}
-
-// ===== 割り当て計算 =====
-function computeAssignments(groups: TaskGroup[], members: Member[], rotation: number) {
-  if (members.length === 0) return [];
-  return groups.map((group, i) => {
-    const memberIdx = ((i + rotation) % members.length + members.length) % members.length;
-    return { group, member: members[memberIdx] };
-  });
-}
+import type { TaskGroup, Member, Schedule, AppState, ScheduleTemplate } from "@/rotation/types";
+import {
+  ANIMATION_DURATION_MS,
+  CARD_STAGGER_DELAY,
+  TASK_STAGGER_DELAY,
+  TEMPLATES,
+  MEMBER_PRESETS,
+} from "@/rotation/constants";
+import {
+  loadState,
+  saveState,
+  createScheduleFromTemplate,
+  computeAssignments,
+  getGridCols,
+  generateId,
+  deepClone,
+} from "@/rotation/utils";
+import { DEFAULT_APP_STATE } from "@/rotation/defaultState";
 
 // ===== カスタムフック: Escキーでモーダルを閉じる =====
 function useEscapeKey(onEscape: () => void) {
@@ -239,14 +65,6 @@ function useBodyScrollLock(isLocked: boolean) {
       };
     }
   }, [isLocked]);
-}
-
-// ===== グリッド列数の計算 =====
-function getGridCols(count: number): string {
-  if (count <= 2) return "grid-cols-1 sm:grid-cols-2";
-  if (count === 3) return "grid-cols-1 md:grid-cols-3";
-  if (count === 4) return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
-  return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
 }
 
 // ===== メインコンポーネント =====
@@ -445,7 +263,7 @@ export default function Home() {
       `}</style>
 
       {/* ===== ヘッダー ===== */}
-      <header className="pt-6 sm:pt-8 pb-3 sm:pb-4 px-3 sm:px-4 print-header">
+      <header className="pt-6 sm:pt-8 pb-8 px-3 sm:px-4 print-header">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ y: -20, opacity: 0 }}
@@ -808,6 +626,14 @@ export default function Home() {
               members={members}
               onSave={handleSaveSettings}
               onClose={() => setShowSettings(false)}
+              onCopyAsDefault={() => {
+                navigator.clipboard.writeText(JSON.stringify(state, null, 2));
+              }}
+              onResetToDefault={() => {
+                setState(DEFAULT_APP_STATE);
+                saveState(DEFAULT_APP_STATE);
+                setShowSettings(false);
+              }}
             />
           )}
         </AnimatePresence>,
@@ -974,12 +800,16 @@ function SettingsModal({
   members,
   onSave,
   onClose,
+  onCopyAsDefault,
+  onResetToDefault,
 }: {
   scheduleName: string;
   groups: TaskGroup[];
   members: Member[];
   onSave: (name: string, groups: TaskGroup[], members: Member[]) => void;
   onClose: () => void;
+  onCopyAsDefault?: () => void;
+  onResetToDefault?: () => void;
 }) {
   const [editName, setEditName] = useState(scheduleName);
   const [editGroups, setEditGroups] = useState<TaskGroup[]>(deepClone(groups));
@@ -1533,8 +1363,8 @@ function SettingsModal({
           )}
         </div>
 
-        {/* 保存ボタン */}
-        <div className="px-5 py-4" style={{ borderTop: "3px solid #1a1a1a" }}>
+        {/* 保存ボタン・デフォルト用コピー */}
+        <div className="px-5 py-4 flex flex-col gap-2" style={{ borderTop: "3px solid #1a1a1a" }}>
           <button
             onClick={handleSave}
             className="brutal-border brutal-shadow-sm w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-sm text-white transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
@@ -1542,6 +1372,26 @@ function SettingsModal({
           >
             <Save className="w-4 h-4" aria-hidden="true" /> 保存する
           </button>
+          {onCopyAsDefault && (
+            <button
+              type="button"
+              onClick={onCopyAsDefault}
+              className="text-xs font-bold hover:underline"
+              style={{ color: "#666" }}
+            >
+              現在の画面の状態をデフォルト用にコピー
+            </button>
+          )}
+          {onResetToDefault && (
+            <button
+              type="button"
+              onClick={onResetToDefault}
+              className="text-xs font-bold hover:underline"
+              style={{ color: "#666" }}
+            >
+              デフォルトの状態に戻す
+            </button>
+          )}
         </div>
       </motion.div>
     </motion.div>
