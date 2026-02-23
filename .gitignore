@@ -30,6 +30,9 @@ build/
 ehthumbs.db
 Thumbs.db
 
+# Manus dev logs (not needed for OSS)
+.manus-logs/
+
 # Logs
 logs
 *.log
