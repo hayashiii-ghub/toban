@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { NewScheduleModal } from "@/components/NewScheduleModal";
 import { SettingsModal } from "@/components/SettingsModal";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { createSchedule, updateSchedule } from "@/lib/api";
 import { ANIMATION_DURATION_MS } from "@/rotation/constants";
-import { DEFAULT_APP_STATE } from "@/rotation/defaultState";
 import type { AppState, Member, Schedule, ScheduleTemplate, TaskGroup } from "@/rotation/types";
 import {
   computeAssignments,
@@ -31,6 +32,7 @@ export default function Home() {
   const [editingName, setEditingName] = useState(false);
   const [tempName, setTempName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -175,6 +177,37 @@ export default function Home() {
     setShowSettings(false);
   }, [updateActiveSchedule]);
 
+  const handleShare = useCallback(async () => {
+    setIsSharing(true);
+    try {
+      const data = {
+        name: activeSchedule.name,
+        rotation: activeSchedule.rotation,
+        groups: activeSchedule.groups,
+        members: activeSchedule.members,
+      };
+
+      if (activeSchedule.slug && activeSchedule.editToken) {
+        await updateSchedule(activeSchedule.slug, activeSchedule.editToken, data);
+        toast.success("クラウドに更新しました");
+      } else {
+        const result = await createSchedule(data);
+        updateActiveSchedule((schedule) => ({
+          ...schedule,
+          slug: result.slug,
+          editToken: result.editToken,
+        }));
+        const shareUrl = `${window.location.origin}/s/${result.slug}`;
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success("共有URLをコピーしました");
+      }
+    } catch {
+      toast.error("保存に失敗しました");
+    } finally {
+      setIsSharing(false);
+    }
+  }, [activeSchedule, updateActiveSchedule]);
+
   const rotationLabel = rotation === 0 ? "初期" : `${rotation}回目`;
 
   return (
@@ -225,11 +258,14 @@ export default function Home() {
         rotationLabel={rotationLabel}
         isAnimating={isAnimating}
         canDelete={state.schedules.length > 1}
+        isCloudSaved={!!activeSchedule.slug}
+        isSharing={isSharing}
         onRotateBackward={() => handleRotate("backward")}
         onRotateForward={() => handleRotate("forward")}
         onPrint={() => window.print()}
         onOpenSettings={() => setShowSettings(true)}
         onDelete={() => setConfirmDelete(activeSchedule.id)}
+        onShare={handleShare}
       />
 
       <AssignmentsGrid
@@ -237,6 +273,8 @@ export default function Home() {
         direction={direction}
         rotation={rotation}
         groupCount={groups.length}
+        scheduleId={activeSchedule.id}
+        stagger={isAnimating}
       />
 
       <RotationQuickTable groups={groups} members={members} rotation={rotation} />
@@ -275,14 +313,6 @@ export default function Home() {
               members={members}
               onSave={handleSaveSettings}
               onClose={() => setShowSettings(false)}
-              onCopyAsDefault={() => {
-                navigator.clipboard.writeText(JSON.stringify(state, null, 2));
-              }}
-              onResetToDefault={() => {
-                setState(DEFAULT_APP_STATE);
-                saveState(DEFAULT_APP_STATE);
-                setShowSettings(false);
-              }}
             />
           )}
         </AnimatePresence>,

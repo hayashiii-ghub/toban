@@ -26,5 +26,8 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    proxy: {
+      "/api": "http://localhost:8788",
+    },
   },
 });

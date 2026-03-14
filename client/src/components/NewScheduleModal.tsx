@@ -5,6 +5,14 @@ import type { ScheduleTemplate } from "@/rotation/types";
 import { TEMPLATES } from "@/rotation/constants";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 
+const TEMPLATE_SECTIONS = [
+  { label: "🏢 事務室・オフィス", from: 0, to: 2 },
+  { label: "🌷 幼稚園・保育園", from: 2, to: 5 },
+  { label: "🏫 小中学校（クラス用）", from: 5, to: 8 },
+  { label: "🔑 職員室（先生用）", from: 8, to: 9 },
+  { label: "✨ その他", from: 9, to: 10 },
+];
+
 interface Props {
   onSelect: (template: ScheduleTemplate) => void;
   onClose: () => void;
@@ -54,32 +62,43 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
         </div>
 
         {/* テンプレート一覧 */}
-        <div className="p-5 overflow-y-auto flex flex-col gap-3">
+        <div className="p-5 overflow-y-auto flex flex-col gap-2">
           <p className="text-xs font-bold mb-1" style={{ color: "#888" }}>
             テンプレートを選択してください。後から自由に編集できます。
           </p>
-          {TEMPLATES.map((template, idx) => (
-            <button
-              key={idx}
-              onClick={() => onSelect(template)}
-              className="brutal-border brutal-shadow-sm p-4 text-left transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
-              style={{ borderRadius: "12px", backgroundColor: "#FAFAFA" }}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl" aria-hidden="true">{template.emoji}</span>
-                <div>
-                  <div className="text-sm font-extrabold" style={{ color: "#1a1a1a" }}>
-                    {template.name}
-                  </div>
-                  <div className="text-[10px] font-medium mt-0.5" style={{ color: "#888" }}>
-                    {template.groups.length}グループ ・ {template.members.length}人
-                    {template.groups.length > 0 && (
-                      <span> ・ {template.groups.map((g) => g.tasks.join("、")).join(" / ")}</span>
-                    )}
-                  </div>
-                </div>
+
+          {TEMPLATE_SECTIONS.map((section) => (
+            <div key={section.label}>
+              <div
+                className="text-[10px] font-extrabold uppercase tracking-wider mt-2 mb-1.5 px-1"
+                style={{ color: "#aaa" }}
+              >
+                {section.label}
               </div>
-            </button>
+              {TEMPLATES.slice(section.from, section.to).map((template, idx) => (
+                <button
+                  key={section.from + idx}
+                  onClick={() => onSelect(template)}
+                  className="brutal-border brutal-shadow-sm p-3 sm:p-4 mb-2 w-full text-left transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
+                  style={{ borderRadius: "12px", backgroundColor: "#FAFAFA" }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl" aria-hidden="true">{template.emoji}</span>
+                    <div className="min-w-0">
+                      <div className="text-sm font-extrabold" style={{ color: "#1a1a1a" }}>
+                        {template.name}
+                      </div>
+                      <div className="text-[10px] font-medium mt-0.5 truncate" style={{ color: "#888" }}>
+                        {template.groups.length}グループ ・ {template.members.length}人
+                        {template.groups.length > 0 && (
+                          <span> ・ {template.groups.map((g) => g.tasks.join("、")).join(" / ")}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
           ))}
         </div>
       </motion.div>

@@ -1,16 +1,19 @@
 import { motion } from "framer-motion";
-import { Printer, RotateCcw, RotateCw, Settings, Trash2 } from "lucide-react";
+import { Cloud, CloudUpload, Loader2, Printer, RotateCcw, RotateCw, Settings, Trash2 } from "lucide-react";
 
 interface RotationControlsProps {
   rotation: number;
   rotationLabel: string;
   isAnimating: boolean;
   canDelete: boolean;
+  isCloudSaved: boolean;
+  isSharing: boolean;
   onRotateBackward: () => void;
   onRotateForward: () => void;
   onPrint: () => void;
   onOpenSettings: () => void;
   onDelete: () => void;
+  onShare: () => void;
 }
 
 export function RotationControls({
@@ -18,11 +21,14 @@ export function RotationControls({
   rotationLabel,
   isAnimating,
   canDelete,
+  isCloudSaved,
+  isSharing,
   onRotateBackward,
   onRotateForward,
   onPrint,
   onOpenSettings,
   onDelete,
+  onShare,
 }: RotationControlsProps) {
   return (
     <div className="px-3 sm:px-4 py-3 rotation-no-print">
@@ -86,6 +92,22 @@ export function RotationControls({
               aria-label="当番表の設定を開く"
             >
               <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
+            </button>
+            <button
+              onClick={onShare}
+              disabled={isSharing}
+              className="brutal-border brutal-shadow-sm flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-2 font-bold text-xs sm:text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a] disabled:opacity-50"
+              style={{ backgroundColor: isCloudSaved ? "#D1FAE5" : "#DBEAFE", borderRadius: "8px" }}
+              aria-label={isCloudSaved ? "クラウドに更新する" : "クラウドに共有する"}
+            >
+              {isSharing ? (
+                <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" aria-hidden="true" />
+              ) : isCloudSaved ? (
+                <CloudUpload className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
+              ) : (
+                <Cloud className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
+              )}
+              {isCloudSaved ? "更新" : "共有"}
             </button>
             {canDelete && (
               <button

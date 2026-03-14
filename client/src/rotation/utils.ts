@@ -83,13 +83,22 @@ function sanitizeSchedule(schedule: unknown): Schedule | null {
     return null;
   }
 
-  return {
+  const result: Schedule = {
     id: schedule.id,
     name: schedule.name.trim(),
     rotation: normalizeRotation(schedule.rotation, members.length),
     groups,
     members,
   };
+
+  if (isNonEmptyString(schedule.slug)) {
+    result.slug = schedule.slug;
+  }
+  if (isNonEmptyString(schedule.editToken)) {
+    result.editToken = schedule.editToken;
+  }
+
+  return result;
 }
 
 function sanitizeAppState(state: unknown): AppState | null {

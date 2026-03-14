@@ -5,9 +5,13 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite --host",
+    "dev:api": "wrangler pages dev dist --d1 DB --port 8788",
+    "dev:full": "concurrently \"pnpm dev\" \"pnpm dev:api\"",
     "build": "vite build",
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply toban-maker-db --local",
     "format": "prettier --write ."
   },
   "dependencies": {
@@ -41,12 +45,13 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "drizzle-orm": "^0.45.1",
     "embla-carousel-react": "^8.6.0",
-    "express": "^4.21.2",
     "framer-motion": "^12.23.22",
+    "hono": "^4.12.8",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.453.0",
-    "next-themes": "^0.4.6",
+    "nanoid": "^5.1.6",
     "react": "^19.2.1",
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.2.1",
@@ -61,14 +66,16 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260313.1",
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "^4.1.3",
-    "@types/express": "4.17.21",
     "@types/node": "^24.7.0",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.1",
+    "drizzle-kit": "^0.31.9",
     "esbuild": "^0.25.0",
     "pnpm": "^10.15.1",
     "postcss": "^8.4.47",
@@ -78,12 +85,18 @@
     "tw-animate-css": "^1.4.0",
     "typescript": "5.6.3",
     "vite": "^7.1.7",
-    "vitest": "^2.1.4"
+    "vitest": "^2.1.4",
+    "wrangler": "^4.73.0"
   },
   "packageManager": "pnpm@10.29.1",
   "pnpm": {
     "overrides": {
       "tailwindcss>nanoid": "3.3.7"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd",
+      "sharp"
+    ]
   }
 }

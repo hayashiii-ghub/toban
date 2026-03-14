@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { X, Plus, Trash2, GripVertical, Save, ArrowRight } from "lucide-react";
+import { X, Plus, Trash2, GripVertical, Save, Palette, ChevronDown } from "lucide-react";
 import type { TaskGroup, Member } from "@/rotation/types";
-import { MEMBER_PRESETS } from "@/rotation/constants";
+import { MEMBER_PRESETS, colorPresetFromHex } from "@/rotation/constants";
 import { computeAssignments, generateId, deepClone } from "@/rotation/utils";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 
@@ -12,8 +12,6 @@ interface Props {
   members: Member[];
   onSave: (name: string, groups: TaskGroup[], members: Member[]) => void;
   onClose: () => void;
-  onCopyAsDefault?: () => void;
-  onResetToDefault?: () => void;
 }
 
 export function SettingsModal({
@@ -22,8 +20,6 @@ export function SettingsModal({
   members,
   onSave,
   onClose,
-  onCopyAsDefault,
-  onResetToDefault,
 }: Props) {
   const [editName, setEditName] = useState(scheduleName);
   const [editGroups, setEditGroups] = useState<TaskGroup[]>(deepClone(groups));
@@ -59,13 +55,11 @@ export function SettingsModal({
     e.preventDefault();
     if (!dragTask) return;
     const { gIdx: srcGIdx, tIdx: srcTIdx } = dragTask;
-
     if (srcGIdx === targetGIdx && srcTIdx === targetTIdx) {
       setDragTask(null);
       setDropTarget(null);
       return;
     }
-
     setEditGroups((prev) => {
       const next = deepClone(prev);
       const [movedTask] = next[srcGIdx].tasks.splice(srcTIdx, 1);
@@ -145,15 +139,47 @@ export function SettingsModal({
     setDropMemberIdx(null);
   };
 
-  // --- 現在の割り当てプレビュー計算 ---
-  const previewAssignments = useMemo(() => {
+  // --- 割り当てマップ（グループIDX → 担当メンバー） ---
+  const assignmentMap = useMemo(() => {
     const validMembers = editMembers.filter((m) => m.name.trim() !== "");
     const validGroups = editGroups
       .map((g) => ({ ...g, tasks: g.tasks.filter((t) => t.trim() !== "") }))
       .filter((g) => g.tasks.length > 0);
-    if (validMembers.length === 0 || validGroups.length === 0) return [];
-    return computeAssignments(validGroups, validMembers, 0);
+    if (validMembers.length === 0 || validGroups.length === 0) return new Map<string, Member>();
+    const assignments = computeAssignments(validGroups, validMembers, 0);
+    const map = new Map<string, Member>();
+    for (const { group, member } of assignments) {
+      map.set(group.id, member);
+    }
+    return map;
   }, [editGroups, editMembers]);
+
+  // --- 担当者ピッカー ---
+  const [openPickerIdx, setOpenPickerIdx] = useState<number | null>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  // ピッカー外クリックで閉じる
+  useEffect(() => {
+    if (openPickerIdx === null) return;
+    const handleClick = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setOpenPickerIdx(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [openPickerIdx]);
+
+  const assignMemberToGroup = (gIdx: number, memberId: string) => {
+    setEditMembers((prev) => {
+      const targetIdx = prev.findIndex((m) => m.id === memberId);
+      if (targetIdx === -1 || targetIdx === gIdx) return prev;
+      const next = [...prev];
+      [next[gIdx], next[targetIdx]] = [next[targetIdx], next[gIdx]];
+      return next;
+    });
+    setOpenPickerIdx(null);
+  };
 
   const handleEscape = useCallback(() => onClose(), [onClose]);
   useEscapeKey(handleEscape);
@@ -221,8 +247,18 @@ export function SettingsModal({
     setEditMembers((prev) => prev.map((m, i) => (i === idx ? { ...m, name } : m)));
   };
 
-  const updateMemberColor = (idx: number, presetIdx: number) => {
+  const [openColorIdx, setOpenColorIdx] = useState<number | null>(null);
+
+  const updateMemberColorPreset = (idx: number, presetIdx: number) => {
     const preset = MEMBER_PRESETS[presetIdx];
+    setEditMembers((prev) =>
+      prev.map((m, i) => (i === idx ? { ...m, ...preset } : m))
+    );
+    setOpenColorIdx(null);
+  };
+
+  const updateMemberColorCustom = (idx: number, hex: string) => {
+    const preset = colorPresetFromHex(hex);
     setEditMembers((prev) =>
       prev.map((m, i) => (i === idx ? { ...m, ...preset } : m))
     );
@@ -332,118 +368,177 @@ export function SettingsModal({
         {/* コンテンツ */}
         <div className="flex-1 overflow-y-auto p-5">
           {activeTab === "tasks" ? (
-            <div id="panel-tasks" role="tabpanel" className="flex flex-col gap-5">
-              {editGroups.map((group, gIdx) => (
-                <div
-                  key={group.id}
-                  className="brutal-border p-4"
-                  style={{ borderRadius: "12px", backgroundColor: "#FAFAFA" }}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={group.emoji}
-                        onChange={(e) => updateGroupEmoji(gIdx, e.target.value)}
-                        className="w-10 text-center text-lg brutal-border px-1 py-0.5"
-                        style={{ borderRadius: "6px", backgroundColor: "#fff" }}
-                        aria-label={`グループ${gIdx + 1}の絵文字`}
-                      />
-                      <div>
+            /* ── タスクグループタブ ── */
+            <div id="panel-tasks" role="tabpanel" className="flex flex-col gap-3">
+              {editGroups.map((group, gIdx) => {
+                const assignedMember = assignmentMap.get(group.id);
+                const isPickerOpen = openPickerIdx === gIdx;
+                return (
+                  <div
+                    key={group.id}
+                    className="brutal-border p-3 sm:p-4"
+                    style={{ borderRadius: "12px", backgroundColor: "#FAFAFA" }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={group.emoji}
+                          onChange={(e) => updateGroupEmoji(gIdx, e.target.value)}
+                          className="w-10 text-center text-lg brutal-border px-1 py-0.5"
+                          style={{ borderRadius: "6px", backgroundColor: "#fff" }}
+                          aria-label={`グループ${gIdx + 1}の絵文字`}
+                        />
                         <span className="text-sm font-extrabold" style={{ color: "#666" }}>
                           グループ {gIdx + 1}
                         </span>
-                        {(() => {
-                          const match = previewAssignments.find((a) => a.group.id === group.id);
-                          if (!match) return null;
-                          return (
-                            <div className="flex items-center gap-1 mt-0.5">
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {/* 割り当てバッジ（クリックでピッカー） */}
+                        <div className="relative" ref={isPickerOpen ? pickerRef : undefined}>
+                          {assignedMember ? (
+                            <button
+                              type="button"
+                              onClick={() => setOpenPickerIdx(isPickerOpen ? null : gIdx)}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-xs font-bold cursor-pointer transition-all hover:shadow-md"
+                              style={{ backgroundColor: assignedMember.bgColor, color: assignedMember.color }}
+                            >
                               <span
                                 className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-extrabold text-white"
-                                style={{ backgroundColor: match.member.color }}
+                                style={{ backgroundColor: assignedMember.color }}
                               >
-                                {match.member.name.charAt(0)}
+                                {assignedMember.name.charAt(0)}
                               </span>
-                              <span className="text-[10px] font-bold" style={{ color: match.member.color }}>
-                                {match.member.name}
-                              </span>
+                              {assignedMember.name}
+                              <ChevronDown className="w-3 h-3 ml-0.5" aria-hidden="true" />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setOpenPickerIdx(isPickerOpen ? null : gIdx)}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-xs font-bold border-2 border-dashed cursor-pointer"
+                              style={{ borderColor: "#ccc", color: "#999" }}
+                            >
+                              担当者を選択
+                              <ChevronDown className="w-3 h-3 ml-0.5" aria-hidden="true" />
+                            </button>
+                          )}
+
+                          {/* ドロップダウンピッカー */}
+                          {isPickerOpen && (
+                            <div
+                              className="absolute right-0 top-full mt-1 z-10 brutal-border py-1 min-w-[140px] max-h-[200px] overflow-y-auto"
+                              style={{ backgroundColor: "#fff", borderRadius: "10px", boxShadow: "4px 4px 0px #1a1a1a" }}
+                            >
+                              {editMembers.map((m, mIdx) => {
+                                if (!m.name.trim()) return null;
+                                const isCurrent = assignedMember?.id === m.id;
+                                return (
+                                  <button
+                                    key={m.id}
+                                    type="button"
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold transition-colors text-left"
+                                    style={{
+                                      backgroundColor: isCurrent ? m.bgColor : "transparent",
+                                      color: isCurrent ? m.color : "#333",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (!isCurrent) (e.currentTarget.style.backgroundColor = "#f5f5f5");
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (!isCurrent) (e.currentTarget.style.backgroundColor = "transparent");
+                                    }}
+                                    onClick={() => assignMemberToGroup(gIdx, m.id)}
+                                  >
+                                    <span
+                                      className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white shrink-0"
+                                      style={{ backgroundColor: m.color }}
+                                    >
+                                      {m.name.charAt(0)}
+                                    </span>
+                                    {m.name}
+                                    {isCurrent && <span className="ml-auto text-[10px]">✓</span>}
+                                  </button>
+                                );
+                              })}
                             </div>
-                          );
-                        })()}
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => removeGroup(gIdx)}
+                          className="p-1.5 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30"
+                          style={{ color: "#EF4444" }}
+                          disabled={editGroups.length <= 1}
+                          aria-label={`グループ${gIdx + 1}を削除`}
+                        >
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => removeGroup(gIdx)}
-                      className="p-1.5 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30"
-                      style={{ color: "#EF4444" }}
-                      disabled={editGroups.length <= 1}
-                      aria-label={`グループ${gIdx + 1}を削除`}
-                    >
-                      <Trash2 className="w-4 h-4" aria-hidden="true" />
-                    </button>
-                  </div>
 
-                  <div
-                    className="flex flex-col gap-2"
-                    onDragOver={handleGroupDragOver}
-                    onDrop={(e) => handleGroupDropZone(e, gIdx)}
-                  >
-                    {group.tasks.map((task, tIdx) => {
-                      const isDragging = dragTask?.gIdx === gIdx && dragTask?.tIdx === tIdx;
-                      const isDropTarget = dropTarget?.gIdx === gIdx && dropTarget?.tIdx === tIdx;
-                      return (
-                        <div
-                          key={`${group.id}-t${tIdx}`}
-                          className={`flex items-center gap-2 transition-all duration-150 ${
-                            isDragging ? "opacity-30 scale-95" : ""
-                          } ${isDropTarget ? "translate-y-1" : ""}`}
-                          draggable
-                          onDragStart={(e) => handleTaskDragStart(e, gIdx, tIdx)}
-                          onDragOver={(e) => handleTaskDragOver(e, gIdx, tIdx)}
-                          onDrop={(e) => { e.stopPropagation(); handleTaskDrop(e, gIdx, tIdx); }}
-                          onDragEnd={handleTaskDragEnd}
-                        >
-                          {isDropTarget && (
-                            <div
-                              className="absolute left-0 right-0 h-0.5 -top-1.5 rounded-full"
-                              style={{ backgroundColor: "#FBBF24" }}
-                            />
-                          )}
-                          <GripVertical
-                            className="w-4 h-4 shrink-0 cursor-grab active:cursor-grabbing"
-                            style={{ color: "#bbb" }}
-                            aria-hidden="true"
-                          />
-                          <input
-                            type="text"
-                            value={task}
-                            onChange={(e) => updateTask(gIdx, tIdx, e.target.value)}
-                            placeholder="タスク名を入力"
-                            className="flex-1 brutal-border px-3 py-2 text-sm font-medium"
-                            style={{ borderRadius: "8px", backgroundColor: "#fff" }}
-                            aria-label={`グループ${gIdx + 1}のタスク${tIdx + 1}`}
-                          />
-                          <button
-                            onClick={() => removeTask(gIdx, tIdx)}
-                            className="p-1.5 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                            style={{ color: "#EF4444" }}
-                            aria-label={`タスク「${task || "空"}」を削除`}
-                          >
-                            <X className="w-3.5 h-3.5" aria-hidden="true" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                    <button
-                      onClick={() => addTask(gIdx)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold self-start hover:bg-gray-100 rounded-lg transition-colors"
-                      style={{ color: "#666" }}
+                    <div
+                      className="flex flex-col gap-2"
+                      onDragOver={handleGroupDragOver}
+                      onDrop={(e) => handleGroupDropZone(e, gIdx)}
                     >
-                      <Plus className="w-3.5 h-3.5" aria-hidden="true" /> タスクを追加
-                    </button>
+                      {group.tasks.map((task, tIdx) => {
+                        const isDragging = dragTask?.gIdx === gIdx && dragTask?.tIdx === tIdx;
+                        const isTaskDropTarget = dropTarget?.gIdx === gIdx && dropTarget?.tIdx === tIdx;
+                        return (
+                          <div
+                            key={`${group.id}-t${tIdx}`}
+                            className={`flex items-center gap-2 transition-all duration-150 ${
+                              isDragging ? "opacity-30 scale-95" : ""
+                            } ${isTaskDropTarget ? "translate-y-1" : ""}`}
+                            draggable
+                            onDragStart={(e) => handleTaskDragStart(e, gIdx, tIdx)}
+                            onDragOver={(e) => handleTaskDragOver(e, gIdx, tIdx)}
+                            onDrop={(e) => { e.stopPropagation(); handleTaskDrop(e, gIdx, tIdx); }}
+                            onDragEnd={handleTaskDragEnd}
+                          >
+                            {isTaskDropTarget && (
+                              <div
+                                className="absolute left-0 right-0 h-0.5 -top-1.5 rounded-full"
+                                style={{ backgroundColor: "#FBBF24" }}
+                              />
+                            )}
+                            <GripVertical
+                              className="w-4 h-4 shrink-0 cursor-grab active:cursor-grabbing"
+                              style={{ color: "#bbb" }}
+                              aria-hidden="true"
+                            />
+                            <input
+                              type="text"
+                              value={task}
+                              onChange={(e) => updateTask(gIdx, tIdx, e.target.value)}
+                              placeholder="タスク名を入力"
+                              className="flex-1 min-w-0 brutal-border px-3 py-2 text-sm font-medium"
+                              style={{ borderRadius: "8px", backgroundColor: "#fff" }}
+                              aria-label={`グループ${gIdx + 1}のタスク${tIdx + 1}`}
+                            />
+                            <button
+                              onClick={() => removeTask(gIdx, tIdx)}
+                              className="p-1.5 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                              style={{ color: "#EF4444" }}
+                              aria-label={`タスク「${task || "空"}」を削除`}
+                            >
+                              <X className="w-3.5 h-3.5" aria-hidden="true" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                      <button
+                        onClick={() => addTask(gIdx)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold self-start hover:bg-gray-100 rounded-lg transition-colors"
+                        style={{ color: "#666" }}
+                      >
+                        <Plus className="w-3.5 h-3.5" aria-hidden="true" /> タスクを追加
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               <button
                 onClick={addGroup}
@@ -454,124 +549,113 @@ export function SettingsModal({
               </button>
             </div>
           ) : (
-            <div id="panel-members" role="tabpanel" className="flex flex-col gap-4">
-              {/* 割り当てプレビュー */}
-              {previewAssignments.length > 0 && (
-                <div
-                  className="brutal-border p-3"
-                  style={{ borderRadius: "10px", backgroundColor: "#FFFBEB", borderColor: "#FBBF24" }}
-                >
-                  <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#92700C" }}>
-                    現在の割り当て（初期）
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    {previewAssignments.map(({ group, member }, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs font-bold">
-                        <span
-                          className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white brutal-border"
-                          style={{ backgroundColor: member.color, borderWidth: "2px" }}
-                        >
-                          {member.name.charAt(0)}
-                        </span>
-                        <span style={{ color: member.color }}>{member.name}</span>
-                        <ArrowRight className="w-3 h-3 shrink-0" style={{ color: "#bbb" }} aria-hidden="true" />
-                        <span className="text-sm" aria-hidden="true">{group.emoji}</span>
-                        <span style={{ color: "#555" }}>{group.tasks.join("・")}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* メンバーリスト */}
-              {editMembers.map((member, mIdx) => {
-                const isDragging = dragMemberIdx === mIdx;
-                const isDropTarget = dropMemberIdx === mIdx;
-                return (
-                  <div
-                    key={member.id}
-                    className={`brutal-border p-4 flex flex-col gap-3 transition-all duration-150 ${
-                      isDragging ? "opacity-30 scale-[0.97]" : ""
-                    } ${isDropTarget ? "ring-2 ring-yellow-400 ring-offset-1" : ""}`}
-                    style={{ borderRadius: "12px", backgroundColor: "#FAFAFA" }}
-                    draggable
-                    onDragStart={(e) => handleMemberDragStart(e, mIdx)}
-                    onDragOver={(e) => handleMemberDragOver(e, mIdx)}
-                    onDrop={(e) => handleMemberDrop(e, mIdx)}
-                    onDragEnd={handleMemberDragEnd}
-                  >
-                    <div className="flex items-center gap-3">
-                      <GripVertical
-                        className="w-4 h-4 shrink-0 cursor-grab active:cursor-grabbing"
-                        style={{ color: "#bbb" }}
-                        aria-hidden="true"
-                      />
-                      <div
-                        className="brutal-border w-10 h-10 flex items-center justify-center font-extrabold text-sm shrink-0"
-                        style={{
-                          backgroundColor: member.color,
-                          borderRadius: "50%",
-                          color: "#fff",
-                        }}
-                        aria-hidden="true"
-                      >
-                        {member.name ? member.name.charAt(0) : "?"}
-                      </div>
-                      <input
-                        type="text"
-                        value={member.name}
-                        onChange={(e) => updateMemberName(mIdx, e.target.value)}
-                        placeholder="名前を入力"
-                        className="flex-1 brutal-border px-3 py-2 text-sm font-bold"
-                        style={{ borderRadius: "8px", backgroundColor: "#fff" }}
-                        aria-label={`担当者${mIdx + 1}の名前`}
-                      />
-                      <button
-                        onClick={() => removeMember(mIdx)}
-                        className="p-1.5 hover:bg-red-50 rounded-lg transition-colors shrink-0 disabled:opacity-30"
-                        style={{ color: "#EF4444" }}
-                        disabled={editMembers.length <= 1}
-                        aria-label={`担当者「${member.name || "未入力"}」を削除`}
-                      >
-                        <Trash2 className="w-4 h-4" aria-hidden="true" />
-                      </button>
-                    </div>
-
-                    {/* カラーパレット */}
-                    <div className="flex items-center gap-1.5 pl-[4.25rem]" role="radiogroup" aria-label={`${member.name || "担当者"}のカラー選択`}>
-                      {MEMBER_PRESETS.map((preset, pIdx) => (
-                        <button
-                          key={pIdx}
-                          className="w-6 h-6 rounded-full transition-transform hover:scale-110"
-                          style={{
-                            backgroundColor: preset.color,
-                            border: member.color === preset.color ? "3px solid #1a1a1a" : "2px solid #ddd",
-                            transform: member.color === preset.color ? "scale(1.15)" : "scale(1)",
-                          }}
-                          onClick={() => updateMemberColor(mIdx, pIdx)}
-                          role="radio"
-                          aria-checked={member.color === preset.color}
-                          aria-label={`カラー${pIdx + 1}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-
-              <button
-                onClick={addMember}
-                className="brutal-border brutal-shadow-sm flex items-center justify-center gap-2 px-4 py-3 font-bold text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px]"
-                style={{ backgroundColor: "#E8E8E8", borderRadius: "10px" }}
+            /* ── 担当者タブ ── */
+            <div id="panel-members" role="tabpanel" className="flex flex-col gap-5">
+              <div
+                className="brutal-border p-3 sm:p-4"
+                style={{ borderRadius: "12px", backgroundColor: "#FAFAFA" }}
               >
-                <Plus className="w-4 h-4" aria-hidden="true" /> 担当者を追加
-              </button>
+                <div className="flex flex-col gap-2">
+                  {editMembers.map((member, mIdx) => {
+                    const isDragging = dragMemberIdx === mIdx;
+                    const isDropMemberTarget = dropMemberIdx === mIdx;
+                    const isColorOpen = openColorIdx === mIdx;
+                    return (
+                      <div key={member.id}>
+                        <div
+                          className={`flex items-center gap-2 transition-all duration-150 ${
+                            isDragging ? "opacity-30 scale-95" : ""
+                          } ${isDropMemberTarget ? "translate-y-1" : ""}`}
+                          draggable
+                          onDragStart={(e) => handleMemberDragStart(e, mIdx)}
+                          onDragOver={(e) => handleMemberDragOver(e, mIdx)}
+                          onDrop={(e) => handleMemberDrop(e, mIdx)}
+                          onDragEnd={handleMemberDragEnd}
+                        >
+                          <GripVertical
+                            className="w-4 h-4 shrink-0 cursor-grab active:cursor-grabbing"
+                            style={{ color: "#bbb" }}
+                            aria-hidden="true"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setOpenColorIdx(isColorOpen ? null : mIdx)}
+                            className="w-7 h-7 rounded-full shrink-0 brutal-border transition-transform hover:scale-110"
+                            style={{ backgroundColor: member.color, borderWidth: "2px" }}
+                            aria-label="色を変更"
+                          />
+                          <input
+                            type="text"
+                            value={member.name}
+                            onChange={(e) => updateMemberName(mIdx, e.target.value)}
+                            placeholder="名前を入力"
+                            className="flex-1 min-w-0 brutal-border px-3 py-2 text-sm font-medium"
+                            style={{ borderRadius: "8px", backgroundColor: "#fff" }}
+                            aria-label={`担当者${mIdx + 1}の名前`}
+                          />
+                          <button
+                            onClick={() => removeMember(mIdx)}
+                            className="p-1.5 hover:bg-red-50 rounded-lg transition-colors shrink-0 disabled:opacity-30"
+                            style={{ color: "#EF4444" }}
+                            disabled={editMembers.length <= 1}
+                            aria-label={`担当者「${member.name || "未入力"}」を削除`}
+                          >
+                            <X className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                        </div>
+
+                        {/* インラインカラーパレット */}
+                        {isColorOpen && (
+                          <div className="flex items-center gap-1.5 pl-[1.75rem] mt-1.5 mb-1" role="radiogroup" aria-label="カラー選択">
+                            {MEMBER_PRESETS.map((preset, pIdx) => (
+                              <button
+                                key={pIdx}
+                                className="w-6 h-6 rounded-full transition-transform hover:scale-110"
+                                style={{
+                                  backgroundColor: preset.color,
+                                  border: member.color === preset.color ? "3px solid #1a1a1a" : "2px solid #ddd",
+                                  transform: member.color === preset.color ? "scale(1.15)" : "scale(1)",
+                                }}
+                                onClick={() => updateMemberColorPreset(mIdx, pIdx)}
+                                role="radio"
+                                aria-checked={member.color === preset.color}
+                                aria-label={`カラー${pIdx + 1}`}
+                              />
+                            ))}
+                            <label
+                              className="w-6 h-6 rounded-full border-2 border-dashed flex items-center justify-center cursor-pointer hover:scale-110 transition-transform relative overflow-hidden"
+                              style={{ borderColor: "#bbb" }}
+                              aria-label="カスタムカラー"
+                            >
+                              <Palette className="w-3 h-3" style={{ color: "#999" }} aria-hidden="true" />
+                              <input
+                                type="color"
+                                value={member.color}
+                                onChange={(e) => updateMemberColorCustom(mIdx, e.target.value)}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                              />
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  <button
+                    onClick={addMember}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold self-start hover:bg-gray-100 rounded-lg transition-colors"
+                    style={{ color: "#666" }}
+                  >
+                    <Plus className="w-3.5 h-3.5" aria-hidden="true" /> 担当者を追加
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
-        {/* 保存ボタン・デフォルト用コピー */}
-        <div className="px-5 py-4 flex flex-col gap-2" style={{ borderTop: "3px solid #1a1a1a" }}>
+        {/* 保存ボタン */}
+        <div className="px-5 py-4" style={{ borderTop: "3px solid #1a1a1a" }}>
           <button
             onClick={handleSave}
             className="brutal-border brutal-shadow-sm w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-sm text-white transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
@@ -579,26 +663,6 @@ export function SettingsModal({
           >
             <Save className="w-4 h-4" aria-hidden="true" /> 保存する
           </button>
-          {onCopyAsDefault && (
-            <button
-              type="button"
-              onClick={onCopyAsDefault}
-              className="text-xs font-bold hover:underline"
-              style={{ color: "#666" }}
-            >
-              現在の画面の状態をデフォルト用にコピー
-            </button>
-          )}
-          {onResetToDefault && (
-            <button
-              type="button"
-              onClick={onResetToDefault}
-              className="text-xs font-bold hover:underline"
-              style={{ color: "#666" }}
-            >
-              デフォルトの状態に戻す
-            </button>
-          )}
         </div>
       </motion.div>
     </motion.div>

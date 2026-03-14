@@ -11,6 +11,8 @@ interface AssignmentsGridProps {
   direction: "forward" | "backward";
   rotation: number;
   groupCount: number;
+  scheduleId: string;
+  stagger?: boolean;
 }
 
 export function AssignmentsGrid({
@@ -18,30 +20,28 @@ export function AssignmentsGrid({
   direction,
   rotation,
   groupCount,
+  scheduleId,
+  stagger = true,
 }: AssignmentsGridProps) {
   return (
     <div className="px-3 sm:px-4 py-3 sm:py-4">
       <div className="max-w-4xl mx-auto">
         <div className={`grid gap-3 md:gap-4 rotation-print-card-grid ${getGridCols(groupCount)}`}>
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {assignments.map(({ group, member }, index) => (
               <motion.div
-                key={`${member.id}-${group.id}-${rotation}`}
+                key={`${scheduleId}-${member.id}-${group.id}-${rotation}`}
                 className="brutal-border brutal-shadow rotation-print-card overflow-hidden"
                 style={{ borderRadius: "16px", backgroundColor: "#fff" }}
-                initial={{
-                  x: direction === "forward" ? 40 : -40,
-                  opacity: 0,
-                  scale: 0.95,
-                }}
+                initial={stagger
+                  ? { x: direction === "forward" ? 40 : -40, opacity: 0, scale: 0.95 }
+                  : { opacity: 0, scale: 0.97 }
+                }
                 animate={{ x: 0, opacity: 1, scale: 1 }}
-                transition={{
-                  duration: 0.4,
-                  delay: index * CARD_STAGGER_DELAY,
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 25,
-                }}
+                transition={stagger
+                  ? { duration: 0.4, delay: index * CARD_STAGGER_DELAY, type: "spring", stiffness: 200, damping: 25 }
+                  : { duration: 0.25 }
+                }
               >
                 <div
                   className="px-3 sm:px-4 py-3 sm:py-4 text-center"
@@ -68,12 +68,12 @@ export function AssignmentsGrid({
                         border: `2px solid ${member.color}40`,
                         color: member.textColor,
                       }}
-                      initial={{ x: 20, opacity: 0 }}
+                      initial={stagger ? { x: 20, opacity: 0 } : { opacity: 1 }}
                       animate={{ x: 0, opacity: 1 }}
-                      transition={{
-                        delay: index * CARD_STAGGER_DELAY + taskIndex * TASK_STAGGER_DELAY + 0.2,
-                        duration: 0.3,
-                      }}
+                      transition={stagger
+                        ? { delay: index * CARD_STAGGER_DELAY + taskIndex * TASK_STAGGER_DELAY + 0.2, duration: 0.3 }
+                        : { duration: 0 }
+                      }
                     >
                       <span className="text-lg" aria-hidden="true">
                         {group.emoji}
