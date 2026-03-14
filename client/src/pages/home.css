@@ -1,0 +1,58 @@
+.rotation-print-only {
+  display: none;
+}
+
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body {
+    width: 297mm;
+    height: 210mm;
+    margin: 0;
+    padding: 0;
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+    overflow: hidden;
+  }
+
+  .rotation-no-print {
+    display: none !important;
+  }
+
+  .rotation-print-only {
+    display: block !important;
+  }
+
+  .rotation-print-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border: 2px solid #333 !important;
+  }
+
+  .rotation-print-header {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .rotation-page {
+    min-height: auto !important;
+    width: 297mm;
+    height: 210mm;
+    padding: 8mm 12mm !important;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .rotation-print-card-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 12px !important;
+  }
+}

@@ -1,4 +1,4 @@
-import type { AppState, Schedule, ScheduleTemplate, TaskGroup, Member } from "./types";
+import type { AppState, Member, Schedule, ScheduleTemplate, TaskGroup } from "./types";
 import { STORAGE_KEY, TEMPLATES } from "./constants";
 import { DEFAULT_APP_STATE } from "./defaultState";
 
@@ -10,18 +10,120 @@ export function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
 }
 
-export function isValidSchedule(s: unknown): s is Schedule {
-  if (!s || typeof s !== "object") return false;
-  const obj = s as Record<string, unknown>;
-  return (
-    typeof obj.id === "string" &&
-    typeof obj.name === "string" &&
-    typeof obj.rotation === "number" &&
-    Array.isArray(obj.groups) &&
-    obj.groups.length > 0 &&
-    Array.isArray(obj.members) &&
-    obj.members.length > 0
-  );
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function sanitizeTaskGroup(group: unknown): TaskGroup | null {
+  if (!isRecord(group)) return null;
+
+  const tasks = Array.isArray(group.tasks)
+    ? group.tasks.filter(isNonEmptyString).map((task) => task.trim())
+    : [];
+
+  if (
+    !isNonEmptyString(group.id) ||
+    !isNonEmptyString(group.emoji) ||
+    tasks.length === 0
+  ) {
+    return null;
+  }
+
+  return {
+    id: group.id,
+    emoji: group.emoji,
+    tasks,
+  };
+}
+
+function sanitizeMember(member: unknown): Member | null {
+  if (!isRecord(member)) return null;
+
+  if (
+    !isNonEmptyString(member.id) ||
+    !isNonEmptyString(member.name) ||
+    !isNonEmptyString(member.color) ||
+    !isNonEmptyString(member.bgColor) ||
+    !isNonEmptyString(member.textColor)
+  ) {
+    return null;
+  }
+
+  return {
+    id: member.id,
+    name: member.name.trim(),
+    color: member.color,
+    bgColor: member.bgColor,
+    textColor: member.textColor,
+  };
+}
+
+function sanitizeSchedule(schedule: unknown): Schedule | null {
+  if (!isRecord(schedule)) return null;
+
+  const groups = Array.isArray(schedule.groups)
+    ? schedule.groups.map(sanitizeTaskGroup).filter((group): group is TaskGroup => group !== null)
+    : [];
+  const members = Array.isArray(schedule.members)
+    ? schedule.members.map(sanitizeMember).filter((member): member is Member => member !== null)
+    : [];
+
+  if (
+    !isNonEmptyString(schedule.id) ||
+    !isNonEmptyString(schedule.name) ||
+    typeof schedule.rotation !== "number" ||
+    !Number.isFinite(schedule.rotation) ||
+    groups.length === 0 ||
+    members.length === 0
+  ) {
+    return null;
+  }
+
+  return {
+    id: schedule.id,
+    name: schedule.name.trim(),
+    rotation: normalizeRotation(schedule.rotation, members.length),
+    groups,
+    members,
+  };
+}
+
+function sanitizeAppState(state: unknown): AppState | null {
+  if (!isRecord(state) || !Array.isArray(state.schedules)) {
+    return null;
+  }
+
+  const schedules = state.schedules
+    .map(sanitizeSchedule)
+    .filter((schedule): schedule is Schedule => schedule !== null);
+
+  if (schedules.length === 0) {
+    return null;
+  }
+
+  const activeScheduleId = isNonEmptyString(state.activeScheduleId)
+    && schedules.some((schedule) => schedule.id === state.activeScheduleId)
+    ? state.activeScheduleId
+    : schedules[0].id;
+
+  return { schedules, activeScheduleId };
+}
+
+export function isValidSchedule(schedule: unknown): schedule is Schedule {
+  return sanitizeSchedule(schedule) !== null;
+}
+
+export function normalizeRotation(rotation: number, memberCount: number): number {
+  if (memberCount <= 0 || !Number.isFinite(rotation)) {
+    return 0;
+  }
+
+  const normalizedRotation = Math.trunc(rotation);
+  return ((normalizedRotation % memberCount) + memberCount) % memberCount;
 }
 
 export function createScheduleFromTemplate(template: ScheduleTemplate): Schedule {
@@ -38,25 +140,18 @@ export function loadState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && Array.isArray(parsed.schedules)) {
-        const validSchedules = parsed.schedules.filter(isValidSchedule);
-        if (validSchedules.length > 0) {
-          const activeId = validSchedules.some((s: Schedule) => s.id === parsed.activeScheduleId)
-            ? parsed.activeScheduleId
-            : validSchedules[0].id;
-          return { schedules: validSchedules, activeScheduleId: activeId };
-        }
+      const parsedState = sanitizeAppState(JSON.parse(raw));
+      if (parsedState) {
+        return parsedState;
       }
     }
   } catch { /* ignore corrupted data */ }
-  const validDefaults = DEFAULT_APP_STATE.schedules.filter(isValidSchedule);
-  if (validDefaults.length > 0) {
-    const activeId = DEFAULT_APP_STATE.schedules.some((s) => s.id === DEFAULT_APP_STATE.activeScheduleId)
-      ? DEFAULT_APP_STATE.activeScheduleId
-      : validDefaults[0].id;
-    return { schedules: validDefaults, activeScheduleId: activeId };
+
+  const defaultState = sanitizeAppState(DEFAULT_APP_STATE);
+  if (defaultState) {
+    return defaultState;
   }
+
   const defaultSchedule = createScheduleFromTemplate(TEMPLATES[0]);
   const customSchedule = createScheduleFromTemplate(TEMPLATES[TEMPLATES.length - 1]);
   return { schedules: [defaultSchedule, customSchedule], activeScheduleId: defaultSchedule.id };
