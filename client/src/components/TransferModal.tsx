@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { X, Copy, Check } from "lucide-react";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
@@ -14,15 +14,20 @@ interface Props {
 export function TransferModal({ slug, editToken, scheduleName, onClose }: Props) {
   const [copied, setCopied] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const copyTimerRef = useRef<number | null>(null);
 
-  const transferData = btoa(JSON.stringify({ slug, editToken, name: scheduleName }));
-  const transferUrl = `${window.location.origin}/transfer?data=${transferData}`;
+  const transferUrl = useMemo(() => {
+    const json = JSON.stringify({ slug, editToken, name: scheduleName });
+    const encoded = btoa(unescape(encodeURIComponent(json)));
+    return `${window.location.origin}/transfer?data=${encoded}`;
+  }, [slug, editToken, scheduleName]);
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(transferUrl);
     setCopied(true);
     toast.success("転送URLをコピーしました");
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = window.setTimeout(() => setCopied(false), 2000);
   }, [transferUrl]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {

@@ -126,16 +126,16 @@ export default function Home() {
   }, []);
 
   const handleDeleteSchedule = useCallback((scheduleId: string) => {
-    // D1からも削除を試みる（失敗してもローカル削除は実行）
-    const schedule = state.schedules.find((s) => s.id === scheduleId);
-    if (schedule?.slug && schedule?.editToken) {
-      deleteSchedule(schedule.slug, schedule.editToken).catch(() => {
-        // D1削除失敗は無視（90日クリーンアップで自然削除される）
-      });
-    }
-
     setState((prev) => {
       if (prev.schedules.length <= 1) return prev;
+
+      // D1からも削除を試みる（失敗してもローカル削除は実行）
+      const schedule = prev.schedules.find((s) => s.id === scheduleId);
+      if (schedule?.slug && schedule?.editToken) {
+        deleteSchedule(schedule.slug, schedule.editToken).catch(() => {
+          // D1削除失敗は無視（90日クリーンアップで自然削除される）
+        });
+      }
 
       const remainingSchedules = prev.schedules.filter((s) => s.id !== scheduleId);
       return {
@@ -146,7 +146,7 @@ export default function Home() {
       };
     });
     setConfirmDelete(null);
-  }, [state.schedules]);
+  }, []);
 
   const handleTabDrop = useCallback((targetId: string) => {
     setDraggedTabId((currentDraggedId) => {

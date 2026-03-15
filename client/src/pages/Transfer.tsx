@@ -18,7 +18,7 @@ export default function Transfer() {
         return;
       }
 
-      const parsed = JSON.parse(atob(data));
+      const parsed = JSON.parse(decodeURIComponent(escape(atob(data))));
       if (!parsed.slug || !parsed.editToken || !parsed.name) {
         setError("転送データが不正です");
         return;

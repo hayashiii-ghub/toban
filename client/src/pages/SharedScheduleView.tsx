@@ -3,7 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { toast } from "sonner";
 import { getSchedule } from "@/lib/api";
 import type { ScheduleDTO } from "@/rotation/types";
-import { APP_TITLE, STORAGE_KEY } from "@/rotation/constants";
+import { APP_TITLE } from "@/rotation/constants";
 import { computeAssignments, generateId, loadState, saveState } from "@/rotation/utils";
 import { AssignmentsGrid } from "@/features/home/AssignmentsGrid";
 import { RotationQuickTable } from "@/features/home/RotationQuickTable";

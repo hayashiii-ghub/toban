@@ -7,7 +7,6 @@ declare global {
 }
 
 export function AdBanner() {
-  const adRef = useRef<HTMLModElement>(null);
   const pushed = useRef(false);
 
   useEffect(() => {
@@ -24,7 +23,6 @@ export function AdBanner() {
     <div className="rotation-no-print px-3 sm:px-4 pb-4">
       <div className="max-w-4xl mx-auto">
         <ins
-          ref={adRef}
           className="adsbygoogle"
           style={{ display: "block" }}
           data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"

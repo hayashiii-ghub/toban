@@ -24,10 +24,7 @@ app.use("/api/*", bodyLimit({ maxSize: 100 * 1024 }));
 
 // メモリベース簡易レート制限（Workerインスタンス単位）
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function getRateLimitKey(ip: string, method: string): string {
-  return `${ip}:${method}`;
-}
+let rateLimitRequestCount = 0;
 
 function getMaxRequests(method: string): number {
   if (method === "POST") return 10;
@@ -38,9 +35,15 @@ function getMaxRequests(method: string): number {
 app.use("/api/*", async (c, next) => {
   const ip = c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for") ?? "unknown";
   const method = c.req.method;
-  const key = getRateLimitKey(ip, method);
+  const key = `${ip}:${method}`;
   const now = Date.now();
-  const maxRequests = getMaxRequests(method);
+
+  // 100リクエストごとに期限切れエントリを掃除
+  if (++rateLimitRequestCount % 100 === 0) {
+    rateLimitMap.forEach((v, k) => {
+      if (now > v.resetAt) rateLimitMap.delete(k);
+    });
+  }
 
   let entry = rateLimitMap.get(key);
   if (!entry || now > entry.resetAt) {
@@ -50,7 +53,7 @@ app.use("/api/*", async (c, next) => {
 
   entry.count++;
 
-  if (entry.count > maxRequests) {
+  if (entry.count > getMaxRequests(method)) {
     return c.json({ error: "Too many requests" }, 429);
   }
 
