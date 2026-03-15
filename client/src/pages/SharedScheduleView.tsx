@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "wouter";
 import { getSchedule } from "@/lib/api";
 import type { ScheduleDTO } from "@/rotation/types";
+import { APP_TITLE } from "@/rotation/constants";
 import { computeAssignments } from "@/rotation/utils";
 import { AssignmentsGrid } from "@/features/home/AssignmentsGrid";
 import { RotationQuickTable } from "@/features/home/RotationQuickTable";
@@ -22,14 +23,15 @@ export default function SharedScheduleView() {
       .finally(() => setLoading(false));
   }, [slug]);
 
+  const scheduleName = schedule?.name;
   useEffect(() => {
-    if (schedule) {
-      document.title = `${schedule.name} - 当番表メーカー`;
+    if (scheduleName) {
+      document.title = `${scheduleName} - 当番表メーカー`;
     }
     return () => {
-      document.title = "当番表メーカー｜無料で当番表を作成・印刷・共有";
+      document.title = APP_TITLE;
     };
-  }, [schedule]);
+  }, [scheduleName]);
 
   const assignments = useMemo(() => {
     if (!schedule) return [];

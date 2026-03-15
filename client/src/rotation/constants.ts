@@ -1,5 +1,7 @@
 import type { ScheduleTemplate } from "./types";
 
+export const APP_TITLE = "当番表メーカー｜無料で当番表を作成・印刷・共有";
+
 export const ANIMATION_DURATION_MS = 500;
 export const CARD_STAGGER_DELAY = 0.08;
 export const TASK_STAGGER_DELAY = 0.06;
