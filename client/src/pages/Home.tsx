@@ -264,7 +264,6 @@ export default function Home() {
         rotation={rotation}
         rotationLabel={rotationLabel}
         isAnimating={isAnimating}
-        isCloudSaved={!!activeSchedule.slug}
         isSharing={isSharing}
         onRotateBackward={() => handleRotate("backward")}
         onRotateForward={() => handleRotate("forward")}

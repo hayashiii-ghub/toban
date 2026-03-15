@@ -1,11 +1,10 @@
 import { motion } from "framer-motion";
-import { Cloud, CloudUpload, Loader2, Printer, RotateCcw, RotateCw, Settings } from "lucide-react";
+import { Cloud, Loader2, Printer, RotateCcw, RotateCw, Settings } from "lucide-react";
 
 interface RotationControlsProps {
   rotation: number;
   rotationLabel: string;
   isAnimating: boolean;
-  isCloudSaved: boolean;
   isSharing: boolean;
   onRotateBackward: () => void;
   onRotateForward: () => void;
@@ -18,7 +17,6 @@ export function RotationControls({
   rotation,
   rotationLabel,
   isAnimating,
-  isCloudSaved,
   isSharing,
   onRotateBackward,
   onRotateForward,
@@ -87,16 +85,14 @@ export function RotationControls({
               disabled={isSharing}
               className="brutal-border brutal-shadow-sm flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 font-bold text-xs sm:text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
               style={{ backgroundColor: "#fff", borderRadius: "8px" }}
-              aria-label={isCloudSaved ? "クラウドに更新する" : "クラウドに共有する"}
+              aria-label="共有する"
             >
               {isSharing ? (
                 <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" aria-hidden="true" />
-              ) : isCloudSaved ? (
-                <CloudUpload className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
               ) : (
                 <Cloud className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
               )}
-              {isCloudSaved ? "更新" : "共有"}
+              共有
             </button>
             <button
               onClick={onOpenSettings}
