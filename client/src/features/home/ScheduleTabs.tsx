@@ -28,7 +28,7 @@ export function ScheduleTabs({
   onDragEnd,
 }: ScheduleTabsProps) {
   return (
-    <div className="px-3 sm:px-4 pb-2 rotation-no-print">
+    <div className="px-3 sm:px-4 pb-2 rotation-no-print" data-onboarding="step-1">
       <div className="max-w-4xl mx-auto">
         <nav aria-label="当番表の切り替え">
           <div className="flex items-center gap-2 overflow-x-auto pb-1" role="tablist">

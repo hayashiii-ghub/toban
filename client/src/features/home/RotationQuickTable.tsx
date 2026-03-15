@@ -13,8 +13,9 @@ export function RotationQuickTable({
   members,
   rotation,
 }: RotationQuickTableProps) {
+  const activeMembers = members.filter(m => !m.skipped);
   return (
-    <div className="px-3 sm:px-4 py-3 sm:py-4 pb-8 sm:pb-12">
+    <div className="px-3 sm:px-4 py-3 sm:py-4 pb-8 sm:pb-12 rotation-print-table-section">
       <div className="max-w-4xl mx-auto">
         <motion.div
           className="brutal-border brutal-shadow-sm p-3 sm:p-5 rotation-print-card"
@@ -40,7 +41,7 @@ export function RotationQuickTable({
                   >
                     担当
                   </th>
-                  {members.map((_, rotationIndex) => {
+                  {activeMembers.map((_, rotationIndex) => {
                     const isCurrent = rotationIndex === rotation;
                     return (
                       <th
@@ -61,7 +62,7 @@ export function RotationQuickTable({
                 </tr>
               </thead>
               <tbody>
-                <tr aria-hidden="true"><td colSpan={members.length + 1} style={{ height: "6px", border: "none" }} /></tr>
+                <tr aria-hidden="true"><td colSpan={activeMembers.length + 1} style={{ height: "6px", border: "none" }} /></tr>
                 {groups.map((group, groupIndex) => (
                   <tr key={group.id}>
                     <td
@@ -78,7 +79,7 @@ export function RotationQuickTable({
                         {group.tasks.join("・")}
                       </span>
                     </td>
-                    {members.map((_, rotationIndex) => {
+                    {activeMembers.map((_, rotationIndex) => {
                       const colAssignments = computeAssignments(groups, members, rotationIndex);
                       const member = colAssignments[groupIndex]?.member;
                       const isCurrent = rotationIndex === rotation;

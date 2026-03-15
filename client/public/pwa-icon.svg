@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#FBBF24"/>
+  <rect x="56" y="56" width="400" height="400" rx="32" fill="#fff" stroke="#1a1a1a" stroke-width="12"/>
+  <text x="256" y="310" text-anchor="middle" font-size="200" font-family="system-ui,sans-serif" font-weight="900" fill="#1a1a1a">当</text>
+</svg>

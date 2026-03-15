@@ -7,6 +7,7 @@ export const CARD_STAGGER_DELAY = 0.08;
 export const TASK_STAGGER_DELAY = 0.06;
 
 export const STORAGE_KEY = "rotation-schedule-app-state";
+export const ONBOARDING_STORAGE_KEY = "toban-onboarding-complete";
 
 export const TEMPLATES: ScheduleTemplate[] = [
   // ── 事務室・オフィス向け ──

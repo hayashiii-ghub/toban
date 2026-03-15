@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { schedules } from "../db/schema";
-import type { TaskGroup, Member } from "../../shared/types";
+import type { TaskGroup, Member, RotationConfig } from "../../shared/types";
 
 type Env = { Bindings: { DB: D1Database } };
 
@@ -44,13 +44,21 @@ const memberSchema = z.object({
   color: z.string().min(1).max(100),
   bgColor: z.string().min(1).max(100),
   textColor: z.string().min(1).max(100),
+  skipped: z.boolean().optional(),
 });
+
+const rotationConfigSchema = z.object({
+  mode: z.enum(["manual", "date"]),
+  startDate: z.string().max(20).optional(),
+  cycleDays: z.number().int().min(1).max(365).optional(),
+}).optional();
 
 const createScheduleSchema = z.object({
   name: z.string().min(1).max(100),
   rotation: z.number().int().default(0),
   groups: z.array(taskGroupSchema).min(1).max(20),
   members: z.array(memberSchema).min(1).max(50),
+  rotationConfig: rotationConfigSchema,
 });
 
 const updateScheduleSchema = createScheduleSchema;
@@ -80,6 +88,7 @@ app.post("/", async (c) => {
     rotation: data.rotation,
     groupsJson: JSON.stringify(data.groups),
     membersJson: JSON.stringify(data.members),
+    rotationConfigJson: data.rotationConfig ? JSON.stringify(data.rotationConfig) : null,
     createdAt: now,
     updatedAt: now,
   });
@@ -108,6 +117,7 @@ app.get("/:slug", async (c) => {
     rotation: row.rotation,
     groups: JSON.parse(row.groupsJson) as TaskGroup[],
     members: JSON.parse(row.membersJson) as Member[],
+    rotationConfig: row.rotationConfigJson ? JSON.parse(row.rotationConfigJson) as RotationConfig : undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   });
@@ -155,6 +165,7 @@ app.put("/:slug", async (c) => {
       rotation: data.rotation,
       groupsJson: JSON.stringify(data.groups),
       membersJson: JSON.stringify(data.members),
+      rotationConfigJson: data.rotationConfig ? JSON.stringify(data.rotationConfig) : null,
       updatedAt: new Date().toISOString(),
     })
     .where(eq(schedules.slug, slug));

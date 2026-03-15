@@ -1,4 +1,4 @@
-import type { AppState, Member, Schedule, ScheduleTemplate, TaskGroup } from "./types";
+import type { AppState, Member, RotationConfig, Schedule, ScheduleTemplate, TaskGroup } from "./types";
 import { STORAGE_KEY, TEMPLATES } from "./constants";
 import { DEFAULT_APP_STATE } from "./defaultState";
 
@@ -53,13 +53,17 @@ function sanitizeMember(member: unknown): Member | null {
     return null;
   }
 
-  return {
+  const result: Member = {
     id: member.id,
     name: member.name.trim(),
     color: member.color,
     bgColor: member.bgColor,
     textColor: member.textColor,
   };
+  if (typeof (member as any).skipped === "boolean") {
+    result.skipped = (member as any).skipped;
+  }
+  return result;
 }
 
 function sanitizeSchedule(schedule: unknown): Schedule | null {
@@ -86,7 +90,7 @@ function sanitizeSchedule(schedule: unknown): Schedule | null {
   const result: Schedule = {
     id: schedule.id,
     name: schedule.name.trim(),
-    rotation: normalizeRotation(schedule.rotation, members.length),
+    rotation: normalizeRotation(schedule.rotation, members.filter(m => !m.skipped).length || members.length),
     groups,
     members,
   };
@@ -96,6 +100,21 @@ function sanitizeSchedule(schedule: unknown): Schedule | null {
   }
   if (isNonEmptyString(schedule.editToken)) {
     result.editToken = schedule.editToken;
+  }
+
+  if (isRecord(schedule.rotationConfig)) {
+    const rc = schedule.rotationConfig;
+    const config: RotationConfig = { mode: "manual" };
+    if (rc.mode === "manual" || rc.mode === "date") {
+      config.mode = rc.mode;
+    }
+    if (typeof rc.startDate === "string" && rc.startDate) {
+      config.startDate = rc.startDate;
+    }
+    if (typeof rc.cycleDays === "number" && Number.isFinite(rc.cycleDays) && rc.cycleDays > 0) {
+      config.cycleDays = rc.cycleDays;
+    }
+    result.rotationConfig = config;
   }
 
   return result;
@@ -176,10 +195,11 @@ export function computeAssignments(
   members: Member[],
   rotation: number
 ): { group: TaskGroup; member: Member }[] {
-  if (members.length === 0) return [];
+  const activeMembers = members.filter(m => !m.skipped);
+  if (activeMembers.length === 0) return [];
   return groups.map((group, i) => {
-    const memberIdx = ((i + rotation) % members.length + members.length) % members.length;
-    return { group, member: members[memberIdx] };
+    const memberIdx = ((i + rotation) % activeMembers.length + activeMembers.length) % activeMembers.length;
+    return { group, member: activeMembers[memberIdx] };
   });
 }
 
@@ -188,4 +208,27 @@ export function getGridCols(count: number): string {
   if (count === 3) return "grid-cols-1 md:grid-cols-3";
   if (count === 4) return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
   return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+}
+
+export function computeDateRotation(config: RotationConfig, memberCount: number): number {
+  if (!config.startDate || !config.cycleDays || config.cycleDays <= 0 || memberCount <= 0) {
+    return 0;
+  }
+  const start = new Date(config.startDate);
+  const today = new Date();
+  start.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  const diffMs = today.getTime() - start.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return 0;
+  const cycles = Math.floor(diffDays / config.cycleDays);
+  return ((cycles % memberCount) + memberCount) % memberCount;
+}
+
+export function getEffectiveRotation(schedule: Schedule): number {
+  if (schedule.rotationConfig?.mode === "date") {
+    const activeMembers = schedule.members.filter(m => !m.skipped);
+    return computeDateRotation(schedule.rotationConfig, activeMembers.length);
+  }
+  return schedule.rotation;
 }

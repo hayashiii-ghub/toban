@@ -4,21 +4,19 @@
 
 @page {
   size: A4 landscape;
-  margin: 0;
+  margin: 8mm;
 }
 
 @media print {
   html,
   body {
     width: 297mm;
-    height: 210mm;
     margin: 0;
     padding: 0;
     background: white !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     color-adjust: exact;
-    overflow: hidden;
   }
 
   .rotation-no-print {
@@ -44,15 +42,35 @@
   .rotation-page {
     min-height: auto !important;
     width: 297mm;
-    height: 210mm;
-    padding: 8mm 12mm !important;
+    padding: 4mm 8mm !important;
     box-sizing: border-box;
-    overflow: hidden;
   }
 
   .rotation-print-card-grid {
     display: grid !important;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
     gap: 12px !important;
+  }
+
+  /* Print mode: cards only - hide table */
+  [data-print-mode="cards"] .rotation-print-table-section {
+    display: none !important;
+  }
+
+  /* Print mode: table only - hide cards */
+  [data-print-mode="table"] .rotation-print-card-section {
+    display: none !important;
+  }
+
+  /* Allow content to flow across pages */
+  .rotation-print-card-section,
+  .rotation-print-table-section {
+    page-break-before: auto;
+    page-break-after: auto;
+  }
+
+  /* Table should start on new page when printing all */
+  [data-print-mode="all"] .rotation-print-table-section {
+    page-break-before: always;
   }
 }

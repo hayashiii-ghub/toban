@@ -1,6 +1,7 @@
 export type {
   TaskGroup,
   Member,
+  RotationConfig,
   Schedule,
   AppState,
   ScheduleTemplate,

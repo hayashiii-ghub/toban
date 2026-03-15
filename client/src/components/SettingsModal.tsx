@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { X, Plus, Trash2, GripVertical, Save, Palette, ChevronDown, Copy, ChevronUp } from "lucide-react";
-import type { TaskGroup, Member } from "@/rotation/types";
+import { X, Plus, Trash2, GripVertical, Save, Palette, ChevronDown, Copy, ChevronUp, UserX, UserCheck } from "lucide-react";
+import type { TaskGroup, Member, RotationConfig } from "@/rotation/types";
 import { MEMBER_PRESETS, colorPresetFromHex } from "@/rotation/constants";
 import { computeAssignments, generateId, deepClone } from "@/rotation/utils";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
@@ -10,8 +10,9 @@ interface Props {
   scheduleName: string;
   groups: TaskGroup[];
   members: Member[];
+  rotationConfig?: RotationConfig;
   canDelete: boolean;
-  onSave: (name: string, groups: TaskGroup[], members: Member[]) => void;
+  onSave: (name: string, groups: TaskGroup[], members: Member[], rotationConfig?: RotationConfig) => void;
   onDuplicate: () => void;
   onDelete: () => void;
   onClose: () => void;
@@ -21,6 +22,7 @@ export function SettingsModal({
   scheduleName,
   groups,
   members,
+  rotationConfig,
   canDelete,
   onSave,
   onDuplicate,
@@ -30,6 +32,9 @@ export function SettingsModal({
   const [editName, setEditName] = useState(scheduleName);
   const [editGroups, setEditGroups] = useState<TaskGroup[]>(deepClone(groups));
   const [editMembers, setEditMembers] = useState<Member[]>(deepClone(members));
+  const [editRotationConfig, setEditRotationConfig] = useState<RotationConfig>(
+    rotationConfig ?? { mode: "manual" }
+  );
   const [activeTab, setActiveTab] = useState<"tasks" | "members">("tasks");
   const [validationError, setValidationError] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -170,7 +175,7 @@ export function SettingsModal({
 
   // --- 割り当てマップ（グループIDX → 担当メンバー） ---
   const assignmentMap = useMemo(() => {
-    const validMembers = editMembers.filter((m) => m.name.trim() !== "");
+    const validMembers = editMembers.filter((m) => m.name.trim() !== "" && !m.skipped);
     const validGroups = editGroups
       .map((g) => ({ ...g, tasks: g.tasks.filter((t) => t.trim() !== "") }))
       .filter((g) => g.tasks.length > 0);
@@ -204,8 +209,9 @@ export function SettingsModal({
     if (editName !== scheduleName) return true;
     if (JSON.stringify(editGroups) !== JSON.stringify(groups)) return true;
     if (JSON.stringify(editMembers) !== JSON.stringify(members)) return true;
+    if (JSON.stringify(editRotationConfig) !== JSON.stringify(rotationConfig ?? { mode: "manual" })) return true;
     return false;
-  }, [editName, scheduleName, editGroups, groups, editMembers, members]);
+  }, [editName, scheduleName, editGroups, groups, editMembers, members, editRotationConfig, rotationConfig]);
 
   const handleCloseWithCheck = useCallback(() => {
     if (isDirty) {
@@ -294,6 +300,12 @@ export function SettingsModal({
     setEditMembers((prev) => prev.map((m, i) => (i === idx ? { ...m, name } : m)));
   };
 
+  const toggleMemberSkip = (idx: number) => {
+    setEditMembers((prev) => prev.map((m, i) =>
+      i === idx ? { ...m, skipped: !m.skipped } : m
+    ));
+  };
+
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkText, setBulkText] = useState("");
 
@@ -349,7 +361,7 @@ export function SettingsModal({
       setActiveTab("members");
       return;
     }
-    onSave(editName.trim() || scheduleName, cleanedGroups, cleanedMembers);
+    onSave(editName.trim() || scheduleName, cleanedGroups, cleanedMembers, editRotationConfig);
   };
 
   return (
@@ -373,7 +385,7 @@ export function SettingsModal({
         exit={{ scale: 0.9, y: 20 }}
       >
         {/* モーダルヘッダー */}
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "3px solid #1a1a1a" }}>
+        <div className="shrink-0 flex items-center justify-between px-5 py-4" style={{ borderBottom: "3px solid #1a1a1a" }}>
           <h2 id="settings-title" className="text-lg font-extrabold" style={{ color: "#1a1a1a" }}>編集</h2>
           <button onClick={handleCloseWithCheck} className="p-1 hover:bg-gray-100 rounded-lg transition-colors" aria-label="閉じる">
             <X className="w-5 h-5" aria-hidden="true" />
@@ -381,7 +393,7 @@ export function SettingsModal({
         </div>
 
         {/* 当番表名 */}
-        <div className="px-5 py-3" style={{ borderBottom: "3px solid #1a1a1a" }}>
+        <div className="shrink-0 px-5 py-3" style={{ borderBottom: "3px solid #1a1a1a" }}>
           <label htmlFor="schedule-name-input" className="text-sm font-bold mb-1.5 block" style={{ color: "#888" }}>当番表の名前</label>
           <input
             id="schedule-name-input"
@@ -394,17 +406,85 @@ export function SettingsModal({
           />
         </div>
 
+        {/* ローテーション設定 */}
+        <div className="shrink-0 px-5 py-3" style={{ borderBottom: "3px solid #1a1a1a" }}>
+          <label className="text-sm font-bold mb-1.5 block" style={{ color: "#888" }}>ローテーション方式</label>
+          <div className="flex gap-2 mb-2">
+            <button
+              type="button"
+              className="flex-1 brutal-border px-3 py-2 text-sm font-bold transition-colors"
+              style={{
+                borderRadius: "8px",
+                backgroundColor: editRotationConfig.mode === "manual" ? "#FBBF24" : "#FAFAFA",
+              }}
+              onClick={() => setEditRotationConfig(prev => ({ ...prev, mode: "manual" }))}
+            >
+              手動
+            </button>
+            <button
+              type="button"
+              className="flex-1 brutal-border px-3 py-2 text-sm font-bold transition-colors"
+              style={{
+                borderRadius: "8px",
+                backgroundColor: editRotationConfig.mode === "date" ? "#FBBF24" : "#FAFAFA",
+              }}
+              onClick={() => setEditRotationConfig(prev => ({ ...prev, mode: "date", startDate: prev.startDate || new Date().toISOString().split("T")[0], cycleDays: prev.cycleDays || 7 }))}
+            >
+              日付ベース
+            </button>
+          </div>
+          {editRotationConfig.mode === "date" && (
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="text-xs font-bold block mb-1" style={{ color: "#888" }}>開始日</label>
+                <input
+                  type="date"
+                  value={editRotationConfig.startDate || ""}
+                  onChange={(e) => setEditRotationConfig(prev => ({ ...prev, startDate: e.target.value }))}
+                  className="w-full brutal-border px-3 py-2 text-sm font-medium"
+                  style={{ borderRadius: "8px", backgroundColor: "#fff" }}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs font-bold block mb-1" style={{ color: "#888" }}>周期</label>
+                <div className="flex gap-1">
+                  {[
+                    { label: "毎日", days: 1 },
+                    { label: "毎週", days: 7 },
+                    { label: "隔週", days: 14 },
+                  ].map(({ label, days }) => (
+                    <button
+                      key={days}
+                      type="button"
+                      className="flex-1 brutal-border px-2 py-2 text-xs font-bold transition-colors"
+                      style={{
+                        borderRadius: "6px",
+                        backgroundColor: editRotationConfig.cycleDays === days ? "#FBBF24" : "#fff",
+                      }}
+                      onClick={() => setEditRotationConfig(prev => ({ ...prev, cycleDays: days }))}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* タブ */}
-        <div className="grid grid-cols-2" style={{ borderBottom: "3px solid #1a1a1a" }} role="tablist">
+        <div className="shrink-0 px-5 py-3" style={{ borderBottom: "3px solid #1a1a1a" }}>
+          <label className="text-sm font-bold mb-1.5 block" style={{ color: "#888" }}>タスク・担当者</label>
+          <div className="flex gap-2" role="tablist">
           <button
             role="tab"
             aria-selected={activeTab === "tasks"}
             aria-controls="panel-tasks"
-            className="py-3 text-sm font-bold transition-colors"
+            className="flex-1 brutal-border px-3 py-2 text-sm font-bold transition-colors"
             style={{
-              backgroundColor: activeTab === "tasks" ? "#FBBF24" : "transparent",
+              borderRadius: "8px",
+              backgroundColor: activeTab === "tasks" ? "#FBBF24" : "#FAFAFA",
               color: "#1a1a1a",
-              borderRight: "1.5px solid #1a1a1a",
             }}
             onClick={() => setActiveTab("tasks")}
           >
@@ -414,16 +494,17 @@ export function SettingsModal({
             role="tab"
             aria-selected={activeTab === "members"}
             aria-controls="panel-members"
-            className="py-3 text-sm font-bold transition-colors"
+            className="flex-1 brutal-border px-3 py-2 text-sm font-bold transition-colors"
             style={{
-              backgroundColor: activeTab === "members" ? "#FBBF24" : "transparent",
+              borderRadius: "8px",
+              backgroundColor: activeTab === "members" ? "#FBBF24" : "#FAFAFA",
               color: "#1a1a1a",
-              borderLeft: "1.5px solid #1a1a1a",
             }}
             onClick={() => setActiveTab("members")}
           >
             担当者
           </button>
+          </div>
         </div>
 
         {/* バリデーションエラー */}
@@ -434,7 +515,7 @@ export function SettingsModal({
         )}
 
         {/* コンテンツ */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 min-h-0 overflow-y-auto p-5">
           {activeTab === "tasks" ? (
             /* ── タスクグループタブ ── */
             <div id="panel-tasks" role="tabpanel" className="flex flex-col gap-3">
@@ -655,7 +736,7 @@ export function SettingsModal({
                         <div
                           className={`flex items-center gap-2 transition-all duration-150 ${
                             isDragging ? "opacity-30 scale-95" : ""
-                          } ${isDropMemberTarget ? "translate-y-1" : ""}`}
+                          } ${isDropMemberTarget ? "translate-y-1" : ""} ${member.skipped ? "opacity-50" : ""}`}
                           draggable
                           onDragStart={(e) => handleMemberDragStart(e, mIdx)}
                           onDragOver={(e) => handleMemberDragOver(e, mIdx)}
@@ -696,13 +777,23 @@ export function SettingsModal({
                             style={{ backgroundColor: member.color, borderWidth: "2px" }}
                             aria-label="色を変更"
                           />
+                          <button
+                            type="button"
+                            onClick={() => toggleMemberSkip(mIdx)}
+                            className="p-1.5 rounded-lg transition-colors shrink-0"
+                            style={{ color: member.skipped ? "#EF4444" : "#10B981" }}
+                            aria-label={member.skipped ? "スキップ解除" : "スキップする"}
+                            title={member.skipped ? "スキップ解除" : "当番をスキップ"}
+                          >
+                            {member.skipped ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                          </button>
                           <input
                             type="text"
                             value={member.name}
                             onChange={(e) => updateMemberName(mIdx, e.target.value)}
                             placeholder="名前を入力"
                             className="flex-1 min-w-0 brutal-border px-3 py-2 text-sm font-medium"
-                            style={{ borderRadius: "8px", backgroundColor: "#fff" }}
+                            style={{ borderRadius: "8px", backgroundColor: "#fff", textDecoration: member.skipped ? "line-through" : "none" }}
                             aria-label={`担当者${mIdx + 1}の名前`}
                           />
                           <button
@@ -802,7 +893,7 @@ export function SettingsModal({
         </div>
 
         {/* フッター */}
-        <div className="px-5 py-4 flex flex-col gap-2" style={{ borderTop: "3px solid #1a1a1a" }}>
+        <div className="shrink-0 px-5 py-4 flex flex-col gap-2" style={{ borderTop: "3px solid #1a1a1a" }}>
           <button
             onClick={handleSave}
             className="brutal-border brutal-shadow-sm w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-sm text-white transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
@@ -810,24 +901,26 @@ export function SettingsModal({
           >
             <Save className="w-4 h-4" aria-hidden="true" /> 保存する
           </button>
-          <button
-            onClick={onDuplicate}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-sm transition-colors hover:bg-blue-50 rounded-lg"
-            style={{ color: "#3B82F6" }}
-            aria-label="この当番表を複製する"
-          >
-            <Copy className="w-4 h-4" aria-hidden="true" /> この当番表を複製
-          </button>
-          {canDelete && (
+          <div className="flex gap-2">
+            {canDelete && (
+              <button
+                onClick={onDelete}
+                className="flex-1 brutal-border flex items-center justify-center gap-1.5 px-3 py-2.5 font-bold text-sm transition-colors hover:bg-red-50"
+                style={{ color: "#DC2626", borderRadius: "8px" }}
+                aria-label="この当番表を削除する"
+              >
+                <Trash2 className="w-4 h-4" aria-hidden="true" /> 削除
+              </button>
+            )}
             <button
-              onClick={onDelete}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-sm transition-colors hover:bg-red-50 rounded-lg"
-              style={{ color: "#DC2626" }}
-              aria-label="この当番表を削除する"
+              onClick={onDuplicate}
+              className="flex-1 brutal-border flex items-center justify-center gap-1.5 px-3 py-2.5 font-bold text-sm transition-colors hover:bg-blue-50"
+              style={{ color: "#3B82F6", borderRadius: "8px" }}
+              aria-label="この当番表を複製する"
             >
-              <Trash2 className="w-4 h-4" aria-hidden="true" /> この当番表を削除
+              <Copy className="w-4 h-4" aria-hidden="true" /> 複製
             </button>
-          )}
+          </div>
         </div>
       </motion.div>
     </motion.div>

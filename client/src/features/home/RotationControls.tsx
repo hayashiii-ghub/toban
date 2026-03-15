@@ -1,14 +1,16 @@
 import { motion } from "framer-motion";
-import { Cloud, Loader2, Pencil, Printer, RotateCcw, RotateCw } from "lucide-react";
+import { Cloud, Loader2, Pencil, RotateCcw, RotateCw } from "lucide-react";
+import { PrintMenu } from "./PrintMenu";
 
 interface RotationControlsProps {
   rotation: number;
   rotationLabel: string;
   isAnimating: boolean;
   isSharing: boolean;
+  isDateMode?: boolean;
   onRotateBackward: () => void;
   onRotateForward: () => void;
-  onPrint: () => void;
+  onPrint: (mode: "all" | "cards" | "table") => void;
   onOpenSettings: () => void;
   onShare: () => void;
 }
@@ -18,6 +20,7 @@ export function RotationControls({
   rotationLabel,
   isAnimating,
   isSharing,
+  isDateMode,
   onRotateBackward,
   onRotateForward,
   onPrint,
@@ -47,42 +50,39 @@ export function RotationControls({
                 現在の順番
               </div>
               <div className="text-xs sm:text-sm font-medium" style={{ color: "#7C5E00" }}>
-                {rotationLabel}
+                {isDateMode ? "日付ベース（自動）" : rotationLabel}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide p-2 -m-2">
-            <button
-              onClick={onRotateBackward}
-              disabled={isAnimating}
-              className="brutal-border brutal-shadow-sm flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 font-bold text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
-              style={{ backgroundColor: "#fff", borderRadius: "8px" }}
-              aria-label="ローテーションを1つ戻す"
-            >
-              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" /> 戻る
-            </button>
-            <button
-              onClick={onRotateForward}
-              disabled={isAnimating}
-              className="brutal-border brutal-shadow-sm flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 font-bold text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
-              style={{ backgroundColor: "#fff", borderRadius: "8px" }}
-              aria-label="ローテーションを1つ進める"
-            >
-              進む <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
-            </button>
-            <button
-              onClick={onPrint}
-              className="brutal-border brutal-shadow-sm flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 font-bold text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a] active:translate-x-[1px] active:translate-y-[1px]"
-              style={{ backgroundColor: "#fff", borderRadius: "8px" }}
-              aria-label="当番表を印刷する"
-            >
-              <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
-              印刷
-            </button>
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide p-2 -m-2" data-onboarding="step-2">
+            {!isDateMode && (
+              <>
+                <button
+                  onClick={onRotateBackward}
+                  disabled={isAnimating}
+                  className="brutal-border brutal-shadow-sm flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 font-bold text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
+                  style={{ backgroundColor: "#fff", borderRadius: "8px" }}
+                  aria-label="ローテーションを1つ戻す"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" /> 戻る
+                </button>
+                <button
+                  onClick={onRotateForward}
+                  disabled={isAnimating}
+                  className="brutal-border brutal-shadow-sm flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 font-bold text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
+                  style={{ backgroundColor: "#fff", borderRadius: "8px" }}
+                  aria-label="ローテーションを1つ進める"
+                >
+                  進む <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
+                </button>
+              </>
+            )}
+            <PrintMenu onPrint={onPrint} />
             <button
               onClick={onShare}
               disabled={isSharing}
+              data-onboarding="step-4"
               className="brutal-border brutal-shadow-sm flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 font-bold text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
               style={{ backgroundColor: "#fff", borderRadius: "8px" }}
               aria-label="共有する"
@@ -96,6 +96,7 @@ export function RotationControls({
             </button>
             <button
               onClick={onOpenSettings}
+              data-onboarding="step-3"
               className="brutal-border brutal-shadow-sm flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 font-bold text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a] active:translate-x-[1px] active:translate-y-[1px]"
               style={{ backgroundColor: "#fff", borderRadius: "8px" }}
               aria-label="当番表を編集する"

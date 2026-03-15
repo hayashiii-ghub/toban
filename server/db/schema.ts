@@ -9,6 +9,7 @@ export const schedules = sqliteTable("schedules", {
   rotation: integer("rotation").default(0).notNull(),
   groupsJson: text("groups_json").notNull(),
   membersJson: text("members_json").notNull(),
+  rotationConfigJson: text("rotation_config_json"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

@@ -5,15 +5,18 @@ import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { NewScheduleModal } from "@/components/NewScheduleModal";
 import { SettingsModal } from "@/components/SettingsModal";
+import { useAutoSync } from "@/hooks/useAutoSync";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { createSchedule, updateSchedule, deleteSchedule } from "@/lib/api";
-import { ANIMATION_DURATION_MS, STORAGE_KEY } from "@/rotation/constants";
-import type { AppState, Member, Schedule, ScheduleTemplate, TaskGroup } from "@/rotation/types";
+import { OnboardingOverlay } from "@/components/OnboardingOverlay";
+import { ANIMATION_DURATION_MS, ONBOARDING_STORAGE_KEY, STORAGE_KEY } from "@/rotation/constants";
+import type { AppState, Member, RotationConfig, Schedule, ScheduleTemplate, TaskGroup } from "@/rotation/types";
 import {
   computeAssignments,
   createScheduleFromTemplate,
   deepClone,
   generateId,
+  getEffectiveRotation,
   loadState,
   normalizeRotation,
   saveState,
@@ -24,6 +27,8 @@ import { RotationQuickTable } from "@/features/home/RotationQuickTable";
 import { ScheduleHeader } from "@/features/home/ScheduleHeader";
 import { ScheduleTabs } from "@/features/home/ScheduleTabs";
 import { ShareModal } from "@/components/ShareModal";
+import { SyncIndicator } from "@/features/home/SyncIndicator";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import "./home.css";
 
 export default function Home() {
@@ -37,17 +42,27 @@ export default function Home() {
   const [showShare, setShowShare] = useState(false);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const animationTimeoutRef = useRef<number | null>(null);
 
   const activeSchedule = useMemo(() => {
     return state.schedules.find((schedule) => schedule.id === state.activeScheduleId) ?? state.schedules[0];
   }, [state.activeScheduleId, state.schedules]);
 
-  const { groups, members, rotation } = activeSchedule;
+  const syncStatus = useAutoSync(activeSchedule);
+
+  const { groups, members } = activeSchedule;
+
+  const effectiveRotation = useMemo(
+    () => getEffectiveRotation(activeSchedule),
+    [activeSchedule],
+  );
+
+  const isDateMode = activeSchedule.rotationConfig?.mode === "date";
 
   const assignments = useMemo(
-    () => computeAssignments(groups, members, rotation),
-    [groups, members, rotation],
+    () => computeAssignments(groups, members, effectiveRotation),
+    [groups, members, effectiveRotation],
   );
 
   useBodyScrollLock(showSettings || showNewSchedule || showShare || confirmDelete !== null);
@@ -72,6 +87,32 @@ export default function Home() {
     } catch { /* ignore */ }
   }, []);
 
+  useEffect(() => {
+    const handleAfterPrint = () => {
+      delete document.body.dataset.printMode;
+    };
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => window.removeEventListener("afterprint", handleAfterPrint);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const isExistingUser = localStorage.getItem(STORAGE_KEY) !== null;
+      const onboardingDone = localStorage.getItem(ONBOARDING_STORAGE_KEY) === "true";
+      if (!onboardingDone && !isExistingUser) {
+        const timer = setTimeout(() => setShowOnboarding(true), 800);
+        return () => clearTimeout(timer);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const handleOnboardingComplete = useCallback(() => {
+    setShowOnboarding(false);
+    try {
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
+    } catch { /* ignore */ }
+  }, []);
+
   const updateActiveSchedule = useCallback((updater: (schedule: Schedule) => Schedule) => {
     setState((prev) => ({
       ...prev,
@@ -88,7 +129,10 @@ export default function Home() {
     setDirection(nextDirection);
     setState((prev) => {
       const schedule = prev.schedules.find((item) => item.id === prev.activeScheduleId);
-      if (!schedule || schedule.members.length === 0) return prev;
+      if (!schedule) return prev;
+
+      const activeMembers = schedule.members.filter(m => !m.skipped);
+      if (activeMembers.length === 0) return prev;
 
       const nextRotation = nextDirection === "forward"
         ? schedule.rotation + 1
@@ -100,7 +144,7 @@ export default function Home() {
           item.id === prev.activeScheduleId
             ? {
                 ...item,
-                rotation: normalizeRotation(nextRotation, schedule.members.length),
+                rotation: normalizeRotation(nextRotation, activeMembers.length),
               }
             : item,
         ),
@@ -155,6 +199,7 @@ export default function Home() {
       rotation: 0,
       groups: deepClone(activeSchedule.groups),
       members: deepClone(activeSchedule.members),
+      rotationConfig: activeSchedule.rotationConfig ? deepClone(activeSchedule.rotationConfig) : undefined,
     };
     setState((prev) => ({
       schedules: [...prev.schedules, clone],
@@ -183,13 +228,14 @@ export default function Home() {
     setDragOverTabId(null);
   }, []);
 
-  const handleSaveSettings = useCallback((name: string, nextGroups: TaskGroup[], nextMembers: Member[]) => {
+  const handleSaveSettings = useCallback((name: string, nextGroups: TaskGroup[], nextMembers: Member[], rotationConfig?: RotationConfig) => {
     updateActiveSchedule((schedule) => ({
       ...schedule,
       name,
       groups: nextGroups,
       members: nextMembers,
-      rotation: normalizeRotation(schedule.rotation, nextMembers.length),
+      rotation: normalizeRotation(schedule.rotation, nextMembers.filter(m => !m.skipped).length || nextMembers.length),
+      rotationConfig: rotationConfig ?? schedule.rotationConfig,
     }));
     setShowSettings(false);
   }, [updateActiveSchedule]);
@@ -202,6 +248,7 @@ export default function Home() {
         rotation: activeSchedule.rotation,
         groups: activeSchedule.groups,
         members: activeSchedule.members,
+        rotationConfig: activeSchedule.rotationConfig,
       };
 
       if (activeSchedule.slug && activeSchedule.editToken) {
@@ -222,7 +269,7 @@ export default function Home() {
     }
   }, [activeSchedule, updateActiveSchedule]);
 
-  const rotationLabel = rotation === 0 ? "初期" : `${rotation}回目`;
+  const rotationLabel = effectiveRotation === 0 ? "初期" : `${effectiveRotation}回目`;
 
   return (
     <main className="rotation-page min-h-screen" style={{ backgroundColor: "#FFF8E7" }}>
@@ -230,6 +277,14 @@ export default function Home() {
         scheduleName={activeSchedule.name}
         rotationLabel={rotationLabel}
       />
+
+      {activeSchedule.slug && (
+        <div className="px-3 sm:px-4 -mt-1 mb-1">
+          <div className="max-w-4xl mx-auto flex justify-end">
+            <SyncIndicator status={syncStatus} hasSlug={!!activeSchedule.slug} />
+          </div>
+        </div>
+      )}
 
       <ScheduleTabs
         schedules={state.schedules}
@@ -258,13 +313,17 @@ export default function Home() {
       />
 
       <RotationControls
-        rotation={rotation}
+        rotation={effectiveRotation}
         rotationLabel={rotationLabel}
         isAnimating={isAnimating}
         isSharing={isSharing}
+        isDateMode={isDateMode}
         onRotateBackward={() => handleRotate("backward")}
         onRotateForward={() => handleRotate("forward")}
-        onPrint={() => window.print()}
+        onPrint={(mode) => {
+          document.body.dataset.printMode = mode;
+          window.print();
+        }}
         onOpenSettings={() => setShowSettings(true)}
         onShare={handleShare}
       />
@@ -272,13 +331,13 @@ export default function Home() {
       <AssignmentsGrid
         assignments={assignments}
         direction={direction}
-        rotation={rotation}
+        rotation={effectiveRotation}
         groupCount={groups.length}
         scheduleId={activeSchedule.id}
         stagger={isAnimating}
       />
 
-      <RotationQuickTable groups={groups} members={members} rotation={rotation} />
+      <RotationQuickTable groups={groups} members={members} rotation={effectiveRotation} />
 
       {createPortal(
         <AnimatePresence>
@@ -312,6 +371,7 @@ export default function Home() {
               scheduleName={activeSchedule.name}
               groups={groups}
               members={members}
+              rotationConfig={activeSchedule.rotationConfig}
               canDelete={state.schedules.length > 1}
               onSave={handleSaveSettings}
               onDuplicate={handleDuplicateSchedule}
@@ -338,6 +398,8 @@ export default function Home() {
         </AnimatePresence>,
         document.body,
       )}
+      {showOnboarding && <OnboardingOverlay onComplete={handleOnboardingComplete} />}
+      <InstallPrompt />
     </main>
   );
 }

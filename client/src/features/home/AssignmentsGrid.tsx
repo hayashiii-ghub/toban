@@ -24,7 +24,7 @@ export function AssignmentsGrid({
   stagger = true,
 }: AssignmentsGridProps) {
   return (
-    <div className="px-3 sm:px-4 py-3 sm:py-4">
+    <div className="px-3 sm:px-4 py-3 sm:py-4 rotation-print-card-section">
       <div className="max-w-4xl mx-auto">
         <div className={`grid gap-3 md:gap-4 rotation-print-card-grid ${getGridCols(groupCount)}`}>
           <AnimatePresence>

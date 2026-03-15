@@ -10,6 +10,13 @@ export interface Member {
   color: string;
   bgColor: string;
   textColor: string;
+  skipped?: boolean;
+}
+
+export interface RotationConfig {
+  mode: "manual" | "date";
+  startDate?: string;
+  cycleDays?: number;
 }
 
 export interface Schedule {
@@ -20,6 +27,7 @@ export interface Schedule {
   members: Member[];
   slug?: string;
   editToken?: string;
+  rotationConfig?: RotationConfig;
 }
 
 export interface AppState {
@@ -40,6 +48,7 @@ export interface ScheduleDTO {
   rotation: number;
   groups: TaskGroup[];
   members: Member[];
+  rotationConfig?: RotationConfig;
   createdAt: string;
   updatedAt: string;
 }
