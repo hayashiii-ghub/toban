@@ -46,14 +46,16 @@ pnpm dev
    ```bash
    wrangler d1 create toban-maker-db
    ```
-2. `wrangler.toml` の `database_id` を取得した ID に置き換える
+2. 取得した D1 の UUID を Cloudflare の環境変数 `CLOUDFLARE_D1_DATABASE_ID` に設定する
+   - プレビュー用 DB を分ける場合は `CLOUDFLARE_D1_PREVIEW_DATABASE_ID` も設定
+   - ローカルで直接 `wrangler deploy` する場合だけ `wrangler.toml` のプレースホルダーを手動で置き換えても OK
 3. マイグレーション適用:
    ```bash
    wrangler d1 migrations apply toban-maker-db --remote
    ```
 4. デプロイ:
    ```bash
-   pnpm build && wrangler pages deploy dist
+   pnpm build && npx wrangler deploy
    ```
 
 ## ライセンス

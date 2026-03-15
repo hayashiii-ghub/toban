@@ -7,7 +7,7 @@
     "dev": "vite --host",
     "dev:api": "wrangler pages dev dist --d1 DB --port 8788",
     "dev:full": "concurrently \"pnpm dev\" \"pnpm dev:api\"",
-    "build": "vite build",
+    "build": "node scripts/prepare-wrangler-config.mjs && vite build",
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",

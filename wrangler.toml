@@ -11,9 +11,10 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "toban-maker-db"
-# フォークして使う場合は自分の D1 データベース ID に置き換えてください
-# wrangler d1 create toban-maker-db で作成できます
-database_id = "c115d106-597f-4616-9e44-b73864319a87"
+# CI では scripts/prepare-wrangler-config.mjs が環境変数から置き換えます
+# ローカルで直接 deploy する場合はこの値を自分の D1 Database ID に更新してください
+database_id = "__CLOUDFLARE_D1_DATABASE_ID__"
+preview_database_id = "__CLOUDFLARE_D1_PREVIEW_DATABASE_ID__"
 migrations_dir = "server/db/migrations"
 
 [triggers]
