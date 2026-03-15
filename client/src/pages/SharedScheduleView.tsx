@@ -22,6 +22,15 @@ export default function SharedScheduleView() {
       .finally(() => setLoading(false));
   }, [slug]);
 
+  useEffect(() => {
+    if (schedule) {
+      document.title = `${schedule.name} - 当番表メーカー`;
+    }
+    return () => {
+      document.title = "当番表メーカー｜無料で当番表を作成・印刷・共有";
+    };
+  }, [schedule]);
+
   const assignments = useMemo(() => {
     if (!schedule) return [];
     return computeAssignments(schedule.groups, schedule.members, schedule.rotation);
@@ -56,7 +65,7 @@ export default function SharedScheduleView() {
   const rotationLabel = schedule.rotation === 0 ? "初期" : `${schedule.rotation}回目`;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#FFF8E7" }}>
+    <main className="min-h-screen" style={{ backgroundColor: "#FFF8E7" }}>
       <div className="px-3 sm:px-4 pt-6 sm:pt-8 pb-2">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-2xl sm:text-3xl font-extrabold" style={{ color: "#1a1a1a" }}>
@@ -94,6 +103,6 @@ export default function SharedScheduleView() {
           </a>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

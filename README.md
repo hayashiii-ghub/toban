@@ -1,5 +1,7 @@
 # toban-maker
 
+[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/hayashiii-ghub/toban-maker)
+
 掃除当番、給食当番、日直などのローテーション表を簡単に作成・印刷できる Web アプリ。
 
 ## 必要な環境

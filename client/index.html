@@ -3,14 +3,54 @@
 
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>toban-maker | 当番表を簡単作成・印刷</title>
-    <meta name="description" content="toban-maker は、掃除当番、給食当番、日直などのローテーション表を簡単に作成・印刷できる無料 Web アプリです。タスクと担当者を設定するだけで、当番表をすぐに作れます。" />
-    <meta name="keywords" content="当番表,ローテーション,掃除当番,給食当番,日直,当番管理,シフト表,無料,Webアプリ" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>当番表メーカー｜無料で当番表を作成・印刷・共有</title>
+    <meta name="description" content="当番表メーカーは、掃除当番・給食当番・日直などのローテーション表を無料で作成・印刷・共有できるWebアプリです。登録不要、ブラウザだけで当番表がすぐ完成します。" />
+    <link rel="canonical" href="https://toban-maker.pages.dev/" />
     <meta name="theme-color" content="#FFF8E7" />
+
+    <!-- OGP -->
+    <meta property="og:title" content="当番表メーカー｜無料で当番表を作成・印刷・共有" />
+    <meta property="og:description" content="掃除当番・給食当番・日直などのローテーション表を無料で簡単に作成・印刷・共有。登録不要ですぐ使えます。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://toban-maker.pages.dev/" />
+    <meta property="og:image" content="https://toban-maker.pages.dev/ogp.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:site_name" content="当番表メーカー" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="当番表メーカー｜無料で当番表を作成・印刷・共有" />
+    <meta name="twitter:description" content="掃除当番・給食当番・日直などのローテーション表を無料で簡単に作成・印刷・共有。登録不要ですぐ使えます。" />
+    <meta name="twitter:image" content="https://toban-maker.pages.dev/ogp.png" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "@id": "https://toban-maker.pages.dev/",
+      "name": "当番表メーカー",
+      "alternateName": "toban-maker",
+      "url": "https://toban-maker.pages.dev/",
+      "description": "掃除当番、給食当番、日直などのローテーション表を簡単に作成・印刷・共有できる無料Webアプリ",
+      "image": "https://toban-maker.pages.dev/ogp.png",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "All",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "JPY"
+      },
+      "inLanguage": "ja",
+      "browserRequirements": "Requires JavaScript"
+    }
+    </script>
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet" />
@@ -19,6 +59,13 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <noscript>
+      <div style="text-align:center;padding:2rem;font-family:sans-serif;">
+        <h1>当番表メーカー</h1>
+        <p>掃除当番・給食当番・日直などのローテーション表を無料で作成・印刷・共有できるWebアプリです。</p>
+        <p>このアプリを利用するにはJavaScriptを有効にしてください。</p>
+      </div>
+    </noscript>
   </body>
 
 </html>

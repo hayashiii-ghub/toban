@@ -1,0 +1,62 @@
+import { readFileSync, writeFileSync } from "fs";
+import { execSync } from "child_process";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const outDir = join(__dirname, "..", "client", "public");
+
+// Create OGP image as SVG, then convert if possible
+const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#FFF8E7"/>
+  <rect x="40" y="40" width="1120" height="550" rx="24" fill="#fff" stroke="#1a1a1a" stroke-width="5"/>
+
+  <!-- Clipboard icon -->
+  <circle cx="600" cy="200" r="80" fill="#FBBF24" stroke="#1a1a1a" stroke-width="5"/>
+  <rect x="568" y="172" width="64" height="70" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
+  <rect x="580" y="162" width="40" height="16" rx="4" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
+  <circle cx="600" cy="170" r="4" fill="#1a1a1a"/>
+  <circle cx="584" cy="200" r="4.5" fill="#10B981"/>
+  <rect x="596" y="196" width="28" height="6" rx="3" fill="#1a1a1a"/>
+  <circle cx="584" cy="218" r="4.5" fill="#3B82F6"/>
+  <rect x="596" y="214" width="28" height="6" rx="3" fill="#1a1a1a"/>
+  <circle cx="584" cy="236" r="4.5" fill="#F97316"/>
+  <rect x="596" y="232" width="28" height="6" rx="3" fill="#1a1a1a"/>
+
+  <!-- Title text -->
+  <text x="600" y="350" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="64" fill="#1a1a1a">当番表メーカー</text>
+
+  <!-- Subtitle -->
+  <text x="600" y="420" text-anchor="middle" font-family="sans-serif" font-weight="500" font-size="32" fill="#7C5E00">掃除当番・給食当番・日直のローテーション表を</text>
+  <text x="600" y="465" text-anchor="middle" font-family="sans-serif" font-weight="500" font-size="32" fill="#7C5E00">無料で簡単作成・印刷・共有</text>
+
+  <!-- Badge -->
+  <rect x="480" y="500" width="240" height="50" rx="25" fill="#FBBF24" stroke="#1a1a1a" stroke-width="3"/>
+  <text x="600" y="533" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="24" fill="#1a1a1a">登録不要・完全無料</text>
+</svg>`;
+
+writeFileSync(join(outDir, "ogp.svg"), svg);
+
+// Try to convert to PNG using sips (macOS built-in) or other tools
+try {
+  // First export SVG, then try sips conversion
+  // sips doesn't handle SVG, but we can try qlmanage or other macOS tools
+  execSync(`which qlmanage`, { stdio: "pipe" });
+  execSync(
+    `qlmanage -t -s 1200 -o "${outDir}" "${join(outDir, "ogp.svg")}"`,
+    { stdio: "pipe" }
+  );
+  // qlmanage outputs as ogp.svg.png
+  const qlOutput = join(outDir, "ogp.svg.png");
+  try {
+    const data = readFileSync(qlOutput);
+    writeFileSync(join(outDir, "ogp.png"), data);
+    execSync(`rm "${qlOutput}"`);
+    console.log("OGP image generated as PNG (via qlmanage)");
+  } catch {
+    console.log("qlmanage output not found, keeping SVG only");
+  }
+} catch {
+  console.log("PNG conversion not available, OGP SVG created at client/public/ogp.svg");
+  console.log("NOTE: For social sharing, convert ogp.svg to ogp.png (1200x630px) manually.");
+}

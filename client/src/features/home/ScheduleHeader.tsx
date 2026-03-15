@@ -73,12 +73,13 @@ export function ScheduleHeader({
               />
             </button>
           )}
-          <h1
+          <div
             className="rotation-print-only text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight"
             style={{ color: "#1a1a1a" }}
+            aria-hidden="true"
           >
             {scheduleName}
-          </h1>
+          </div>
 
           <div className="rotation-print-only mt-2 text-sm font-bold" style={{ color: "#666" }}>
             ローテーション: {rotationLabel} ／ 印刷日: {new Date().toLocaleDateString("ja-JP")}

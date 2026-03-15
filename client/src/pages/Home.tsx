@@ -211,7 +211,7 @@ export default function Home() {
   const rotationLabel = rotation === 0 ? "初期" : `${rotation}回目`;
 
   return (
-    <div className="rotation-page min-h-screen" style={{ backgroundColor: "#FFF8E7" }}>
+    <main className="rotation-page min-h-screen" style={{ backgroundColor: "#FFF8E7" }}>
       <ScheduleHeader
         editingName={editingName}
         tempName={tempName}
@@ -321,6 +321,6 @@ export default function Home() {
         </AnimatePresence>,
         document.body,
       )}
-    </div>
+    </main>
   );
 }
