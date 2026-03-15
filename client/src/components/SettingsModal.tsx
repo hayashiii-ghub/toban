@@ -10,7 +10,9 @@ interface Props {
   scheduleName: string;
   groups: TaskGroup[];
   members: Member[];
+  canDelete: boolean;
   onSave: (name: string, groups: TaskGroup[], members: Member[]) => void;
+  onDelete: () => void;
   onClose: () => void;
 }
 
@@ -18,7 +20,9 @@ export function SettingsModal({
   scheduleName,
   groups,
   members,
+  canDelete,
   onSave,
+  onDelete,
   onClose,
 }: Props) {
   const [editName, setEditName] = useState(scheduleName);
@@ -654,8 +658,8 @@ export function SettingsModal({
           )}
         </div>
 
-        {/* 保存ボタン */}
-        <div className="px-5 py-4" style={{ borderTop: "3px solid #1a1a1a" }}>
+        {/* フッター */}
+        <div className="px-5 py-4 flex flex-col gap-2" style={{ borderTop: "3px solid #1a1a1a" }}>
           <button
             onClick={handleSave}
             className="brutal-border brutal-shadow-sm w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-sm text-white transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
@@ -663,6 +667,16 @@ export function SettingsModal({
           >
             <Save className="w-4 h-4" aria-hidden="true" /> 保存する
           </button>
+          {canDelete && (
+            <button
+              onClick={onDelete}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-sm transition-colors hover:bg-red-50 rounded-lg"
+              style={{ color: "#DC2626" }}
+              aria-label="この当番表を削除する"
+            >
+              <Trash2 className="w-4 h-4" aria-hidden="true" /> この当番表を削除
+            </button>
+          )}
         </div>
       </motion.div>
     </motion.div>

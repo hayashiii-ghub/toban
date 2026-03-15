@@ -1,16 +1,16 @@
-import { useCallback, useRef } from "react";
-import { motion } from "framer-motion";
-import { FileText, X } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown, FileText, X } from "lucide-react";
 import type { ScheduleTemplate } from "@/rotation/types";
 import { TEMPLATES } from "@/rotation/constants";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 const TEMPLATE_SECTIONS = [
-  { label: "🏢 事務室・オフィス", from: 0, to: 2 },
-  { label: "🌷 幼稚園・保育園", from: 2, to: 5 },
-  { label: "🏫 小中学校（クラス用）", from: 5, to: 8 },
-  { label: "🔑 職員室（先生用）", from: 8, to: 9 },
-  { label: "✨ その他", from: 9, to: 10 },
+  { label: "✨ カスタム", from: 9, to: 10, defaultOpen: true },
+  { label: "🏢 事務室・オフィス", from: 0, to: 2, defaultOpen: false },
+  { label: "🌷 幼稚園・保育園", from: 2, to: 5, defaultOpen: false },
+  { label: "🏫 小中学校（クラス用）", from: 5, to: 8, defaultOpen: false },
+  { label: "🔑 職員室（先生用）", from: 8, to: 9, defaultOpen: false },
 ];
 
 interface Props {
@@ -20,6 +20,9 @@ interface Props {
 
 export function NewScheduleModal({ onSelect, onClose }: Props) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const [openSections, setOpenSections] = useState<Set<string>>(
+    () => new Set(TEMPLATE_SECTIONS.filter((s) => s.defaultOpen).map((s) => s.label))
+  );
 
   const handleEscape = useCallback(() => onClose(), [onClose]);
   useEscapeKey(handleEscape);
@@ -28,6 +31,18 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
     if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
       onClose();
     }
+  };
+
+  const toggleSection = (label: string) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) {
+        next.delete(label);
+      } else {
+        next.add(label);
+      }
+      return next;
+    });
   };
 
   return (
@@ -62,44 +77,73 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
         </div>
 
         {/* テンプレート一覧 */}
-        <div className="p-5 overflow-y-auto flex flex-col gap-2">
-          <p className="text-xs font-bold mb-1" style={{ color: "#888" }}>
+        <div className="p-5 overflow-y-auto flex flex-col gap-1">
+          <p className="text-xs font-bold mb-2" style={{ color: "#888" }}>
             テンプレートを選択してください。後から自由に編集できます。
           </p>
 
-          {TEMPLATE_SECTIONS.map((section) => (
-            <div key={section.label}>
-              <div
-                className="text-[10px] font-extrabold uppercase tracking-wider mt-2 mb-1.5 px-1"
-                style={{ color: "#aaa" }}
-              >
-                {section.label}
-              </div>
-              {TEMPLATES.slice(section.from, section.to).map((template, idx) => (
+          {TEMPLATE_SECTIONS.map((section) => {
+            const isOpen = openSections.has(section.label);
+            const templates = TEMPLATES.slice(section.from, section.to);
+            return (
+              <div key={section.label}>
                 <button
-                  key={section.from + idx}
-                  onClick={() => onSelect(template)}
-                  className="brutal-border brutal-shadow-sm p-3 sm:p-4 mb-2 w-full text-left transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
-                  style={{ borderRadius: "12px", backgroundColor: "#FAFAFA" }}
+                  type="button"
+                  onClick={() => toggleSection(section.label)}
+                  className="w-full flex items-center justify-between py-2 px-2 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl" aria-hidden="true">{template.emoji}</span>
-                    <div className="min-w-0">
-                      <div className="text-sm font-extrabold" style={{ color: "#1a1a1a" }}>
-                        {template.name}
-                      </div>
-                      <div className="text-[10px] font-medium mt-0.5 truncate" style={{ color: "#888" }}>
-                        {template.groups.length}グループ ・ {template.members.length}人
-                        {template.groups.length > 0 && (
-                          <span> ・ {template.groups.map((g) => g.tasks.join("、")).join(" / ")}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <span
+                    className="text-xs font-extrabold tracking-wider"
+                    style={{ color: "#666" }}
+                  >
+                    {section.label}
+                  </span>
+                  <ChevronDown
+                    className="w-4 h-4 transition-transform duration-200"
+                    style={{ color: "#aaa", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                    aria-hidden="true"
+                  />
                 </button>
-              ))}
-            </div>
-          ))}
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex flex-col gap-2 pt-1 pb-2">
+                        {templates.map((template, idx) => (
+                          <button
+                            key={section.from + idx}
+                            onClick={() => onSelect(template)}
+                            className="brutal-border brutal-shadow-sm p-3 sm:p-4 w-full text-left transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
+                            style={{ borderRadius: "12px", backgroundColor: "#FAFAFA" }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl" aria-hidden="true">{template.emoji}</span>
+                              <div className="min-w-0">
+                                <div className="text-sm font-extrabold" style={{ color: "#1a1a1a" }}>
+                                  {template.name}
+                                </div>
+                                <div className="text-[10px] font-medium mt-0.5 truncate" style={{ color: "#888" }}>
+                                  {template.groups.length}グループ ・ {template.members.length}人
+                                  {template.groups.length > 0 && (
+                                    <span> ・ {template.groups.map((g) => g.tasks.join("、")).join(" / ")}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
         </div>
       </motion.div>
     </motion.div>

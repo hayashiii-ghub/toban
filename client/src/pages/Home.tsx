@@ -257,14 +257,12 @@ export default function Home() {
         rotation={rotation}
         rotationLabel={rotationLabel}
         isAnimating={isAnimating}
-        canDelete={state.schedules.length > 1}
         isCloudSaved={!!activeSchedule.slug}
         isSharing={isSharing}
         onRotateBackward={() => handleRotate("backward")}
         onRotateForward={() => handleRotate("forward")}
         onPrint={() => window.print()}
         onOpenSettings={() => setShowSettings(true)}
-        onDelete={() => setConfirmDelete(activeSchedule.id)}
         onShare={handleShare}
       />
 
@@ -311,7 +309,12 @@ export default function Home() {
               scheduleName={activeSchedule.name}
               groups={groups}
               members={members}
+              canDelete={state.schedules.length > 1}
               onSave={handleSaveSettings}
+              onDelete={() => {
+                setShowSettings(false);
+                setConfirmDelete(activeSchedule.id);
+              }}
               onClose={() => setShowSettings(false)}
             />
           )}

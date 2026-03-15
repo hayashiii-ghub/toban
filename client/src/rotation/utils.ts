@@ -161,9 +161,8 @@ export function loadState(): AppState {
     return defaultState;
   }
 
-  const defaultSchedule = createScheduleFromTemplate(TEMPLATES[0]);
   const customSchedule = createScheduleFromTemplate(TEMPLATES[TEMPLATES.length - 1]);
-  return { schedules: [defaultSchedule, customSchedule], activeScheduleId: defaultSchedule.id };
+  return { schedules: [customSchedule], activeScheduleId: customSchedule.id };
 }
 
 export function saveState(state: AppState): void {

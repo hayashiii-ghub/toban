@@ -1,18 +1,16 @@
 import { motion } from "framer-motion";
-import { Cloud, CloudUpload, Loader2, Printer, RotateCcw, RotateCw, Settings, Trash2 } from "lucide-react";
+import { Cloud, CloudUpload, Loader2, Printer, RotateCcw, RotateCw, Settings } from "lucide-react";
 
 interface RotationControlsProps {
   rotation: number;
   rotationLabel: string;
   isAnimating: boolean;
-  canDelete: boolean;
   isCloudSaved: boolean;
   isSharing: boolean;
   onRotateBackward: () => void;
   onRotateForward: () => void;
   onPrint: () => void;
   onOpenSettings: () => void;
-  onDelete: () => void;
   onShare: () => void;
 }
 
@@ -20,14 +18,12 @@ export function RotationControls({
   rotation,
   rotationLabel,
   isAnimating,
-  canDelete,
   isCloudSaved,
   isSharing,
   onRotateBackward,
   onRotateForward,
   onPrint,
   onOpenSettings,
-  onDelete,
   onShare,
 }: RotationControlsProps) {
   return (
@@ -79,25 +75,18 @@ export function RotationControls({
             </button>
             <button
               onClick={onPrint}
-              className="brutal-border brutal-shadow-sm flex items-center gap-1.5 px-2.5 sm:px-3 py-2 font-bold text-xs sm:text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
+              className="brutal-border brutal-shadow-sm flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-2 font-bold text-xs sm:text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
               style={{ backgroundColor: "#fff", borderRadius: "8px" }}
               aria-label="当番表を印刷する"
             >
               <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
-            </button>
-            <button
-              onClick={onOpenSettings}
-              className="brutal-border brutal-shadow-sm flex items-center gap-1.5 px-2.5 sm:px-3 py-2 font-bold text-xs sm:text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
-              style={{ backgroundColor: "#fff", borderRadius: "8px" }}
-              aria-label="当番表の設定を開く"
-            >
-              <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
+              印刷
             </button>
             <button
               onClick={onShare}
               disabled={isSharing}
               className="brutal-border brutal-shadow-sm flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-2 font-bold text-xs sm:text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a] disabled:opacity-50"
-              style={{ backgroundColor: isCloudSaved ? "#D1FAE5" : "#DBEAFE", borderRadius: "8px" }}
+              style={{ backgroundColor: "#fff", borderRadius: "8px" }}
               aria-label={isCloudSaved ? "クラウドに更新する" : "クラウドに共有する"}
             >
               {isSharing ? (
@@ -109,16 +98,14 @@ export function RotationControls({
               )}
               {isCloudSaved ? "更新" : "共有"}
             </button>
-            {canDelete && (
-              <button
-                onClick={onDelete}
-                className="brutal-border brutal-shadow-sm flex items-center gap-1.5 px-2.5 sm:px-3 py-2 font-bold text-xs sm:text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
-                style={{ backgroundColor: "#FEE2E2", borderRadius: "8px", color: "#DC2626" }}
-                aria-label="この当番表を削除する"
-              >
-                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
-              </button>
-            )}
+            <button
+              onClick={onOpenSettings}
+              className="brutal-border brutal-shadow-sm flex items-center gap-1.5 px-2.5 sm:px-3 py-2 font-bold text-xs sm:text-sm transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#1a1a1a]"
+              style={{ backgroundColor: "#fff", borderRadius: "8px" }}
+              aria-label="当番表の設定を開く"
+            >
+              <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
+            </button>
           </div>
         </motion.div>
       </div>
