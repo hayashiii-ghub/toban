@@ -11,9 +11,9 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "toban-maker-db"
-# 自分の D1 データベース ID に置き換えてください
+# フォークして使う場合は自分の D1 データベース ID に置き換えてください
 # wrangler d1 create toban-maker-db で作成できます
-database_id = "<YOUR_D1_DATABASE_ID>"
+database_id = "c115d106-597f-4616-9e44-b73864319a87"
 migrations_dir = "server/db/migrations"
 
 [triggers]
