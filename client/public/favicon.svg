@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="#FBBF24" stroke="#1a1a1a" stroke-width="5"/>
+  <!-- Clipboard body -->
+  <rect x="36" y="38" width="56" height="62" rx="6" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
+  <!-- Clipboard clip -->
+  <rect x="48" y="30" width="32" height="14" rx="4" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
+  <circle cx="64" cy="37" r="3.5" fill="#1a1a1a"/>
+  <!-- Check lines -->
+  <circle cx="48" cy="58" r="4" fill="#10B981"/>
+  <rect x="58" y="55" width="26" height="5" rx="2.5" fill="#1a1a1a"/>
+  <circle cx="48" cy="74" r="4" fill="#3B82F6"/>
+  <rect x="58" y="71" width="26" height="5" rx="2.5" fill="#1a1a1a"/>
+  <circle cx="48" cy="90" r="4" fill="#F97316"/>
+  <rect x="58" y="87" width="26" height="5" rx="2.5" fill="#1a1a1a"/>
+</svg>
