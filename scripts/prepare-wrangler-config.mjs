@@ -7,7 +7,7 @@ const projectRoot = path.resolve(__dirname, "..");
 const inputConfigPath = path.resolve(projectRoot, "wrangler.toml");
 const outputConfigPath = process.env.WRANGLER_CONFIG_PATH
   ? path.resolve(process.cwd(), process.env.WRANGLER_CONFIG_PATH)
-  : path.resolve(projectRoot, ".wrangler/deploy.toml");
+  : path.resolve(projectRoot, "wrangler.deploy.toml");
 const requireDatabaseId = process.argv.includes("--require");
 
 const DATABASE_ID_PLACEHOLDER = "__CLOUDFLARE_D1_DATABASE_ID__";
