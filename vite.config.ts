@@ -63,6 +63,30 @@ export default defineConfig({
       "server/**/*.test.{ts,tsx}",
     ],
     setupFiles: ["client/src/test/setup.ts"],
+    coverage: {
+      provider: "v8",
+      include: [
+        "client/src/**/*.{ts,tsx}",
+        "server/**/*.{ts,tsx}",
+        "shared/**/*.{ts,tsx}",
+      ],
+      exclude: [
+        "**/*.test.{ts,tsx}",
+        "**/*.spec.{ts,tsx}",
+        "**/test/**",
+        "**/node_modules/**",
+        "**/dist/**",
+        "client/src/main.tsx",
+        "client/src/vite-env.d.ts",
+        "client/src/components/ui/**",
+      ],
+      thresholds: {
+        statements: 50,
+        branches: 50,
+        functions: 50,
+        lines: 50,
+      },
+    },
   } satisfies VitestUserConfig["test"],
   server: {
     port: 3000,

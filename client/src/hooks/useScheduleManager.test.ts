@@ -104,10 +104,10 @@ describe("useScheduleManager", () => {
   it("handleTabDropでスケジュールの並び順を変更する", () => {
     const { result } = renderHook(() => useScheduleManager());
 
-    let s2: Schedule | undefined;
+    let _s2: Schedule | undefined;
     let s3: Schedule | undefined;
     act(() => {
-      s2 = result.current.handleAddSchedule(makeTemplate("B"));
+      _s2 = result.current.handleAddSchedule(makeTemplate("B"));
     });
     act(() => {
       s3 = result.current.handleAddSchedule(makeTemplate("C"));

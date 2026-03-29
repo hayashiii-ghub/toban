@@ -4,23 +4,24 @@ import { AssignmentsGrid } from "./AssignmentsGrid";
 import type { Assignment, AssignmentMode, Member, TaskGroup } from "@shared/types";
 
 vi.mock("framer-motion", () => {
-  const React = require("react");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const ReactMod = require("react");
   const motionProxy = new Proxy(
     {},
     {
       get: (_target: unknown, prop: string) =>
-        React.forwardRef((props: any, ref: any) => {
+        ReactMod.forwardRef((props: Record<string, unknown>, ref: unknown) => {
           const {
-            initial, animate, exit, transition, variants,
-            whileHover, whileTap, layout, ...rest
+            initial: _initial, animate: _animate, exit: _exit, transition: _transition, variants: _variants,
+            whileHover: _whileHover, whileTap: _whileTap, layout: _layout, ...rest
           } = props;
-          return React.createElement(prop, { ...rest, ref });
+          return ReactMod.createElement(prop, { ...rest, ref });
         }),
     },
   );
   return {
     motion: motionProxy,
-    AnimatePresence: ({ children }: any) => children,
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
   };
 });
 

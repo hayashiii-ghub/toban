@@ -176,7 +176,8 @@ function useSyncOnChange(
         attemptAutoBackup(current);
       }, BACKUP_DEBOUNCE_MS);
     }
-  }, [schedule, attemptAutoBackup, onScheduleUpdate, scheduleRef, backupTimerRef]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleRef and backupTimerRef are stable refs
+  }, [schedule, attemptAutoBackup, onScheduleUpdate]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -190,7 +191,8 @@ function useSyncOnChange(
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [schedule?.id, schedule?.slug, schedule?.editToken, backupTimerRef]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- backupTimerRef is a stable ref
+  }, [schedule?.id, schedule?.slug, schedule?.editToken]);
 
   useEffect(() => {
     const retrySync = () => {
@@ -219,7 +221,8 @@ function useSyncOnChange(
       window.removeEventListener("online", retrySync);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [attemptAutoBackup, onScheduleUpdate, scheduleRef]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleRef is a stable ref
+  }, [attemptAutoBackup, onScheduleUpdate]);
 }
 
 export function useAutoSync(

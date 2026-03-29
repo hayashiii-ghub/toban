@@ -104,6 +104,28 @@ export default function Home() {
     closeModal();
   }, [handleSaveSettings, closeModal]);
 
+  const onReorderTab = useCallback(
+    (scheduleId: string, direction: "left" | "right") => {
+      const { schedules } = state;
+      const pinned = schedules.filter((s) => s.pinned);
+      const unpinned = schedules.filter((s) => !s.pinned);
+      const sorted = [...pinned, ...unpinned];
+      const idx = sorted.findIndex((s) => s.id === scheduleId);
+      if (idx < 0) return;
+      if (sorted[idx].pinned) return;
+      if (direction === "right") {
+        const neighbor = sorted[idx + 1];
+        if (!neighbor) return;
+        handleTabDrop(scheduleId, neighbor.id);
+      } else {
+        const neighbor = sorted[idx - 1];
+        if (!neighbor || neighbor.pinned) return;
+        handleTabDrop(scheduleId, neighbor.id);
+      }
+    },
+    [state.schedules, handleTabDrop],
+  );
+
   if (!activeSchedule) {
     return (
       <DesignThemeProvider themeId={undefined}>
@@ -170,6 +192,7 @@ export default function Home() {
         onDragOver={onDragOver}
         onDrop={onDrop}
         onDragEnd={onDragEnd}
+        onReorderTab={onReorderTab}
       />
 
       <ViewTabs viewTab={viewTab} onChangeTab={changeTab} />

@@ -38,10 +38,17 @@ export default function SharedScheduleView() {
 
   useEffect(() => {
     if (!slug) return;
+    let cancelled = false;
     setLoading(true);
+    setError(null);
+    setSchedule(null);
     getSchedule(slug)
-      .then(setSchedule)
+      .then((data) => {
+        if (cancelled) return;
+        setSchedule(data);
+      })
       .catch((err: unknown) => {
+        if (cancelled) return;
         if (err instanceof ApiError) {
           if (err.status === 404) {
             setError("スケジュールが見つかりませんでした");
@@ -54,7 +61,11 @@ export default function SharedScheduleView() {
           setError("ネットワークエラーが発生しました。接続を確認してください");
         }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [slug]);
 
   const scheduleName = schedule?.name;

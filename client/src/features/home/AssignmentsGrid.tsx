@@ -27,11 +27,27 @@ export function AssignmentsGrid({
   return (
     <div className="px-3 sm:px-4 py-3 sm:py-4 rotation-print-card-section">
       <div className="max-w-4xl mx-auto">
-        <div className={`grid gap-3 md:gap-4 rotation-print-card-grid ${getGridCols()}`}>
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
+          {assignments.map(({ group, member }) =>
+            isTaskMode
+              ? `${group.tasks[0] ?? ""}: ${member.name}`
+              : `${member.name}: ${group.tasks.join("・")}`
+          ).join("、")}
+        </div>
+        <div
+          className={`grid gap-3 md:gap-4 rotation-print-card-grid ${getGridCols()}`}
+          role="list"
+          aria-label="当番割り当て一覧"
+        >
           <AnimatePresence>
             {assignments.map(({ group, member }, index) => (
               <motion.div
                 key={`${scheduleId}-${member.id}-${group.id}-${rotation}`}
+                role="listitem"
+                aria-label={isTaskMode
+                  ? `${group.tasks[0] ?? ""}: ${member.name}`
+                  : `${member.name}: ${group.tasks.join("・")}`
+                }
                 className="theme-border theme-shadow rotation-print-card overflow-hidden"
                 style={{ borderRadius: "var(--dt-border-radius)", backgroundColor: "var(--dt-card-bg)" }}
                 initial={stagger
