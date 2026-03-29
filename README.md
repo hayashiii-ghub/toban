@@ -50,7 +50,7 @@
 │   ├── api.ts                # Hono APIアプリ定義
 │   ├── routes/               # APIルートハンドラ
 │   └── db/                   # Drizzle スキーマ・マイグレーション
-├── shared/                   # フロント・バックエンド共有の型定義
+├── shared/                   # フロント・バックエンド共有の型定義・Zodスキーマ
 └── functions/                # Cloudflare Pages Functions エントリーポイント
 ```
 
