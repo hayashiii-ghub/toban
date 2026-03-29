@@ -57,10 +57,12 @@ export default defineConfig({
   },
   test: {
     root: path.resolve(import.meta.dirname),
+    environment: "jsdom",
     include: [
       "client/src/**/*.test.{ts,tsx}",
       "server/**/*.test.{ts,tsx}",
     ],
+    setupFiles: ["client/src/test/setup.ts"],
   } satisfies VitestUserConfig["test"],
   server: {
     port: 3000,

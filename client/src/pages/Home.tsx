@@ -1,4 +1,4 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
 import { NewScheduleModal } from "@/components/NewScheduleModal";
@@ -6,18 +6,23 @@ import { ModalHost } from "@/components/ModalHost";
 import { useAutoSync } from "@/hooks/useAutoSync";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useModalManager } from "@/hooks/useModalManager";
+import { useOnboarding } from "@/hooks/useOnboarding";
+import { usePrintMode } from "@/hooks/usePrintMode";
+import { useRotationAnimation } from "@/hooks/useRotationAnimation";
 import { useScheduleManager } from "@/hooks/useScheduleManager";
 import { useShareFlow } from "@/hooks/useShareFlow";
-import { safeGetItem, safeSetItem } from "@/lib/storage";
+import { useTabDragDrop } from "@/hooks/useTabDragDrop";
+import { useViewTab } from "@/hooks/useViewTab";
+import { safeGetItem } from "@/lib/storage";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
 import { DesignThemeProvider } from "@/contexts/DesignThemeContext";
-import { ANIMATION_DURATION_MS, ONBOARDING_STORAGE_KEY, STORAGE_KEY, TEMPLATES } from "@/rotation/constants";
-import { computeAssignments, getEffectiveRotation, normalizeRotation } from "@/rotation/utils";
+import { STORAGE_KEY, TEMPLATES } from "@/rotation/constants";
+import { computeAssignments, getEffectiveRotation } from "@/rotation/utils";
 import { AssignmentsGrid } from "@/features/home/AssignmentsGrid";
 import { RotationControls } from "@/features/home/RotationControls";
 import { RotationQuickTable } from "@/features/home/RotationQuickTable";
 import { RotationCalendar } from "@/features/home/RotationCalendar";
-import { ViewTabs, type ViewTabValue } from "@/features/home/ViewTabs";
+import { ViewTabs } from "@/features/home/ViewTabs";
 import { ScheduleHeader } from "@/features/home/ScheduleHeader";
 import { ScheduleTabs } from "@/features/home/ScheduleTabs";
 import { TodayBanner } from "@/features/home/TodayBanner";
@@ -35,18 +40,16 @@ export default function Home() {
   const { syncStatus, prepareForManualSave } = useAutoSync(activeSchedule, updateActiveSchedule);
   const { isSharing, showShare, setShowShare, handleShare } = useShareFlow({ activeSchedule, prepareForManualSave, updateActiveSchedule });
   const { modal, openSettings, openNewSchedule, openConfirmDelete, closeModal } = useModalManager();
-
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [direction, setDirection] = useState<"forward" | "backward">("forward");
-  const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
-  const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [viewTab, setViewTab] = useState<ViewTabValue>(() => {
-    const saved = safeGetItem("toban-view-tab");
-    if (saved === "cards" || saved === "table" || saved === "calendar") return saved;
-    return "cards";
+  const { isAnimating, direction, handleRotate } = useRotationAnimation(setState);
+  const { draggedTabId, dragOverTabId, onDragStart, onDragOver, onDrop, onDragEnd } = useTabDragDrop(handleTabDrop);
+  const { handlePrint } = usePrintMode();
+  const { viewTab, changeTab } = useViewTab();
+  const { showOnboarding, handleOnboardingComplete } = useOnboarding({
+    hasSchedule: !!activeSchedule,
+    isModalOpen: modal.type !== null,
+    isShareOpen: showShare,
   });
-  const animationTimeoutRef = useRef<number | null>(null);
+
   const mountedRef = useRef(false);
 
   const groups = useMemo(() => activeSchedule?.groups ?? [], [activeSchedule]);
@@ -66,19 +69,6 @@ export default function Home() {
   useEffect(() => { saveState(state); }, [state, saveState]);
 
   useEffect(() => {
-    return () => { if (animationTimeoutRef.current !== null) window.clearTimeout(animationTimeoutRef.current); };
-  }, []);
-
-  useEffect(() => {
-    const cleanupPrintState = () => {
-      delete document.body.dataset.printMode;
-      document.getElementById("print-orientation")?.remove();
-    };
-    window.addEventListener("afterprint", cleanupPrintState);
-    return () => { window.removeEventListener("afterprint", cleanupPrintState); cleanupPrintState(); };
-  }, []);
-
-  useEffect(() => {
     if (mountedRef.current) return;
     mountedRef.current = true;
     const params = new URLSearchParams(window.location.search);
@@ -93,44 +83,6 @@ export default function Home() {
     }
     window.history.replaceState({}, "", window.location.pathname);
   }, [addScheduleFromTemplateIndex, closeModal, openNewSchedule]);
-
-  useEffect(() => {
-    const onboardingDone = safeGetItem(ONBOARDING_STORAGE_KEY) === "true";
-    if (onboardingDone || modal.type !== null || showShare || !activeSchedule) return;
-    const timer = window.setTimeout(() => setShowOnboarding(true), 800);
-    return () => window.clearTimeout(timer);
-  }, [activeSchedule, modal.type, showShare]);
-
-  const handleOnboardingComplete = useCallback(() => {
-    setShowOnboarding(false);
-    safeSetItem(ONBOARDING_STORAGE_KEY, "true");
-  }, []);
-
-  const handleRotate = useCallback((nextDirection: "forward" | "backward") => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    setDirection(nextDirection);
-    setState((prev) => {
-      const schedule = prev.schedules.find((item) => item.id === prev.activeScheduleId);
-      if (!schedule) return prev;
-      const activeMembers = schedule.members.filter(m => !m.skipped);
-      if (activeMembers.length === 0) return prev;
-      const nextRotation = nextDirection === "forward" ? schedule.rotation + 1 : schedule.rotation - 1;
-      return {
-        ...prev,
-        schedules: prev.schedules.map((item) =>
-          item.id === prev.activeScheduleId
-            ? { ...item, rotation: normalizeRotation(nextRotation, activeMembers.length) }
-            : item,
-        ),
-      };
-    });
-    if (animationTimeoutRef.current !== null) window.clearTimeout(animationTimeoutRef.current);
-    animationTimeoutRef.current = window.setTimeout(() => {
-      setIsAnimating(false);
-      animationTimeoutRef.current = null;
-    }, ANIMATION_DURATION_MS);
-  }, [isAnimating, setState]);
 
   const onAddSchedule = useCallback((template: Parameters<typeof handleAddSchedule>[0]) => {
     handleAddSchedule(template);
@@ -151,14 +103,6 @@ export default function Home() {
     handleSaveSettings(...args);
     closeModal();
   }, [handleSaveSettings, closeModal]);
-
-  const onTabDrop = useCallback((targetId: string) => {
-    setDraggedTabId((currentDraggedId) => {
-      if (currentDraggedId) handleTabDrop(currentDraggedId, targetId);
-      return null;
-    });
-    setDragOverTabId(null);
-  }, [handleTabDrop]);
 
   if (!activeSchedule) {
     return (
@@ -202,15 +146,7 @@ export default function Home() {
         isSharing={isSharing}
         isDateMode={isDateMode}
         isAnimating={isAnimating}
-        onPrint={() => {
-          document.body.dataset.printMode = viewTab;
-          const orientation = viewTab === "calendar" ? "portrait" : "landscape";
-          const style = document.createElement("style");
-          style.id = "print-orientation";
-          style.textContent = `@page { size: A4 ${orientation}; }`;
-          document.head.appendChild(style);
-          window.print();
-        }}
+        onPrint={() => handlePrint(viewTab)}
         onOpenSettings={openSettings}
         onShare={handleShare}
         onRotateForward={() => handleRotate("forward")}
@@ -230,16 +166,13 @@ export default function Home() {
         dragOverTabId={dragOverTabId}
         onSelectSchedule={selectSchedule}
         onAddSchedule={openNewSchedule}
-        onDragStart={(event, scheduleId) => { setDraggedTabId(scheduleId); event.dataTransfer.effectAllowed = "move"; }}
-        onDragOver={(event, scheduleId) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDragOverTabId(scheduleId); }}
-        onDrop={(event, scheduleId) => { event.preventDefault(); onTabDrop(scheduleId); }}
-        onDragEnd={() => { setDraggedTabId(null); setDragOverTabId(null); }}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onDragEnd={onDragEnd}
       />
 
-      <ViewTabs viewTab={viewTab} onChangeTab={(tab) => {
-        startTransition(() => setViewTab(tab));
-        safeSetItem("toban-view-tab", tab);
-      }} />
+      <ViewTabs viewTab={viewTab} onChangeTab={changeTab} />
 
       {viewTab === "cards" && (
         <AssignmentsGrid
