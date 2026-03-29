@@ -69,7 +69,7 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
     >
       <motion.div
         ref={modalRef}
-        className="theme-border theme-shadow w-full max-w-md max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col sm:rounded-2xl rounded-t-2xl rounded-b-none sm:rounded-b-2xl"
+        className="theme-border theme-shadow w-full max-w-md modal-max-h overflow-hidden flex flex-col sm:rounded-2xl rounded-t-2xl rounded-b-none sm:rounded-b-2xl"
         style={{ backgroundColor: "var(--dt-card-bg)" }}
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}

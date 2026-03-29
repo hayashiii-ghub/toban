@@ -2,6 +2,10 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { usePrintMode } from "./usePrintMode";
 
+vi.mock("sonner", () => ({
+  toast: { error: vi.fn() },
+}));
+
 describe("usePrintMode", () => {
   afterEach(() => {
     delete document.body.dataset.printMode;
@@ -37,6 +41,17 @@ describe("usePrintMode", () => {
     const { result } = renderHook(() => usePrintMode());
     act(() => result.current.handlePrint("cards"));
     expect(window.print).toHaveBeenCalled();
+  });
+
+  it("window.printが未実装の場合はtoast.errorを表示しprintModeを設定しない", async () => {
+    const { toast } = await import("sonner");
+    const original = window.print;
+    Object.defineProperty(window, "print", { value: undefined, writable: true, configurable: true });
+    const { result } = renderHook(() => usePrintMode());
+    act(() => result.current.handlePrint("cards"));
+    expect(toast.error).toHaveBeenCalledWith("このブラウザでは印刷できません。SafariまたはChromeで開いてください");
+    expect(document.body.dataset.printMode).toBeUndefined();
+    Object.defineProperty(window, "print", { value: original, writable: true, configurable: true });
   });
 
   it("afterprintイベントでdatasetとstyle要素がクリーンアップされる", () => {

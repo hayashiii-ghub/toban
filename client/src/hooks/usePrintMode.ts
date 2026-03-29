@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from "react";
+import { toast } from "sonner";
 
 export function usePrintMode(): {
   handlePrint: (viewTab: string) => void;
@@ -16,6 +17,10 @@ export function usePrintMode(): {
   }, []);
 
   const handlePrint = useCallback((viewTab: string) => {
+    if (typeof window.print !== "function") {
+      toast.error("このブラウザでは印刷できません。SafariまたはChromeで開いてください");
+      return;
+    }
     document.body.dataset.printMode = viewTab;
     const orientation = viewTab === "calendar" ? "portrait" : "landscape";
     const style = document.createElement("style");
