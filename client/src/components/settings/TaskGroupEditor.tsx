@@ -4,6 +4,7 @@ import type { AssignmentMode, TaskGroup, Member } from "@/rotation/types";
 import { MEMBER_PRESETS, colorPresetFromHex } from "@/rotation/constants";
 import { generateId, deepClone } from "@/rotation/utils";
 import { GroupCard } from "./GroupCard";
+import { GroupCardProvider, type GroupCardContextValue } from "./GroupCardContext";
 import { BulkMemberAdd } from "./BulkMemberAdd";
 
 interface Props {
@@ -339,64 +340,69 @@ export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChan
     );
   };
 
+  const contextValue: GroupCardContextValue = {
+    isTaskMode,
+    activeMembers,
+    activeMemberIds,
+    membersById,
+    openDetailsKey,
+    onToggleDetails: handleToggleDetails,
+    openColorKey,
+    onToggleColor: handleToggleColor,
+    onColorPreset: updateMemberColor,
+    onColorCustom: updateMemberColorCustom,
+    onMemberNameChange: updateMemberName,
+    onMoveGroup: moveGroup,
+    onRemoveGroup: removeGroup,
+    onUpdateEmoji: updateGroupEmoji,
+    onAddTask: addTask,
+    onUpdateTask: updateTask,
+    onRemoveTask: removeTask,
+    onMoveTask: moveTask,
+    onRemoveMemberFromGroup: removeMemberFromGroup,
+    onAddMemberToGroup: addMemberToGroup,
+    onAddNewMemberToGroup: addNewMemberToGroup,
+    onSetExplicitMembers: setExplicitMembers,
+    onResetToAllMembers: resetToAllMembers,
+    onReorderMember: reorderMember,
+    dragGroupIdx,
+    onGroupDragStart: handleGroupDragStart,
+    onGroupDragEnd: handleGroupReorderDragEnd,
+    onGroupReorderDragOver: handleGroupReorderDragOver,
+    onGroupReorderDrop: handleGroupReorderDrop,
+    dragTask,
+    dropTarget,
+    onTaskDragStart: handleTaskDragStart,
+    onTaskDragOver: handleTaskDragOver,
+    onTaskDrop: handleTaskDrop,
+    onTaskDragEnd: handleTaskDragEnd,
+    onGroupDragOver: handleGroupDragOver,
+    onGroupDropZone: handleGroupDropZone,
+    dragMember,
+    dropMemberTarget,
+    onMemberDragStart: handleMemberDragStart,
+    onMemberDragOver: handleMemberDragOver,
+    onMemberDrop: handleMemberDrop,
+    onMemberDragEnd: handleMemberDragEnd,
+  };
+
   return (
     <div className="flex flex-col gap-3">
-      <div className={`flex flex-col gap-3 ${groups.length > 8 ? "max-h-[400px] overflow-y-auto pr-1" : ""}`}>
-        {groups.map((group, gIdx) => (
-          <GroupCard
-            key={group.id}
-            group={group}
-            gIdx={gIdx}
-            groupCount={groups.length}
-            isTaskMode={isTaskMode}
-            ownerMember={!isTaskMode ? members[gIdx] : undefined}
-            activeMembers={activeMembers}
-            activeMemberIds={activeMemberIds}
-            membersById={membersById}
-            openDetailsKey={openDetailsKey}
-            onToggleDetails={handleToggleDetails}
-            openColorKey={openColorKey}
-            onToggleColor={handleToggleColor}
-            onColorPreset={updateMemberColor}
-            onColorCustom={updateMemberColorCustom}
-            onMemberNameChange={updateMemberName}
-            onMoveGroup={moveGroup}
-            onRemoveGroup={removeGroup}
-            onUpdateEmoji={updateGroupEmoji}
-            onAddTask={addTask}
-            onUpdateTask={updateTask}
-            onRemoveTask={removeTask}
-            onMoveTask={moveTask}
-            onRemoveMemberFromGroup={removeMemberFromGroup}
-            onAddMemberToGroup={addMemberToGroup}
-            onAddNewMemberToGroup={addNewMemberToGroup}
-            onSetExplicitMembers={setExplicitMembers}
-            onResetToAllMembers={resetToAllMembers}
-            onReorderMember={reorderMember}
-            isGroupDragging={dragGroupIdx === gIdx}
-            isGroupDropTarget={dropGroupIdx === gIdx}
-            onGroupDragStart={handleGroupDragStart}
-            onGroupDragEnd={handleGroupReorderDragEnd}
-            onGroupReorderDragOver={handleGroupReorderDragOver}
-            onGroupReorderDrop={handleGroupReorderDrop}
-            dragGroupIdx={dragGroupIdx}
-            dragTask={dragTask}
-            dropTarget={dropTarget}
-            onTaskDragStart={handleTaskDragStart}
-            onTaskDragOver={handleTaskDragOver}
-            onTaskDrop={handleTaskDrop}
-            onTaskDragEnd={handleTaskDragEnd}
-            onGroupDragOver={handleGroupDragOver}
-            onGroupDropZone={handleGroupDropZone}
-            dragMember={dragMember}
-            dropMemberTarget={dropMemberTarget}
-            onMemberDragStart={handleMemberDragStart}
-            onMemberDragOver={handleMemberDragOver}
-            onMemberDrop={handleMemberDrop}
-            onMemberDragEnd={handleMemberDragEnd}
-          />
-        ))}
-      </div>
+      <GroupCardProvider value={contextValue}>
+        <div className={`flex flex-col gap-3 ${groups.length > 8 ? "max-h-[400px] overflow-y-auto pr-1" : ""}`}>
+          {groups.map((group, gIdx) => (
+            <GroupCard
+              key={group.id}
+              group={group}
+              gIdx={gIdx}
+              groupCount={groups.length}
+              ownerMember={!isTaskMode ? members[gIdx] : undefined}
+              isGroupDragging={dragGroupIdx === gIdx}
+              isGroupDropTarget={dropGroupIdx === gIdx}
+            />
+          ))}
+        </div>
+      </GroupCardProvider>
 
       <div className="flex items-center gap-2">
         <button

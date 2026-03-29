@@ -5,15 +5,16 @@ import { SettingsModal } from "./SettingsModal";
 import type { TaskGroup, Member } from "@shared/types";
 
 vi.mock("framer-motion", () => {
-  const React = require("react");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const ReactMod = require("react");
   const createMotionComponent = (tag: string) =>
-    React.forwardRef((props: any, ref: any) => {
+    ReactMod.forwardRef((props: Record<string, unknown>, ref: unknown) => {
       const {
-        initial, animate, exit, transition, variants,
-        whileHover, whileTap, layout, onAnimationComplete,
+        initial: _initial, animate: _animate, exit: _exit, transition: _transition, variants: _variants,
+        whileHover: _whileHover, whileTap: _whileTap, layout: _layout, onAnimationComplete: _onAnimationComplete,
         ...rest
       } = props;
-      return React.createElement(tag, { ref, ...rest });
+      return ReactMod.createElement(tag, { ref, ...rest });
     });
   return {
     motion: {
@@ -24,7 +25,7 @@ vi.mock("framer-motion", () => {
       ul: createMotionComponent("ul"),
       section: createMotionComponent("section"),
     },
-    AnimatePresence: ({ children }: any) => children,
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
   };
 });
 

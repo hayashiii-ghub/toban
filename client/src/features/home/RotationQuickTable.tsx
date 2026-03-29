@@ -99,8 +99,9 @@ export function RotationQuickTable({
                 <tr aria-hidden="true"><td colSpan={activeMembers.length + 1} style={{ height: "6px", border: "none" }} /></tr>
                 {groups.map((group, groupIndex) => (
                   <tr key={group.id}>
-                    <td
-                      className="py-2 sm:py-2.5 px-2 sm:px-3 font-bold text-sm whitespace-nowrap"
+                    <th
+                      scope="row"
+                      className="py-2 sm:py-2.5 px-2 sm:px-3 font-bold text-sm whitespace-nowrap text-left"
                       style={{
                         borderTop: groupIndex > 0 ? `1px solid var(--dt-table-border-light)` : "none",
                         color: "var(--dt-text-secondary)",
@@ -112,7 +113,7 @@ export function RotationQuickTable({
                       <span className="text-xs sm:text-sm">
                         {group.tasks.join("・")}
                       </span>
-                    </td>
+                    </th>
                     {activeMembers.map((_, rotationIndex) => {
                       const member = allColumnAssignments[rotationIndex]?.[groupIndex]?.member;
                       const isCurrent = rotationIndex === rotation;

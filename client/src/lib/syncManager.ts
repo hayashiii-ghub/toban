@@ -67,18 +67,20 @@ async function doSync(
 
     if (error instanceof ApiError) {
       if (error.status === 401 || error.status === 403) {
-        console.warn("認証エラー: スケジュール同期をスキップ");
+        // Auth error — non-retriable, discard pending
+        console.warn(`[syncManager] 認証エラー (${error.status}): スケジュール ${schedule.id} の同期をスキップ`);
         pendingSchedules.delete(schedule.id);
       } else if (error.status === 400) {
-        console.warn("データ不正: スケジュール同期をスキップ");
+        // Validation error — non-retriable, discard pending
+        console.warn(`[syncManager] データ不正 (400): スケジュール ${schedule.id} の同期をスキップ`, error.message);
         pendingSchedules.delete(schedule.id);
       } else {
-        // 5xx server errors — keep pending for retry on reconnect
-        console.error("サーバーエラー: スケジュール同期に失敗", error);
+        // 5xx server errors — retriable, keep pending for retry on reconnect
+        console.error(`[syncManager] サーバーエラー (${error.status}): スケジュール ${schedule.id} の同期に失敗`, error);
       }
     } else {
-      // Network errors etc. — keep pending for retry on reconnect
-      console.error("ネットワークエラー: スケジュール同期に失敗", error);
+      // Network errors etc. — retriable, keep pending for retry on reconnect
+      console.error(`[syncManager] ネットワークエラー: スケジュール ${schedule.id} の同期に失敗`, error);
     }
 
     return false;

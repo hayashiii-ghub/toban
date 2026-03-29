@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface OnboardingOverlayProps {
@@ -46,6 +46,7 @@ const STEPS = [
 export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   const step = STEPS[currentStep];
 
@@ -115,10 +116,52 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
     }
   }, [currentStep]);
 
+  // Focus the tooltip when step changes
+  useEffect(() => {
+    // Small delay to let animation start before focusing
+    const timer = setTimeout(() => {
+      tooltipRef.current?.focus();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [currentStep]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case "Escape":
+          e.preventDefault();
+          onComplete();
+          break;
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          handleNext();
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          handleNext();
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          handleBack();
+          break;
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleNext, handleBack, onComplete]);
+
   const highlightPadding = 6;
 
   return (
-    <div className="fixed inset-0 z-[100] rotation-no-print" style={{ pointerEvents: "none" }}>
+    <div
+      className="fixed inset-0 z-[100] rotation-no-print"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`ガイド: ${step.title}`}
+      style={{ pointerEvents: "none" }}
+    >
       <motion.div
         className="fixed inset-0"
         style={{ backgroundColor: "rgba(0,0,0,0.5)", pointerEvents: "auto" }}
@@ -147,12 +190,15 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
-          style={{ ...tooltipStyle, pointerEvents: "auto", zIndex: 102 }}
+          ref={tooltipRef}
+          tabIndex={-1}
+          style={{ ...tooltipStyle, pointerEvents: "auto", zIndex: 102, outline: "none" }}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ duration: 0.2 }}
           onClick={(e) => e.stopPropagation()}
+          aria-label={`ステップ ${currentStep + 1}/${STEPS.length}: ${step.title} — ${step.description}`}
         >
           <div
             className="theme-border p-4"

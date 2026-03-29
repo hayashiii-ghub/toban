@@ -6,7 +6,8 @@
 export function safeGetItem(key: string): string | null {
   try {
     return localStorage.getItem(key);
-  } catch {
+  } catch (error) {
+    console.warn(`[storage] localStorageの読み取りに失敗 (key: ${key}):`, error);
     return null;
   }
 }
@@ -14,7 +15,7 @@ export function safeGetItem(key: string): string | null {
 export function safeSetItem(key: string, value: string): void {
   try {
     localStorage.setItem(key, value);
-  } catch {
-    // storage full or unavailable
+  } catch (error) {
+    console.warn(`[storage] localStorageの書き込みに失敗 (key: ${key}):`, error);
   }
 }

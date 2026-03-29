@@ -64,6 +64,7 @@ pnpm dev:full     # フロント + API を同時起動
 pnpm build        # 本番ビルド
 pnpm check        # TypeScript 型チェック
 pnpm test         # テスト実行 (Vitest)
+pnpm test:coverage # テスト実行 + カバレッジレポート (v8)
 pnpm lint         # ESLint
 pnpm db:migrate:local  # ローカル D1 に migration を適用
 pnpm run deploy:cf     # migration 適用込みで Cloudflare へデプロイ

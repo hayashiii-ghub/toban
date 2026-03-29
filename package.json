@@ -16,6 +16,7 @@
     "db:migrate:local": "wrangler d1 migrations apply toban-maker-db --local",
     "format": "prettier --write .",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest"
   },
   "dependencies": {

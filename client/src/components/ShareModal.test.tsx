@@ -3,15 +3,16 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { ShareModal } from "./ShareModal";
 
 vi.mock("framer-motion", () => {
-  const React = require("react");
-  const MotionComponent = React.forwardRef(
-    ({ children, ...props }: any, ref: any) => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const ReactMod = require("react");
+  const MotionComponent = ReactMod.forwardRef(
+    ({ children, ...props }: Record<string, unknown>, ref: unknown) => {
       const filteredProps = Object.fromEntries(
         Object.entries(props).filter(
           ([key]) => !["initial", "animate", "exit", "transition", "variants", "whileHover", "whileTap"].includes(key)
         )
       );
-      return React.createElement("div", { ...filteredProps, ref }, children);
+      return ReactMod.createElement("div", { ...filteredProps, ref }, children);
     }
   );
   return {
@@ -21,7 +22,7 @@ vi.mock("framer-motion", () => {
 });
 
 vi.mock("react-qr-code", () => ({
-  default: (props: any) => <div data-testid="qr-code" data-value={props.value} />,
+  default: (props: { value: string }) => <div data-testid="qr-code" data-value={props.value} />,
 }));
 
 Object.assign(navigator, {

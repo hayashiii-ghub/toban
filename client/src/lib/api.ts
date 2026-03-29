@@ -24,6 +24,11 @@ function parseResponse<T>(schema: { parse(data: unknown): T }, data: unknown, en
   }
 }
 
+/** Status codes that should never be retried (client errors). */
+function isRetriable(status: number): boolean {
+  return status >= 500;
+}
+
 async function fetchWithRetry(
   input: RequestInfo | URL,
   init?: RequestInit & { keepalive?: boolean },
@@ -32,9 +37,10 @@ async function fetchWithRetry(
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const res = await fetch(input, init);
-      if (res.ok || res.status < 500) return res;
+      if (res.ok || !isRetriable(res.status)) return res;
       // 5xx: retry
       if (attempt < maxRetries) {
+        console.warn(`[api] サーバーエラー ${res.status}, リトライ ${attempt + 1}/${maxRetries}: ${String(input)}`);
         await new Promise((r) => setTimeout(r, 1000 * 3 ** attempt));
         continue;
       }
@@ -42,6 +48,7 @@ async function fetchWithRetry(
     } catch (error) {
       // Network error: retry
       if (attempt < maxRetries) {
+        console.warn(`[api] ネットワークエラー, リトライ ${attempt + 1}/${maxRetries}: ${String(input)}`, error);
         await new Promise((r) => setTimeout(r, 1000 * 3 ** attempt));
         continue;
       }

@@ -13,6 +13,7 @@ export function useRotationAnimation(
   const [isAnimating, setIsAnimating] = useState(false);
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const animationTimeoutRef = useRef<number | null>(null);
+  const isAnimatingRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -21,7 +22,8 @@ export function useRotationAnimation(
   }, []);
 
   const handleRotate = useCallback((nextDirection: "forward" | "backward") => {
-    if (isAnimating) return;
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
     setIsAnimating(true);
     setDirection(nextDirection);
     setState((prev) => {
@@ -41,10 +43,11 @@ export function useRotationAnimation(
     });
     if (animationTimeoutRef.current !== null) window.clearTimeout(animationTimeoutRef.current);
     animationTimeoutRef.current = window.setTimeout(() => {
+      isAnimatingRef.current = false;
       setIsAnimating(false);
       animationTimeoutRef.current = null;
     }, ANIMATION_DURATION_MS);
-  }, [isAnimating, setState]);
+  }, [setState]);
 
   return { isAnimating, direction, handleRotate };
 }

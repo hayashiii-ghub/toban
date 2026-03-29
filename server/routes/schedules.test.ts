@@ -109,10 +109,10 @@ function createMockD1(
     async dump() {
       return new ArrayBuffer(0);
     },
-    async batch(stmts: D1PreparedStatement[]) {
+    async batch(_stmts: D1PreparedStatement[]) {
       return [];
     },
-    async exec(sql: string) {
+    async exec(_sql: string) {
       return { count: 0, duration: 0 };
     },
   } as unknown as D1Database;

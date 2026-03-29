@@ -14,6 +14,7 @@ interface ScheduleTabsProps {
   onDragOver: (event: DragEvent<HTMLButtonElement>, scheduleId: string) => void;
   onDrop: (event: DragEvent<HTMLButtonElement>, scheduleId: string) => void;
   onDragEnd: () => void;
+  onReorderTab?: (scheduleId: string, direction: "left" | "right") => void;
 }
 
 export function ScheduleTabs({
@@ -27,6 +28,7 @@ export function ScheduleTabs({
   onDragOver,
   onDrop,
   onDragEnd,
+  onReorderTab,
 }: ScheduleTabsProps) {
   const sortedSchedules = useMemo(() => {
     const pinned = schedules.filter((s) => s.pinned);
@@ -64,6 +66,46 @@ export function ScheduleTabs({
     el.scrollBy({ left: dir === "left" ? -120 : 120, behavior: "smooth" });
   };
 
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, scheduleId: string, index: number) => {
+    const tabs = scrollRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+    if (!tabs) return;
+
+    switch (e.key) {
+      case "ArrowRight": {
+        e.preventDefault();
+        if (e.altKey && onReorderTab) {
+          const schedule = sortedSchedules[index];
+          if (!schedule?.pinned) onReorderTab(scheduleId, "right");
+        } else {
+          const next = tabs[index + 1];
+          if (next) next.focus();
+        }
+        break;
+      }
+      case "ArrowLeft": {
+        e.preventDefault();
+        if (e.altKey && onReorderTab) {
+          const schedule = sortedSchedules[index];
+          if (!schedule?.pinned) onReorderTab(scheduleId, "left");
+        } else {
+          const prev = tabs[index - 1];
+          if (prev) prev.focus();
+        }
+        break;
+      }
+      case "Home": {
+        e.preventDefault();
+        tabs[0]?.focus();
+        break;
+      }
+      case "End": {
+        e.preventDefault();
+        tabs[tabs.length - 1]?.focus();
+        break;
+      }
+    }
+  };
+
   return (
     <div className="px-3 sm:px-4 pt-2 pb-1 rotation-no-print" data-onboarding="schedule-tabs">
       <div className="max-w-4xl mx-auto">
@@ -81,18 +123,23 @@ export function ScheduleTabs({
             )}
             <div
               ref={scrollRef}
+              role="tablist"
+              aria-label="当番表タブ一覧（Alt+矢印キーで並び替え）"
               className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide"
             >
-              {sortedSchedules.map((schedule) => (
+              {sortedSchedules.map((schedule, index) => (
                 <button
                   key={schedule.id}
-                  aria-label={`${schedule.name}タブ${schedule.pinned ? "（ピン留め）" : ""}`}
-                  aria-pressed={schedule.id === activeScheduleId}
+                  role="tab"
+                  aria-label={`${schedule.name}タブ${schedule.pinned ? "（ピン留め）" : ""}${!schedule.pinned ? "（Alt+矢印キーで並び替え）" : ""}`}
+                  aria-selected={schedule.id === activeScheduleId}
+                  tabIndex={schedule.id === activeScheduleId ? 0 : -1}
                   draggable={!schedule.pinned}
                   onDragStart={(event) => onDragStart(event, schedule.id)}
                   onDragOver={(event) => onDragOver(event, schedule.id)}
                   onDrop={(event) => onDrop(event, schedule.id)}
                   onDragEnd={onDragEnd}
+                  onKeyDown={(e) => handleTabKeyDown(e, schedule.id, index)}
                   onClick={() => onSelectSchedule(schedule.id)}
                   className={`theme-border shrink-0 px-3 sm:px-4 py-2 text-sm font-bold transition-all duration-150 flex items-center gap-1 sm:gap-1.5 ${
                     schedule.id === activeScheduleId

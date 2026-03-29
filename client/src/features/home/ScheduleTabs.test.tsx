@@ -51,7 +51,7 @@ describe("ScheduleTabs", () => {
   it("タブクリックでonSelectScheduleが呼ばれる", () => {
     const props = defaultProps();
     const { unmount } = render(<ScheduleTabs {...props} />);
-    fireEvent.click(screen.getByLabelText("給食当番タブ"));
+    fireEvent.click(screen.getByLabelText("給食当番タブ（Alt+矢印キーで並び替え）"));
     expect(props.onSelectSchedule).toHaveBeenCalledWith("s2");
     unmount();
   });
@@ -66,10 +66,10 @@ describe("ScheduleTabs", () => {
 
   it("アクティブなタブが視覚的に区別される", () => {
     const { unmount } = render(<ScheduleTabs {...defaultProps()} />);
-    const activeTab = screen.getByLabelText("掃除当番タブ");
-    const inactiveTab = screen.getByLabelText("給食当番タブ");
-    expect(activeTab).toHaveAttribute("aria-pressed", "true");
-    expect(inactiveTab).toHaveAttribute("aria-pressed", "false");
+    const activeTab = screen.getByLabelText("掃除当番タブ（Alt+矢印キーで並び替え）");
+    const inactiveTab = screen.getByLabelText("給食当番タブ（Alt+矢印キーで並び替え）");
+    expect(activeTab).toHaveAttribute("aria-selected", "true");
+    expect(inactiveTab).toHaveAttribute("aria-selected", "false");
     unmount();
   });
 });

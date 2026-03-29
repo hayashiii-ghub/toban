@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, fireEvent, within } from "@testing-library/react";
 import { RotationControls } from "./RotationControls";
 
 // framer-motion v12 は jsdom 環境で子要素を二重レンダリングするため、
