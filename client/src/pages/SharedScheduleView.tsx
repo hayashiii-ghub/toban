@@ -32,6 +32,10 @@ export default function SharedScheduleView() {
   }, []);
 
   const handlePrint = useCallback(() => {
+    if (typeof window.print !== "function") {
+      toast.error("このブラウザでは印刷できません。SafariまたはChromeで開いてください");
+      return;
+    }
     document.body.dataset.printMode = viewTab;
     window.print();
   }, [viewTab]);

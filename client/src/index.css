@@ -205,6 +205,18 @@
     transform: translate(var(--dt-hover-translate), var(--dt-hover-translate));
   }
 
+  /* モーダル高さ: dvh対応ブラウザではdvhを使い、iOS Chrome等でもアドレスバー分を考慮 */
+  .modal-max-h {
+    max-height: 90vh;
+    max-height: 90dvh;
+  }
+  @media (min-width: 640px) {
+    .modal-max-h {
+      max-height: 85vh;
+      max-height: 85dvh;
+    }
+  }
+
   .settings-option-control {
     display: flex;
     height: 2.5rem;
