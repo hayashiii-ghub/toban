@@ -12,7 +12,7 @@
 - **9種類のデザインテーマ** — こくばん・クレヨン・さくらなど、印刷して掲示できる品質。テンプレートごとに推奨テーマを自動適用
 - **共有** — URL・QRコード・LINE共有。閲覧用/編集権限付きの2種類
 - **自動クラウドバックアップ** — メンバー入力後に自動でD1へ保存。ブラウザデータ消失に備える
-- **印刷** — カラー/モノクロ選択、画像（PNG）保存にも対応
+- **印刷** — ブラウザの印刷機能でそのまま印刷・PDF保存が可能
 - **PWA** — ホーム画面に追加してアプリとして利用可能（iOS Safari向け案内あり）
 - **登録不要** — アカウント作成なしで即利用開始
 
@@ -28,7 +28,6 @@
 | バックエンド | Hono (Cloudflare Workers) | 軽量・Web標準API準拠・Cloudflare Workersにネイティブ対応 |
 | データベース | Cloudflare D1 + Drizzle ORM | SQLite互換でサーバーレス・型安全なクエリ |
 | データ永続化 | localStorage + D1 | ローカルが主データストア、D1はクラウド共有・バックアップ層 |
-| 画像保存 | html2canvas | 当番表をPNG画像として保存 |
 | パッケージマネージャ | pnpm | 高速・ディスク効率の良い依存管理 |
 
 ## 構成
@@ -63,6 +62,8 @@ pnpm dev:api      # Wrangler Pages dev サーバー (port 8788)
 pnpm dev:full     # フロント + API を同時起動
 pnpm build        # 本番ビルド
 pnpm check        # TypeScript 型チェック
+pnpm test         # テスト実行 (Vitest)
+pnpm lint         # ESLint
 pnpm db:migrate:local  # ローカル D1 に migration を適用
 pnpm run deploy:cf     # migration 適用込みで Cloudflare へデプロイ
 ```
