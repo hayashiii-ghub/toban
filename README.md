@@ -82,4 +82,4 @@ pnpm run deploy:cf     # migration 適用込みで Cloudflare へデプロイ
 
 ## ライセンス
 
-コードは参考として公開しています。コンテンツ（テキスト・画像・ロゴ）の無断転載はご遠慮ください。
+[MIT License](./LICENSE)
