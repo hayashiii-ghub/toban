@@ -2,6 +2,7 @@ import { startTransition, useCallback, useMemo, useState } from "react";
 import type { AppState, AssignmentMode, Member, RotationConfig, Schedule, ScheduleTemplate, TaskGroup } from "@/rotation/types";
 import { createScheduleFromTemplate, deepClone, generateId, loadState, normalizeRotation, saveState } from "@/rotation/utils";
 import { deleteSchedule } from "@/lib/api";
+import { toast } from "sonner";
 
 export function useScheduleManager() {
   const [state, setState] = useState<AppState>(loadState);
@@ -39,7 +40,10 @@ export function useScheduleManager() {
 
         const schedule = prev.schedules.find((s) => s.id === scheduleId);
         if (schedule?.slug && schedule?.editToken) {
-          deleteSchedule(schedule.slug, schedule.editToken).catch(() => {});
+          deleteSchedule(schedule.slug, schedule.editToken).catch((error) => {
+            console.error("Failed to delete schedule from server:", error);
+            toast.error("サーバーからの削除に失敗しました");
+          });
         }
 
         const remainingSchedules = prev.schedules.filter((s) => s.id !== scheduleId);

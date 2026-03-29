@@ -18,6 +18,12 @@ type Env = { Bindings: { DB: D1Database } };
 
 const app = new Hono<Env>();
 
+// スキーマの初期化をミドルウェアで一元管理
+app.use("*", async (c, next) => {
+  await ensureSchedulesSchema(c.env.DB);
+  await next();
+});
+
 function logDatabaseError(scope: string, error: unknown, context: Record<string, unknown> = {}) {
   const serializedError = error instanceof Error
     ? { name: error.name, message: error.message, stack: error.stack }
@@ -66,7 +72,6 @@ function serializeSchedule(row: typeof schedules.$inferSelect) {
 
 // POST /api/schedules - Create
 app.post("/", async (c) => {
-  await ensureSchedulesSchema(c.env.DB);
   const body = await parseJsonBody(c);
   if (!body.ok) return body.response;
 
@@ -135,7 +140,6 @@ app.get("/:slug", async (c) => {
   const slug = c.req.param("slug");
   if (!SLUG_PATTERN.test(slug)) return c.json({ error: "Invalid slug" }, 400);
 
-  await ensureSchedulesSchema(c.env.DB);
   const db = drizzle(c.env.DB);
 
   try {

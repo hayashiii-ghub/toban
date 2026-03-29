@@ -1,29 +1,10 @@
-import type { AssignmentMode, RotationConfig } from "@/rotation/types";
+import type { ScheduleData } from "@shared/schemas";
 import {
   createScheduleResponseSchema,
   scheduleResponseSchema,
   type CreateScheduleResponseData,
   type ScheduleResponseData,
 } from "./apiSchemas";
-
-interface ScheduleWriteMember {
-  id: string;
-  name: string;
-  color: string;
-  bgColor: string;
-  textColor: string;
-  skipped?: boolean;
-}
-
-interface ScheduleWriteData {
-  name: string;
-  rotation: number;
-  groups: { id: string; tasks: string[]; emoji: string; memberIds?: string[] }[];
-  members: ScheduleWriteMember[];
-  rotationConfig?: RotationConfig;
-  assignmentMode?: AssignmentMode;
-  designThemeId?: string;
-}
 
 export class ApiError extends Error {
   constructor(message: string, public status: number) {
@@ -43,13 +24,41 @@ function parseResponse<T>(schema: { parse(data: unknown): T }, data: unknown, en
   }
 }
 
+async function fetchWithRetry(
+  input: RequestInfo | URL,
+  init?: RequestInit & { keepalive?: boolean },
+  maxRetries = 2,
+): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(input, init);
+      if (res.ok || res.status < 500) return res;
+      // 5xx: retry
+      if (attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 1000 * 3 ** attempt));
+        continue;
+      }
+      return res;
+    } catch (error) {
+      // Network error: retry
+      if (attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 1000 * 3 ** attempt));
+        continue;
+      }
+      throw error;
+    }
+  }
+  // Unreachable, but satisfies TypeScript
+  throw new Error("fetchWithRetry: unexpected state");
+}
+
 const BASE = "/api/schedules";
 
 export async function createSchedule(
-  data: ScheduleWriteData,
+  data: ScheduleData,
   options?: { keepalive?: boolean },
 ): Promise<CreateScheduleResponseData> {
-  const res = await fetch(BASE, {
+  const res = await fetchWithRetry(BASE, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     keepalive: options?.keepalive,
@@ -82,10 +91,10 @@ export async function getScheduleForEdit(
 export async function updateSchedule(
   slug: string,
   editToken: string,
-  data: ScheduleWriteData,
+  data: ScheduleData,
   options?: { keepalive?: boolean },
 ): Promise<void> {
-  const res = await fetch(`${BASE}/${slug}`, {
+  const res = await fetchWithRetry(`${BASE}/${slug}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -98,7 +107,7 @@ export async function updateSchedule(
 }
 
 export async function publishSchedule(slug: string, editToken: string): Promise<void> {
-  const res = await fetch(`${BASE}/${slug}/publish`, {
+  const res = await fetchWithRetry(`${BASE}/${slug}/publish`, {
     method: "POST",
     headers: { "x-edit-token": editToken },
   });

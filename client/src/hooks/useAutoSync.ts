@@ -11,22 +11,12 @@ import {
 
 const BACKUP_DEBOUNCE_MS = 5000;
 
-export function useAutoSync(
-  schedule: Schedule | undefined,
-  onScheduleUpdate?: (updater: (s: Schedule) => Schedule) => void,
-): {
+function useSyncStatusSubscription(scheduleId: string | undefined): {
   syncStatus: SyncStatus;
-  cancelPendingBackup: () => void;
-  prepareForManualSave: () => Promise<Schedule | undefined>;
+  setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>;
 } {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
-  const prevJsonRef = useRef<string>("");
-  const scheduleIdRef = useRef(schedule?.id ?? "");
-  const backupTimerRef = useRef<number | null>(null);
-  const backupInFlightRef = useRef(false);
-  const backupPromiseRef = useRef<Promise<Schedule | undefined> | null>(null);
-  const scheduleRef = useRef(schedule);
-  scheduleRef.current = schedule;
+  const scheduleIdRef = useRef(scheduleId ?? "");
 
   useEffect(() => {
     setSyncStatusCallback((id, status) => {
@@ -38,10 +28,29 @@ export function useAutoSync(
   }, []);
 
   useEffect(() => {
-    scheduleIdRef.current = schedule?.id ?? "";
-    prevJsonRef.current = "";
+    scheduleIdRef.current = scheduleId ?? "";
     setSyncStatus("idle");
-  }, [schedule?.id]);
+  }, [scheduleId]);
+
+  return { syncStatus, setSyncStatus };
+}
+
+function useAutoBackup(
+  schedule: Schedule | undefined,
+  onScheduleUpdate: ((updater: (s: Schedule) => Schedule) => void) | undefined,
+  setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>,
+): {
+  cancelPendingBackup: () => void;
+  prepareForManualSave: () => Promise<Schedule | undefined>;
+  attemptAutoBackup: (s: Schedule) => Promise<Schedule | undefined>;
+  scheduleRef: React.MutableRefObject<Schedule | undefined>;
+  backupTimerRef: React.MutableRefObject<number | null>;
+} {
+  const backupTimerRef = useRef<number | null>(null);
+  const backupInFlightRef = useRef(false);
+  const backupPromiseRef = useRef<Promise<Schedule | undefined> | null>(null);
+  const scheduleRef = useRef(schedule);
+  scheduleRef.current = schedule;
 
   const attemptAutoBackup = useCallback(async (s: Schedule) => {
     // 最新の状態を再チェック — 別の経路で既に slug が付与されていたらスキップ
@@ -93,7 +102,47 @@ export function useAutoSync(
     currentBackupPromise = backupPromise;
     backupPromiseRef.current = backupPromise;
     return backupPromise;
-  }, [onScheduleUpdate]);
+  }, [onScheduleUpdate, setSyncStatus]);
+
+  // Cleanup backup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (backupTimerRef.current) {
+        window.clearTimeout(backupTimerRef.current);
+      }
+    };
+  }, []);
+
+  const cancelPendingBackup = useCallback(() => {
+    if (backupTimerRef.current) {
+      window.clearTimeout(backupTimerRef.current);
+      backupTimerRef.current = null;
+    }
+  }, []);
+
+  const prepareForManualSave = useCallback(async () => {
+    cancelPendingBackup();
+    if (backupPromiseRef.current) {
+      return backupPromiseRef.current;
+    }
+    return scheduleRef.current;
+  }, [cancelPendingBackup]);
+
+  return { cancelPendingBackup, prepareForManualSave, attemptAutoBackup, scheduleRef, backupTimerRef };
+}
+
+function useSyncOnChange(
+  schedule: Schedule | undefined,
+  attemptAutoBackup: (s: Schedule) => Promise<Schedule | undefined>,
+  onScheduleUpdate: ((updater: (s: Schedule) => Schedule) => void) | undefined,
+  scheduleRef: React.MutableRefObject<Schedule | undefined>,
+  backupTimerRef: React.MutableRefObject<number | null>,
+): void {
+  const prevJsonRef = useRef<string>("");
+
+  useEffect(() => {
+    prevJsonRef.current = "";
+  }, [schedule?.id]);
 
   useEffect(() => {
     if (!schedule) return;
@@ -127,7 +176,7 @@ export function useAutoSync(
         attemptAutoBackup(current);
       }, BACKUP_DEBOUNCE_MS);
     }
-  }, [schedule, attemptAutoBackup, onScheduleUpdate]);
+  }, [schedule, attemptAutoBackup, onScheduleUpdate, scheduleRef, backupTimerRef]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -141,7 +190,7 @@ export function useAutoSync(
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [schedule?.id, schedule?.slug, schedule?.editToken]);
+  }, [schedule?.id, schedule?.slug, schedule?.editToken, backupTimerRef]);
 
   useEffect(() => {
     const retrySync = () => {
@@ -170,31 +219,19 @@ export function useAutoSync(
       window.removeEventListener("online", retrySync);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [attemptAutoBackup, onScheduleUpdate]);
+  }, [attemptAutoBackup, onScheduleUpdate, scheduleRef]);
+}
 
-  // Cleanup backup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (backupTimerRef.current) {
-        window.clearTimeout(backupTimerRef.current);
-      }
-    };
-  }, []);
-
-  const cancelPendingBackup = useCallback(() => {
-    if (backupTimerRef.current) {
-      window.clearTimeout(backupTimerRef.current);
-      backupTimerRef.current = null;
-    }
-  }, []);
-
-  const prepareForManualSave = useCallback(async () => {
-    cancelPendingBackup();
-    if (backupPromiseRef.current) {
-      return backupPromiseRef.current;
-    }
-    return scheduleRef.current;
-  }, [cancelPendingBackup]);
-
+export function useAutoSync(
+  schedule: Schedule | undefined,
+  onScheduleUpdate?: (updater: (s: Schedule) => Schedule) => void,
+): {
+  syncStatus: SyncStatus;
+  cancelPendingBackup: () => void;
+  prepareForManualSave: () => Promise<Schedule | undefined>;
+} {
+  const { syncStatus, setSyncStatus } = useSyncStatusSubscription(schedule?.id);
+  const { cancelPendingBackup, prepareForManualSave, attemptAutoBackup, scheduleRef, backupTimerRef } = useAutoBackup(schedule, onScheduleUpdate, setSyncStatus);
+  useSyncOnChange(schedule, attemptAutoBackup, onScheduleUpdate, scheduleRef, backupTimerRef);
   return { syncStatus, cancelPendingBackup, prepareForManualSave };
 }

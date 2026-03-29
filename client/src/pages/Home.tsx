@@ -1,11 +1,11 @@
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
-import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { NewScheduleModal } from "@/components/NewScheduleModal";
-import { SettingsModal } from "@/components/SettingsModal";
+import { ModalHost } from "@/components/ModalHost";
 import { useAutoSync } from "@/hooks/useAutoSync";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useModalManager } from "@/hooks/useModalManager";
 import { useScheduleManager } from "@/hooks/useScheduleManager";
 import { useShareFlow } from "@/hooks/useShareFlow";
 import { safeGetItem, safeSetItem } from "@/lib/storage";
@@ -21,7 +21,6 @@ import { ViewTabs, type ViewTabValue } from "@/features/home/ViewTabs";
 import { ScheduleHeader } from "@/features/home/ScheduleHeader";
 import { ScheduleTabs } from "@/features/home/ScheduleTabs";
 import { TodayBanner } from "@/features/home/TodayBanner";
-import { ShareModal } from "@/components/ShareModal";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import "./home.css";
 
@@ -35,12 +34,10 @@ export default function Home() {
 
   const { syncStatus, prepareForManualSave } = useAutoSync(activeSchedule, updateActiveSchedule);
   const { isSharing, showShare, setShowShare, handleShare } = useShareFlow({ activeSchedule, prepareForManualSave, updateActiveSchedule });
+  const { modal, openSettings, openNewSchedule, openConfirmDelete, closeModal } = useModalManager();
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
-  const [showSettings, setShowSettings] = useState(false);
-  const [showNewSchedule, setShowNewSchedule] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -50,6 +47,7 @@ export default function Home() {
     return "cards";
   });
   const animationTimeoutRef = useRef<number | null>(null);
+  const mountedRef = useRef(false);
 
   const groups = useMemo(() => activeSchedule?.groups ?? [], [activeSchedule]);
   const members = useMemo(() => activeSchedule?.members ?? [], [activeSchedule]);
@@ -63,10 +61,9 @@ export default function Home() {
     [groups, members, effectiveRotation, activeSchedule],
   );
 
-  useBodyScrollLock(showSettings || showNewSchedule || showShare || confirmDelete !== null);
+  useBodyScrollLock(modal.type !== null || showShare);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- saveState is stable from useScheduleManager
-  useEffect(() => { saveState(state); }, [state]);
+  useEffect(() => { saveState(state); }, [state, saveState]);
 
   useEffect(() => {
     return () => { if (animationTimeoutRef.current !== null) window.clearTimeout(animationTimeoutRef.current); };
@@ -82,26 +79,27 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (mountedRef.current) return;
+    mountedRef.current = true;
     const params = new URLSearchParams(window.location.search);
     const templateParam = params.get("template");
     if (templateParam !== null) {
       const idx = parseInt(templateParam, 10);
       if (addScheduleFromTemplateIndex(idx, TEMPLATES)) {
-        setShowNewSchedule(false);
+        closeModal();
       }
     } else if (safeGetItem(STORAGE_KEY) === null) {
-      setShowNewSchedule(true);
+      openNewSchedule();
     }
     window.history.replaceState({}, "", window.location.pathname);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: reads URL params once
-  }, []);
+  }, [addScheduleFromTemplateIndex, closeModal, openNewSchedule]);
 
   useEffect(() => {
     const onboardingDone = safeGetItem(ONBOARDING_STORAGE_KEY) === "true";
-    if (onboardingDone || showNewSchedule || showSettings || showShare || confirmDelete !== null || !activeSchedule) return;
+    if (onboardingDone || modal.type !== null || showShare || !activeSchedule) return;
     const timer = window.setTimeout(() => setShowOnboarding(true), 800);
     return () => window.clearTimeout(timer);
-  }, [activeSchedule, confirmDelete, showNewSchedule, showSettings, showShare]);
+  }, [activeSchedule, modal.type, showShare]);
 
   const handleOnboardingComplete = useCallback(() => {
     setShowOnboarding(false);
@@ -136,23 +134,23 @@ export default function Home() {
 
   const onAddSchedule = useCallback((template: Parameters<typeof handleAddSchedule>[0]) => {
     handleAddSchedule(template);
-    setShowNewSchedule(false);
-  }, [handleAddSchedule]);
+    closeModal();
+  }, [handleAddSchedule, closeModal]);
 
   const onDeleteSchedule = useCallback((scheduleId: string) => {
     handleDeleteSchedule(scheduleId);
-    setConfirmDelete(null);
-  }, [handleDeleteSchedule]);
+    closeModal();
+  }, [handleDeleteSchedule, closeModal]);
 
   const onDuplicateSchedule = useCallback(() => {
     handleDuplicateSchedule();
-    setShowSettings(false);
-  }, [handleDuplicateSchedule]);
+    closeModal();
+  }, [handleDuplicateSchedule, closeModal]);
 
   const onSaveSettings = useCallback((...args: Parameters<typeof handleSaveSettings>) => {
     handleSaveSettings(...args);
-    setShowSettings(false);
-  }, [handleSaveSettings]);
+    closeModal();
+  }, [handleSaveSettings, closeModal]);
 
   const onTabDrop = useCallback((targetId: string) => {
     setDraggedTabId((currentDraggedId) => {
@@ -173,14 +171,14 @@ export default function Home() {
               type="button"
               className="theme-border px-6 py-3 font-bold theme-hover-lift transition-all duration-150"
               style={{ backgroundColor: "var(--dt-button-bg)", borderRadius: "var(--dt-border-radius-sm)", color: "var(--dt-text)" }}
-              onClick={() => setShowNewSchedule(true)}
+              onClick={openNewSchedule}
             >
               当番表を作成
             </button>
           </div>
           {createPortal(
             <AnimatePresence>
-              {showNewSchedule && <NewScheduleModal onSelect={onAddSchedule} onClose={() => setShowNewSchedule(false)} />}
+              {modal.type === "newSchedule" && <NewScheduleModal onSelect={onAddSchedule} onClose={closeModal} />}
             </AnimatePresence>,
             document.body,
           )}
@@ -213,7 +211,7 @@ export default function Home() {
           document.head.appendChild(style);
           window.print();
         }}
-        onOpenSettings={() => setShowSettings(true)}
+        onOpenSettings={openSettings}
         onShare={handleShare}
         onRotateForward={() => handleRotate("forward")}
         onRotateBackward={() => handleRotate("backward")}
@@ -231,7 +229,7 @@ export default function Home() {
         draggedTabId={draggedTabId}
         dragOverTabId={dragOverTabId}
         onSelectSchedule={selectSchedule}
-        onAddSchedule={() => setShowNewSchedule(true)}
+        onAddSchedule={openNewSchedule}
         onDragStart={(event, scheduleId) => { setDraggedTabId(scheduleId); event.dataTransfer.effectAllowed = "move"; }}
         onDragOver={(event, scheduleId) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDragOverTabId(scheduleId); }}
         onDrop={(event, scheduleId) => { event.preventDefault(); onTabDrop(scheduleId); }}
@@ -257,48 +255,20 @@ export default function Home() {
         <RotationCalendar groups={groups} members={members} rotation={effectiveRotation} rotationConfig={activeSchedule.rotationConfig} assignmentMode={activeSchedule.assignmentMode} />
       )}
 
-      {createPortal(
-        <AnimatePresence>
-          {showNewSchedule && <NewScheduleModal onSelect={onAddSchedule} onClose={() => setShowNewSchedule(false)} />}
-        </AnimatePresence>,
-        document.body,
-      )}
-      {createPortal(
-        <AnimatePresence>
-          {confirmDelete && (
-            <ConfirmDeleteDialog
-              scheduleName={state.schedules.find((schedule) => schedule.id === confirmDelete)?.name ?? ""}
-              onConfirm={() => onDeleteSchedule(confirmDelete)}
-              onCancel={() => setConfirmDelete(null)}
-            />
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
-      {createPortal(
-        <AnimatePresence>
-          {showSettings && (
-            <SettingsModal
-              scheduleName={activeSchedule.name} groups={groups} members={members}
-              rotationConfig={activeSchedule.rotationConfig} pinned={activeSchedule.pinned}
-              assignmentMode={activeSchedule.assignmentMode} designThemeId={activeSchedule.designThemeId}
-              canDelete={state.schedules.length > 1}
-              onSave={onSaveSettings} onDuplicate={onDuplicateSchedule}
-              onDelete={() => { setShowSettings(false); setConfirmDelete(activeSchedule.id); }}
-              onClose={() => setShowSettings(false)}
-            />
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
-      {createPortal(
-        <AnimatePresence>
-          {showShare && activeSchedule.slug && activeSchedule.editToken && (
-            <ShareModal slug={activeSchedule.slug} editToken={activeSchedule.editToken} scheduleName={activeSchedule.name} onClose={() => setShowShare(false)} />
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
+      <ModalHost
+        modalType={modal.type}
+        deleteTargetId={modal.deleteTargetId}
+        showShare={showShare}
+        activeSchedule={activeSchedule}
+        schedules={state.schedules}
+        onAddSchedule={onAddSchedule}
+        onDeleteSchedule={onDeleteSchedule}
+        onDuplicateSchedule={onDuplicateSchedule}
+        onSaveSettings={onSaveSettings}
+        onCloseModal={closeModal}
+        onRequestDelete={() => openConfirmDelete(activeSchedule.id)}
+        onCloseShare={() => setShowShare(false)}
+      />
       {showOnboarding && <OnboardingOverlay onComplete={handleOnboardingComplete} />}
       <InstallPrompt />
     </main>
