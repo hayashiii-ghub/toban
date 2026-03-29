@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // api モジュールをモック
-vi.mock("./api", () => ({
-  updateSchedule: vi.fn(() => Promise.resolve()),
-}));
+vi.mock("./api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./api")>();
+  return {
+    ...actual,
+    updateSchedule: vi.fn(() => Promise.resolve()),
+  };
+});
 
 import {
   scheduleSyncDebounced,

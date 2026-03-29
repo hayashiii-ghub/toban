@@ -1,7 +1,6 @@
 import { drizzle } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
 import { schedules } from "../db/schema";
-import { ensureSchedulesSchema } from "../db/ensureSchema";
 
 const SLUG_PATTERN = /^[a-zA-Z0-9_-]{10,}$/;
 
@@ -55,7 +54,6 @@ export async function authenticateEditRequest(
     return { error: c.json({ error: "Edit token required" }, 401) };
   }
 
-  await ensureSchedulesSchema(c.env.DB);
   const db = drizzle(c.env.DB);
 
   const [row] = await db

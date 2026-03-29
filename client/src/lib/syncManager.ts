@@ -1,4 +1,4 @@
-import { updateSchedule } from "./api";
+import { updateSchedule, ApiError } from "./api";
 import type { Schedule } from "@shared/types";
 
 const DEBOUNCE_MS = 3000;
@@ -62,8 +62,25 @@ async function doSync(
     }, options);
     statusCallback?.(schedule.id, "synced");
     return true;
-  } catch {
+  } catch (error) {
     statusCallback?.(schedule.id, "error");
+
+    if (error instanceof ApiError) {
+      if (error.status === 401 || error.status === 403) {
+        console.warn("認証エラー: スケジュール同期をスキップ");
+        pendingSchedules.delete(schedule.id);
+      } else if (error.status === 400) {
+        console.warn("データ不正: スケジュール同期をスキップ");
+        pendingSchedules.delete(schedule.id);
+      } else {
+        // 5xx server errors — keep pending for retry on reconnect
+        console.error("サーバーエラー: スケジュール同期に失敗", error);
+      }
+    } else {
+      // Network errors etc. — keep pending for retry on reconnect
+      console.error("ネットワークエラー: スケジュール同期に失敗", error);
+    }
+
     return false;
   }
 }
