@@ -101,7 +101,7 @@ describe("getSchedule", () => {
 
     expect(result).toEqual(mockScheduleResponse);
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockFetch).toHaveBeenCalledWith("/api/schedules/abc123");
+    expect(mockFetch).toHaveBeenCalledWith("/api/schedules/abc123", expect.objectContaining({ signal: expect.any(AbortSignal) }));
   });
 
   it("404エラー時にApiErrorをスローする", async () => {

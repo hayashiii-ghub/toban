@@ -18,6 +18,22 @@ interface Env {
 
 const CLEANUP_RETENTION_DAYS = 90;
 
+const HTML_SECURITY_HEADERS: Record<string, string> = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Content-Security-Policy":
+    "object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+};
+
+function withSecurityHeaders(response: Response): Response {
+  const newResponse = new Response(response.body, response);
+  for (const [key, value] of Object.entries(HTML_SECURITY_HEADERS)) {
+    newResponse.headers.set(key, value);
+  }
+  return newResponse;
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
@@ -45,17 +61,17 @@ export default {
     // 共有スケジュールページ — bot用OGP注入
     const slugMatch = pathname.match(/^\/s\/([a-zA-Z0-9_-]+)$/);
     if (slugMatch && botRequest) {
-      return handleScheduleOgp(url, env, slugMatch[1]);
+      return withSecurityHeaders(await handleScheduleOgp(url, env, slugMatch[1]));
     }
 
     // テンプレート一覧ページ — bot用プリレンダリング
     if (pathname === "/templates" && botRequest) {
-      return new Response(renderTemplateListHtml(origin), {
+      return withSecurityHeaders(new Response(renderTemplateListHtml(origin), {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "public, max-age=86400",
         },
-      });
+      }));
     }
 
     // テンプレート詳細ページ — bot用プリレンダリング
@@ -63,16 +79,16 @@ export default {
     if (templateMatch && botRequest) {
       const html = renderTemplateDetailHtml(origin, templateMatch[1]);
       if (html) {
-        return new Response(html, {
+        return withSecurityHeaders(new Response(html, {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
             "Cache-Control": "public, max-age=86400",
           },
-        });
+        }));
       }
     }
 
-    return env.ASSETS.fetch(request);
+    return withSecurityHeaders(await env.ASSETS.fetch(request));
   },
 
   async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext) {

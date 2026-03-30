@@ -24,6 +24,21 @@ function parseResponse<T>(schema: { parse(data: unknown): T }, data: unknown, en
   }
 }
 
+/** リクエストタイムアウト（keepalive送信時は適用しない） */
+const FETCH_TIMEOUT_MS = 15_000;
+
+function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit & { keepalive?: boolean },
+): Promise<Response> {
+  if (init?.keepalive) return fetch(input, init);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  return fetch(input, { ...init, signal: controller.signal }).finally(() =>
+    clearTimeout(timeoutId),
+  );
+}
+
 /** Status codes that should never be retried (client errors). */
 function isRetriable(status: number): boolean {
   return status >= 500;
@@ -36,7 +51,7 @@ async function fetchWithRetry(
 ): Promise<Response> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const res = await fetch(input, init);
+      const res = await fetchWithTimeout(input, init);
       if (res.ok || !isRetriable(res.status)) return res;
       // 5xx: retry
       if (attempt < maxRetries) {
@@ -77,7 +92,7 @@ export async function createSchedule(
 }
 
 export async function getSchedule(slug: string): Promise<ScheduleResponseData> {
-  const res = await fetch(`${BASE}/${slug}`);
+  const res = await fetchWithTimeout(`${BASE}/${slug}`);
   if (!res.ok) throw new ApiError(`Failed to fetch schedule: ${res.status}`, res.status);
   const json = await res.json();
   return parseResponse(scheduleResponseSchema, json, `GET /api/schedules/${slug}`);
@@ -87,7 +102,7 @@ export async function getScheduleForEdit(
   slug: string,
   editToken: string,
 ): Promise<ScheduleResponseData> {
-  const res = await fetch(`${BASE}/${slug}/edit`, {
+  const res = await fetchWithTimeout(`${BASE}/${slug}/edit`, {
     headers: { "x-edit-token": editToken },
   });
   if (!res.ok) throw new ApiError(`Failed to fetch editable schedule: ${res.status}`, res.status);
@@ -122,7 +137,7 @@ export async function publishSchedule(slug: string, editToken: string): Promise<
 }
 
 export async function deleteSchedule(slug: string, editToken: string): Promise<void> {
-  const res = await fetch(`${BASE}/${slug}`, {
+  const res = await fetchWithTimeout(`${BASE}/${slug}`, {
     method: "DELETE",
     headers: { "x-edit-token": editToken },
   });
