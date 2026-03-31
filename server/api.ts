@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 import { bodyLimit } from "hono/body-limit";
 import scheduleRoutes from "./routes/schedules";
 import contactRoutes from "./routes/contact";
-import { getLastSchedulesSchemaRepair, getSchedulesSchemaStatus } from "./db/ensureSchema";
+import { getSchedulesSchemaStatus } from "./db/ensureSchema";
 
 type Env = { Bindings: { DB: D1Database; ENVIRONMENT?: string; RESEND_API_KEY: string } };
 
