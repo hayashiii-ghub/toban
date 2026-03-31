@@ -211,7 +211,7 @@ export function renderTemplateListHtml(origin: string): string {
 <script type="application/ld+json">${faqSchema}</script>
 </head>
 <body>
-<header><nav><a href="${origin}/">toban</a> / <span>テンプレート一覧</span></nav></header>
+<header><nav><a href="${origin}/about">toban について</a> / <span>テンプレート一覧</span></nav></header>
 <main>
 <h1>${escapeHtml(title)}</h1>
 <p>${escapeHtml(desc)}</p>
@@ -219,7 +219,7 @@ ${categoryHtml}
 <h2>よくある質問</h2>
 <dl>${COMMON_FAQ.map((f) => `<dt>${escapeHtml(f.question)}</dt><dd>${escapeHtml(f.answer)}</dd>`).join("")}</dl>
 </main>
-<footer><a href="${origin}/">toban トップへ</a></footer>
+<footer><a href="${origin}/about">toban について</a></footer>
 </body>
 </html>`;
 }
@@ -245,7 +245,7 @@ export function renderTemplateDetailHtml(origin: string, slug: string): string |
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "toban", item: `${origin}/` },
+        { "@type": "ListItem", position: 1, name: "toban について", item: `${origin}/about` },
         { "@type": "ListItem", position: 2, name: "テンプレート一覧", item: `${origin}/templates` },
         { "@type": "ListItem", position: 3, name: seo.heading },
       ],
@@ -271,7 +271,7 @@ export function renderTemplateDetailHtml(origin: string, slug: string): string |
 <script type="application/ld+json">${faqAndBreadcrumb}</script>
 </head>
 <body>
-<header><nav><a href="${origin}/">toban</a> / <a href="${origin}/templates">テンプレート一覧</a> / <span>${escapeHtml(seo.heading)}</span></nav></header>
+<header><nav><a href="${origin}/about">toban について</a> / <a href="${origin}/templates">テンプレート一覧</a> / <span>${escapeHtml(seo.heading)}</span></nav></header>
 <main>
 ${cat ? `<p>${cat.emoji} ${escapeHtml(cat.label)}</p>` : ""}
 <h1>${escapeHtml(seo.heading)}</h1>
@@ -280,7 +280,7 @@ ${cat ? `<p>${cat.emoji} ${escapeHtml(cat.label)}</p>` : ""}
 <h2>よくある質問</h2>
 <dl>${COMMON_FAQ.map((f) => `<dt>${escapeHtml(f.question)}</dt><dd>${escapeHtml(f.answer)}</dd>`).join("")}</dl>
 </main>
-<footer><a href="${origin}/templates">テンプレート一覧に戻る</a> | <a href="${origin}/">toban トップへ</a></footer>
+<footer><a href="${origin}/templates">テンプレート一覧に戻る</a> | <a href="${origin}/about">toban について</a></footer>
 </body>
 </html>`;
 }

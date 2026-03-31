@@ -14,6 +14,7 @@ for (const t of TEMPLATE_SEO_DATA) byCategory.get(t.categoryId)?.push(t);
 
 export default function TemplatesPage() {
   useEffect(() => {
+    window.scrollTo(0, 0);
     document.title = "当番表テンプレート一覧｜無料で使えるtoban（トバン）";
     return () => {
       document.title = "toban（トバン）｜無料で当番表を作成・印刷・共有";
@@ -24,8 +25,8 @@ export default function TemplatesPage() {
     <main className="min-h-screen" style={{ backgroundColor: "#FFF8E7" }}>
       {/* ヘッダー */}
       <div className="px-4 pt-8 pb-6 text-center">
-        <Link href="/" className="inline-block mb-4 text-sm font-bold text-amber-700 hover:underline">
-          ← toban トップへ
+        <Link href="/about" className="inline-block mb-4 text-sm font-bold text-amber-700 hover:underline">
+          ← toban について
         </Link>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
           当番表テンプレート一覧

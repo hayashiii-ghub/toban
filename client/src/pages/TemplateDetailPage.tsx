@@ -35,7 +35,7 @@ export default function TemplateDetailPage() {
       {/* パンくず */}
       <nav className="px-4 pt-6 pb-2 max-w-3xl mx-auto" aria-label="パンくず">
         <ol className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
-          <li><Link href="/" className="hover:underline text-amber-700">toban</Link></li>
+          <li><Link href="/about" className="hover:underline text-amber-700">toban について</Link></li>
           <li aria-hidden="true">/</li>
           <li><Link href="/templates" className="hover:underline text-amber-700">テンプレート一覧</Link></li>
           <li aria-hidden="true">/</li>
@@ -153,8 +153,8 @@ export default function TemplateDetailPage() {
               {
                 "@type": "ListItem",
                 position: 1,
-                name: "toban",
-                item: window.location.origin + "/",
+                name: "toban について",
+                item: window.location.origin + "/about",
               },
               {
                 "@type": "ListItem",

@@ -187,6 +187,7 @@ export default function LandingPage() {
   const [showFloatingCta, setShowFloatingCta] = useState(false);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     document.title = "toban（トバン）｜無料で当番表を作成・印刷・共有";
   }, []);
 
