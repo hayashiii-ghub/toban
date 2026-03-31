@@ -130,7 +130,7 @@ export default function SharedScheduleView() {
     };
     saveState(newState);
     toast.success("当番表をコピーしました");
-    navigate("/");
+    navigate("/app");
   }, [schedule, navigate]);
 
   if (loading) {
@@ -149,7 +149,7 @@ export default function SharedScheduleView() {
           {error ?? "スケジュールが見つかりませんでした"}
         </h1>
         <a
-          href="/"
+          href="/app"
           className="theme-border theme-shadow-sm px-4 py-2 font-bold text-sm transition-all duration-150 theme-hover-lift"
           style={{ backgroundColor: "var(--dt-current-highlight)", borderRadius: "var(--dt-border-radius-sm)" }}
         >
@@ -239,7 +239,7 @@ export default function SharedScheduleView() {
             この当番表を自分用にコピー
           </button>
           <a
-            href="/"
+            href="/app"
             className="theme-border theme-shadow-sm inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 font-bold text-sm transition-all duration-150 theme-hover-lift"
             style={{ backgroundColor: "var(--dt-current-highlight)", borderRadius: "var(--dt-border-radius-sm)" }}
           >

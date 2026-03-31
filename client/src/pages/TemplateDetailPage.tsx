@@ -65,7 +65,7 @@ export default function TemplateDetailPage() {
         {/* CTA */}
         <div className="mt-6 flex flex-col sm:flex-row gap-3">
           <a
-            href={`/?template=${seo.templateIndex}`}
+            href={`/app?template=${seo.templateIndex}`}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3 shadow-md transition-colors"
           >
             このテンプレートで当番表を作る
@@ -193,7 +193,7 @@ export default function TemplateDetailPage() {
       {/* 下部CTA */}
       <div className="px-4 pb-6 max-w-3xl mx-auto flex flex-col sm:flex-row gap-3 items-center justify-center">
         <a
-          href={`/?template=${seo.templateIndex}`}
+          href={`/app?template=${seo.templateIndex}`}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3 shadow-md transition-colors"
         >
           このテンプレートで当番表を作る

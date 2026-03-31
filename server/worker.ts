@@ -5,6 +5,7 @@ import { schedules } from "./db/schema";
 import {
   isBot,
   handleScheduleOgp,
+  renderLandingPageHtml,
   renderTemplateListHtml,
   renderTemplateDetailHtml,
   handleSitemap,
@@ -14,6 +15,7 @@ import {
 interface Env {
   ASSETS: { fetch: typeof fetch };
   DB: D1Database;
+  RESEND_API_KEY: string;
 }
 
 const CLEANUP_RETENTION_DAYS = 90;
@@ -58,6 +60,16 @@ export default {
     const ua = request.headers.get("user-agent") ?? "";
     const botRequest = isBot(ua);
 
+    // LP — bot用プリレンダリング
+    if (pathname === "/" && botRequest) {
+      return withSecurityHeaders(new Response(renderLandingPageHtml(origin), {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "public, max-age=86400",
+        },
+      }));
+    }
+
     // 共有スケジュールページ — bot用OGP注入
     const slugMatch = pathname.match(/^\/s\/([a-zA-Z0-9_-]+)$/);
     if (slugMatch && botRequest) {
@@ -86,6 +98,15 @@ export default {
           },
         }));
       }
+    }
+
+    // /app* — SPA フォールバック（静的ファイルが無い場合 index.html を返す）
+    if (pathname.startsWith("/app")) {
+      const assetResponse = await env.ASSETS.fetch(request);
+      if (assetResponse.status === 404) {
+        return withSecurityHeaders(await env.ASSETS.fetch(new Request(`${origin}/`, request)));
+      }
+      return withSecurityHeaders(assetResponse);
     }
 
     return withSecurityHeaders(await env.ASSETS.fetch(request));
