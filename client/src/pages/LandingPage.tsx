@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import {
   ArrowRight,
@@ -183,30 +183,15 @@ const featuredTemplates = TEMPLATE_CATEGORIES
   .slice(0, 6);
 
 export default function LandingPage() {
-  const heroRef = useRef<HTMLElement>(null);
-  const [showFloatingCta, setShowFloatingCta] = useState(false);
-
   useEffect(() => {
     window.scrollTo(0, 0);
     document.title = "toban（トバン）｜無料で当番表を作成・印刷・共有";
-  }, []);
-
-  useEffect(() => {
-    const hero = heroRef.current;
-    if (!hero) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setShowFloatingCta(!entry.isIntersecting),
-      { threshold: 0 },
-    );
-    observer.observe(hero);
-    return () => observer.disconnect();
   }, []);
 
   return (
     <main className="lp min-h-screen" style={{ backgroundColor: C.pageBg, fontFamily: "'M PLUS Rounded 1c', sans-serif" }}>
       {/* ── ヒーロー ── */}
       <section
-        ref={heroRef}
         className="px-4 py-16 sm:py-24 text-center"
         style={{ backgroundColor: C.heroBg }}
       >
@@ -372,17 +357,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* ── フローティングCTA（ヒーローが見えなくなったら表示） ── */}
-      {showFloatingCta && (
-        <Link
-          href="/"
-          className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-xl bg-[#2E6B4F] hover:bg-[#245A41] text-white font-bold px-5 py-3 shadow-lg transition-colors print:hidden"
-        >
-          当番表を作る
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      )}
 
       {/* JSON-LD */}
       <script
