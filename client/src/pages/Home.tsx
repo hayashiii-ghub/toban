@@ -1,23 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
 import { NewScheduleModal } from "@/components/NewScheduleModal";
 import { ModalHost } from "@/components/ModalHost";
-import { useAutoSync } from "@/hooks/useAutoSync";
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
-import { useModalManager } from "@/hooks/useModalManager";
-import { useOnboarding } from "@/hooks/useOnboarding";
-import { usePrintMode } from "@/hooks/usePrintMode";
-import { useRotationAnimation } from "@/hooks/useRotationAnimation";
-import { useScheduleManager } from "@/hooks/useScheduleManager";
-import { useShareFlow } from "@/hooks/useShareFlow";
-import { useTabDragDrop } from "@/hooks/useTabDragDrop";
-import { useViewTab } from "@/hooks/useViewTab";
-import { safeGetItem } from "@/lib/storage";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
 import { DesignThemeProvider } from "@/contexts/DesignThemeContext";
-import { STORAGE_KEY, TEMPLATES } from "@/rotation/constants";
-import { computeAssignments, getEffectiveRotation } from "@/rotation/utils";
 import { AssignmentsGrid } from "@/features/home/AssignmentsGrid";
 import { RotationControls } from "@/features/home/RotationControls";
 import { RotationQuickTable } from "@/features/home/RotationQuickTable";
@@ -27,106 +13,13 @@ import { ScheduleHeader } from "@/features/home/ScheduleHeader";
 import { ScheduleTabs } from "@/features/home/ScheduleTabs";
 import { TodayBanner } from "@/features/home/TodayBanner";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { useHomeState } from "./useHomeState";
 import "./home.css";
 
 export default function Home() {
-  const {
-    state, setState, activeSchedule, updateActiveSchedule,
-    handleAddSchedule, handleDeleteSchedule, handleDuplicateSchedule,
-    handleSaveSettings, selectSchedule, handleTabDrop, addScheduleFromTemplateIndex,
-    saveState,
-  } = useScheduleManager();
+  const s = useHomeState();
 
-  const { syncStatus, prepareForManualSave } = useAutoSync(activeSchedule, updateActiveSchedule);
-  const { isSharing, showShare, setShowShare, handleShare } = useShareFlow({ activeSchedule, prepareForManualSave, updateActiveSchedule });
-  const { modal, openSettings, openNewSchedule, openConfirmDelete, closeModal } = useModalManager();
-  const { isAnimating, direction, handleRotate } = useRotationAnimation(setState);
-  const { draggedTabId, dragOverTabId, onDragStart, onDragOver, onDrop, onDragEnd } = useTabDragDrop(handleTabDrop);
-  const { handlePrint } = usePrintMode();
-  const { viewTab, changeTab } = useViewTab();
-  const { showOnboarding, handleOnboardingComplete } = useOnboarding({
-    hasSchedule: !!activeSchedule,
-    isModalOpen: modal.type !== null,
-    isShareOpen: showShare,
-  });
-
-  const mountedRef = useRef(false);
-
-  const groups = useMemo(() => activeSchedule?.groups ?? [], [activeSchedule]);
-  const members = useMemo(() => activeSchedule?.members ?? [], [activeSchedule]);
-  const effectiveRotation = useMemo(
-    () => (activeSchedule ? getEffectiveRotation(activeSchedule) : 0),
-    [activeSchedule],
-  );
-  const isDateMode = activeSchedule?.rotationConfig?.mode === "date";
-  const assignments = useMemo(
-    () => activeSchedule ? computeAssignments(groups, members, effectiveRotation, activeSchedule.assignmentMode) : [],
-    [groups, members, effectiveRotation, activeSchedule],
-  );
-
-  useBodyScrollLock(modal.type !== null || showShare);
-
-  useEffect(() => { saveState(state); }, [state, saveState]);
-
-  useEffect(() => {
-    if (mountedRef.current) return;
-    mountedRef.current = true;
-    const params = new URLSearchParams(window.location.search);
-    const templateParam = params.get("template");
-    if (templateParam !== null) {
-      const idx = parseInt(templateParam, 10);
-      if (addScheduleFromTemplateIndex(idx, TEMPLATES)) {
-        closeModal();
-      }
-    } else if (safeGetItem(STORAGE_KEY) === null) {
-      openNewSchedule();
-    }
-    window.history.replaceState({}, "", window.location.pathname);
-  }, [addScheduleFromTemplateIndex, closeModal, openNewSchedule]);
-
-  const onAddSchedule = useCallback((template: Parameters<typeof handleAddSchedule>[0]) => {
-    handleAddSchedule(template);
-    closeModal();
-  }, [handleAddSchedule, closeModal]);
-
-  const onDeleteSchedule = useCallback((scheduleId: string) => {
-    handleDeleteSchedule(scheduleId);
-    closeModal();
-  }, [handleDeleteSchedule, closeModal]);
-
-  const onDuplicateSchedule = useCallback(() => {
-    handleDuplicateSchedule();
-    closeModal();
-  }, [handleDuplicateSchedule, closeModal]);
-
-  const onSaveSettings = useCallback((...args: Parameters<typeof handleSaveSettings>) => {
-    handleSaveSettings(...args);
-    closeModal();
-  }, [handleSaveSettings, closeModal]);
-
-  const onReorderTab = useCallback(
-    (scheduleId: string, direction: "left" | "right") => {
-      const { schedules } = state;
-      const pinned = schedules.filter((s) => s.pinned);
-      const unpinned = schedules.filter((s) => !s.pinned);
-      const sorted = [...pinned, ...unpinned];
-      const idx = sorted.findIndex((s) => s.id === scheduleId);
-      if (idx < 0) return;
-      if (sorted[idx].pinned) return;
-      if (direction === "right") {
-        const neighbor = sorted[idx + 1];
-        if (!neighbor) return;
-        handleTabDrop(scheduleId, neighbor.id);
-      } else {
-        const neighbor = sorted[idx - 1];
-        if (!neighbor || neighbor.pinned) return;
-        handleTabDrop(scheduleId, neighbor.id);
-      }
-    },
-    [state.schedules, handleTabDrop],
-  );
-
-  if (!activeSchedule) {
+  if (!s.activeSchedule) {
     return (
       <DesignThemeProvider themeId={undefined}>
         <main className="rotation-page min-h-screen" style={{ backgroundColor: "var(--dt-page-bg)" }}>
@@ -137,95 +30,95 @@ export default function Home() {
               type="button"
               className="theme-border px-6 py-3 font-bold theme-hover-lift transition-all duration-150"
               style={{ backgroundColor: "var(--dt-button-bg)", borderRadius: "var(--dt-border-radius-sm)", color: "var(--dt-text)" }}
-              onClick={openNewSchedule}
+              onClick={s.openNewSchedule}
             >
               当番表を作成
             </button>
           </div>
           {createPortal(
             <AnimatePresence>
-              {modal.type === "newSchedule" && <NewScheduleModal onSelect={onAddSchedule} onClose={closeModal} />}
+              {s.modal.type === "newSchedule" && <NewScheduleModal onSelect={s.onAddSchedule} onClose={s.closeModal} />}
             </AnimatePresence>,
             document.body,
           )}
-          {showOnboarding && <OnboardingOverlay onComplete={handleOnboardingComplete} />}
+          {s.showOnboarding && <OnboardingOverlay onComplete={s.handleOnboardingComplete} />}
           <InstallPrompt />
         </main>
       </DesignThemeProvider>
     );
   }
 
-  const rotationLabel = effectiveRotation === 0 ? "初期" : `${effectiveRotation}回目`;
+  const rotationLabel = s.effectiveRotation === 0 ? "初期" : `${s.effectiveRotation}回目`;
 
   return (
-    <DesignThemeProvider themeId={activeSchedule.designThemeId}>
+    <DesignThemeProvider themeId={s.activeSchedule.designThemeId}>
     <main className="rotation-page min-h-screen" style={{ backgroundColor: "var(--dt-page-bg)" }}>
-      <ScheduleHeader scheduleName={activeSchedule.name} rotationLabel={rotationLabel} />
+      <ScheduleHeader scheduleName={s.activeSchedule.name} rotationLabel={rotationLabel} />
 
       <RotationControls
-        rotation={effectiveRotation}
+        rotation={s.effectiveRotation}
         rotationLabel={rotationLabel}
-        isSharing={isSharing}
-        isDateMode={isDateMode}
-        isAnimating={isAnimating}
-        onPrint={() => handlePrint(viewTab)}
-        onOpenSettings={openSettings}
-        onShare={handleShare}
-        onRotateForward={() => handleRotate("forward")}
-        onRotateBackward={() => handleRotate("backward")}
-        syncStatus={syncStatus}
-        hasSlug={!!activeSchedule.slug}
+        isSharing={s.isSharing}
+        isDateMode={s.isDateMode}
+        isAnimating={s.isAnimating}
+        onPrint={() => s.handlePrint(s.viewTab)}
+        onOpenSettings={s.openSettings}
+        onShare={s.handleShare}
+        onRotateForward={() => s.handleRotate("forward")}
+        onRotateBackward={() => s.handleRotate("backward")}
+        syncStatus={s.syncStatus}
+        hasSlug={!!s.activeSchedule.slug}
       />
 
-      {isDateMode && (
-        <TodayBanner groups={groups} members={members} rotation={effectiveRotation} assignmentMode={activeSchedule.assignmentMode} />
+      {s.isDateMode && (
+        <TodayBanner groups={s.groups} members={s.members} rotation={s.effectiveRotation} assignmentMode={s.activeSchedule.assignmentMode} />
       )}
 
       <ScheduleTabs
-        schedules={state.schedules}
-        activeScheduleId={state.activeScheduleId}
-        draggedTabId={draggedTabId}
-        dragOverTabId={dragOverTabId}
-        onSelectSchedule={selectSchedule}
-        onAddSchedule={openNewSchedule}
-        onDragStart={onDragStart}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-        onDragEnd={onDragEnd}
-        onReorderTab={onReorderTab}
+        schedules={s.state.schedules}
+        activeScheduleId={s.state.activeScheduleId}
+        draggedTabId={s.draggedTabId}
+        dragOverTabId={s.dragOverTabId}
+        onSelectSchedule={s.selectSchedule}
+        onAddSchedule={s.openNewSchedule}
+        onDragStart={s.onDragStart}
+        onDragOver={s.onDragOver}
+        onDrop={s.onDrop}
+        onDragEnd={s.onDragEnd}
+        onReorderTab={s.onReorderTab}
       />
 
-      <ViewTabs viewTab={viewTab} onChangeTab={changeTab} />
+      <ViewTabs viewTab={s.viewTab} onChangeTab={s.changeTab} />
 
-      {viewTab === "cards" && (
+      {s.viewTab === "cards" && (
         <AssignmentsGrid
-          assignments={assignments} direction={direction} rotation={effectiveRotation}
-          scheduleId={activeSchedule.id} stagger={isAnimating}
-          assignmentMode={activeSchedule.assignmentMode}
+          assignments={s.assignments} direction={s.direction} rotation={s.effectiveRotation}
+          scheduleId={s.activeSchedule.id} stagger={s.isAnimating}
+          assignmentMode={s.activeSchedule.assignmentMode}
         />
       )}
-      {viewTab === "table" && (
-        <RotationQuickTable groups={groups} members={members} rotation={effectiveRotation} assignmentMode={activeSchedule.assignmentMode} />
+      {s.viewTab === "table" && (
+        <RotationQuickTable groups={s.groups} members={s.members} rotation={s.effectiveRotation} assignmentMode={s.activeSchedule.assignmentMode} />
       )}
-      {viewTab === "calendar" && (
-        <RotationCalendar groups={groups} members={members} rotation={effectiveRotation} rotationConfig={activeSchedule.rotationConfig} assignmentMode={activeSchedule.assignmentMode} />
+      {s.viewTab === "calendar" && (
+        <RotationCalendar groups={s.groups} members={s.members} rotation={s.effectiveRotation} rotationConfig={s.activeSchedule.rotationConfig} assignmentMode={s.activeSchedule.assignmentMode} />
       )}
 
       <ModalHost
-        modalType={modal.type}
-        deleteTargetId={modal.deleteTargetId}
-        showShare={showShare}
-        activeSchedule={activeSchedule}
-        schedules={state.schedules}
-        onAddSchedule={onAddSchedule}
-        onDeleteSchedule={onDeleteSchedule}
-        onDuplicateSchedule={onDuplicateSchedule}
-        onSaveSettings={onSaveSettings}
-        onCloseModal={closeModal}
-        onRequestDelete={() => openConfirmDelete(activeSchedule.id)}
-        onCloseShare={() => setShowShare(false)}
+        modalType={s.modal.type}
+        deleteTargetId={s.modal.deleteTargetId}
+        showShare={s.showShare}
+        activeSchedule={s.activeSchedule}
+        schedules={s.state.schedules}
+        onAddSchedule={s.onAddSchedule}
+        onDeleteSchedule={s.onDeleteSchedule}
+        onDuplicateSchedule={s.onDuplicateSchedule}
+        onSaveSettings={s.onSaveSettings}
+        onCloseModal={s.closeModal}
+        onRequestDelete={() => s.openConfirmDelete(s.activeSchedule!.id)}
+        onCloseShare={() => s.setShowShare(false)}
       />
-      {showOnboarding && <OnboardingOverlay onComplete={handleOnboardingComplete} />}
+      {s.showOnboarding && <OnboardingOverlay onComplete={s.handleOnboardingComplete} />}
       <InstallPrompt />
     </main>
     </DesignThemeProvider>

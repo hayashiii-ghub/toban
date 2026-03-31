@@ -12,6 +12,7 @@ export default tseslint.config(
       "*.config.ts",
       "scripts/",
       "server/db/migrations/",
+      "playwright-report/",
     ],
   },
   eslint.configs.recommended,

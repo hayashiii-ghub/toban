@@ -7,6 +7,10 @@ import {
   computeDateRotationForDate,
   loadState,
   normalizeRotation,
+  sanitizeAppState,
+  sanitizeMember,
+  sanitizeSchedule,
+  sanitizeTaskGroup,
 } from "./utils";
 
 afterEach(() => {
@@ -210,6 +214,263 @@ describe("computeAssignments - 専用メンバー", () => {
 
     expect(assignments[0].member.name).toBe("Aさん");
     expect(assignments.every(a => a.member.name !== "Dさん")).toBe(true);
+  });
+});
+
+// ─── Phase 1: サニタイズ関数テスト ───
+
+describe("sanitizeTaskGroup", () => {
+  it("returns null for non-object input", () => {
+    expect(sanitizeTaskGroup(null)).toBeNull();
+    expect(sanitizeTaskGroup("string")).toBeNull();
+    expect(sanitizeTaskGroup(42)).toBeNull();
+  });
+
+  it("returns null when id is missing or empty", () => {
+    expect(sanitizeTaskGroup({ emoji: "🧹", tasks: ["掃除"] })).toBeNull();
+    expect(sanitizeTaskGroup({ id: "  ", emoji: "🧹", tasks: ["掃除"] })).toBeNull();
+  });
+
+  it("returns null when emoji is missing or empty", () => {
+    expect(sanitizeTaskGroup({ id: "g1", tasks: ["掃除"] })).toBeNull();
+    expect(sanitizeTaskGroup({ id: "g1", emoji: "", tasks: ["掃除"] })).toBeNull();
+  });
+
+  it("returns null when all tasks are invalid (empty/non-string)", () => {
+    expect(sanitizeTaskGroup({ id: "g1", emoji: "🧹", tasks: [123, "", "  "] })).toBeNull();
+  });
+
+  it("filters out invalid tasks and trims valid ones", () => {
+    const result = sanitizeTaskGroup({ id: "g1", emoji: "🧹", tasks: [" 掃除 ", 123, "", "給食"] });
+    expect(result).toEqual({ id: "g1", emoji: "🧹", tasks: ["掃除", "給食"] });
+  });
+
+  it("preserves valid memberIds and ignores invalid ones", () => {
+    const result = sanitizeTaskGroup({ id: "g1", emoji: "🧹", tasks: ["掃除"], memberIds: ["m1", 123, "", "m2"] });
+    expect(result?.memberIds).toEqual(["m1", "m2"]);
+  });
+
+  it("omits memberIds when all are invalid", () => {
+    const result = sanitizeTaskGroup({ id: "g1", emoji: "🧹", tasks: ["掃除"], memberIds: [123, null] });
+    expect(result?.memberIds).toBeUndefined();
+  });
+});
+
+describe("sanitizeMember", () => {
+  const validMember = { id: "m1", name: "田中", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" };
+
+  it("returns null for non-object input", () => {
+    expect(sanitizeMember(null)).toBeNull();
+    expect(sanitizeMember("string")).toBeNull();
+  });
+
+  it("returns null when required color fields are missing", () => {
+    expect(sanitizeMember({ id: "m1", name: "田中", color: "#000" })).toBeNull();
+    expect(sanitizeMember({ id: "m1", name: "田中", color: "#000", bgColor: "#fff" })).toBeNull();
+  });
+
+  it("returns null when name is empty or whitespace", () => {
+    expect(sanitizeMember({ ...validMember, name: "" })).toBeNull();
+    expect(sanitizeMember({ ...validMember, name: "  " })).toBeNull();
+  });
+
+  it("trims name and preserves all fields", () => {
+    const result = sanitizeMember({ ...validMember, name: " 田中 " });
+    expect(result?.name).toBe("田中");
+    expect(result?.color).toBe("#3B82F6");
+  });
+
+  it("preserves skipped boolean, ignores non-boolean", () => {
+    expect(sanitizeMember({ ...validMember, skipped: true })?.skipped).toBe(true);
+    expect(sanitizeMember({ ...validMember, skipped: "yes" })?.skipped).toBeUndefined();
+  });
+});
+
+describe("sanitizeSchedule", () => {
+  const validGroup = { id: "g1", emoji: "🧹", tasks: ["掃除"] };
+  const validMember = { id: "m1", name: "田中", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" };
+  const validSchedule = { id: "s1", name: "テスト", rotation: 0, groups: [validGroup], members: [validMember] };
+
+  it("returns null for non-object input", () => {
+    expect(sanitizeSchedule(null)).toBeNull();
+  });
+
+  it("returns null when id or name is missing", () => {
+    expect(sanitizeSchedule({ ...validSchedule, id: "" })).toBeNull();
+    expect(sanitizeSchedule({ ...validSchedule, name: "  " })).toBeNull();
+  });
+
+  it("returns null when rotation is NaN or Infinity", () => {
+    expect(sanitizeSchedule({ ...validSchedule, rotation: NaN })).toBeNull();
+    expect(sanitizeSchedule({ ...validSchedule, rotation: Infinity })).toBeNull();
+  });
+
+  it("returns null when all groups are invalid", () => {
+    expect(sanitizeSchedule({ ...validSchedule, groups: [{ id: "g1" }] })).toBeNull();
+  });
+
+  it("returns null when all members are invalid", () => {
+    expect(sanitizeSchedule({ ...validSchedule, members: [{ id: "m1" }] })).toBeNull();
+  });
+
+  it("preserves valid assignmentMode, ignores invalid", () => {
+    expect(sanitizeSchedule({ ...validSchedule, assignmentMode: "task" })?.assignmentMode).toBe("task");
+    expect(sanitizeSchedule({ ...validSchedule, assignmentMode: "member" })?.assignmentMode).toBe("member");
+    expect(sanitizeSchedule({ ...validSchedule, assignmentMode: "invalid" })?.assignmentMode).toBeUndefined();
+  });
+
+  it("preserves slug, editToken, designThemeId, pinned", () => {
+    const result = sanitizeSchedule({
+      ...validSchedule, slug: "abc", editToken: "tok123", designThemeId: "sakura", pinned: true,
+    });
+    expect(result?.slug).toBe("abc");
+    expect(result?.editToken).toBe("tok123");
+    expect(result?.designThemeId).toBe("sakura");
+    expect(result?.pinned).toBe(true);
+  });
+
+  it("sanitizes rotationConfig and strips invalid cycleDays", () => {
+    const result = sanitizeSchedule({
+      ...validSchedule,
+      rotationConfig: { mode: "date", startDate: "2026-03-01", cycleDays: 0, skipSaturday: true },
+    });
+    expect(result?.rotationConfig?.mode).toBe("date");
+    expect(result?.rotationConfig?.cycleDays).toBeUndefined();
+    expect(result?.rotationConfig?.skipSaturday).toBe(true);
+  });
+
+  it("migrates weekdaysOnly to skipSaturday+skipSunday", () => {
+    const result = sanitizeSchedule({
+      ...validSchedule,
+      rotationConfig: { mode: "manual", weekdaysOnly: true },
+    });
+    expect(result?.rotationConfig?.skipSaturday).toBe(true);
+    expect(result?.rotationConfig?.skipSunday).toBe(true);
+  });
+});
+
+describe("sanitizeAppState", () => {
+  const validGroup = { id: "g1", emoji: "🧹", tasks: ["掃除"] };
+  const validMember = { id: "m1", name: "田中", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" };
+  const validSchedule = { id: "s1", name: "テスト", rotation: 0, groups: [validGroup], members: [validMember] };
+
+  it("returns null for non-object or missing schedules array", () => {
+    expect(sanitizeAppState(null)).toBeNull();
+    expect(sanitizeAppState({ schedules: "not array" })).toBeNull();
+  });
+
+  it("returns null when all schedules are invalid", () => {
+    expect(sanitizeAppState({ schedules: [{ id: "broken" }], activeScheduleId: "broken" })).toBeNull();
+  });
+
+  it("drops invalid schedules and keeps valid ones", () => {
+    const result = sanitizeAppState({
+      schedules: [{ id: "broken" }, validSchedule],
+      activeScheduleId: "s1",
+    });
+    expect(result?.schedules).toHaveLength(1);
+    expect(result?.schedules[0].id).toBe("s1");
+  });
+
+  it("falls back activeScheduleId to first schedule when invalid", () => {
+    const result = sanitizeAppState({
+      schedules: [validSchedule],
+      activeScheduleId: "nonexistent",
+    });
+    expect(result?.activeScheduleId).toBe("s1");
+  });
+
+  it("falls back activeScheduleId when it is not a string", () => {
+    const result = sanitizeAppState({
+      schedules: [validSchedule],
+      activeScheduleId: 123,
+    });
+    expect(result?.activeScheduleId).toBe("s1");
+  });
+});
+
+// ─── Phase 2: computeDateRotationForDate エッジケース ───
+
+describe("computeDateRotationForDate - edge cases", () => {
+  it("combined skip: Saturday + Sunday + holiday does not double-count", () => {
+    // 2026-01-01 (Thu) → 2026-01-04 (Sun=祝日振替? No, just regular Sun)
+    // Use 2026-03-02 (Mon) start → 2026-03-21 (Sat, 春分の日=祝日) → skip both as Saturday and holiday
+    const result = computeDateRotationForDate(
+      { mode: "date", startDate: "2026-03-02", cycleDays: 1, skipSaturday: true, skipSunday: true, skipHolidays: true },
+      3,
+      new Date(2026, 2, 23), // Mon after the weekend with holiday
+    );
+    // 3/2(Mon)=day0, 3/3=1, 3/4=2, 3/5=3, 3/6=4, (3/7sat skip, 3/8sun skip)
+    // 3/9=5, 3/10=6, 3/11=7, 3/12=8, 3/13=9, (3/14sat skip, 3/15sun skip)
+    // 3/16=10, 3/17=11, 3/18=12, 3/19=13, 3/20(春分の日=fri, skip)
+    // (3/21sat skip, 3/22sun skip), 3/23=14
+    // 14 effective days / cycleDays=1 = 14 cycles → 14 % 3 = 2
+    expect(result).toBe(2);
+  });
+
+  it("cycleDays=0 returns 0", () => {
+    expect(
+      computeDateRotationForDate(
+        { mode: "date", startDate: "2026-03-01", cycleDays: 0 },
+        3,
+        new Date(2026, 2, 10),
+      ),
+    ).toBe(0);
+  });
+
+  it("negative cycleDays returns 0", () => {
+    expect(
+      computeDateRotationForDate(
+        { mode: "date", startDate: "2026-03-01", cycleDays: -5 },
+        3,
+        new Date(2026, 2, 10),
+      ),
+    ).toBe(0);
+  });
+
+  it("handles leap year correctly (2028-02-28 → 2028-03-01)", () => {
+    // 2028 is a leap year: Feb 28 → Feb 29 → Mar 1 = 2 days
+    const result = computeDateRotationForDate(
+      { mode: "date", startDate: "2028-02-28", cycleDays: 1 },
+      3,
+      new Date(2028, 2, 1), // Mar 1
+    );
+    // 2 effective days / 1 = 2 cycles → 2 % 3 = 2
+    expect(result).toBe(2);
+  });
+
+  it("large rotation wraps correctly with modular arithmetic", () => {
+    // 100 weekdays: 2026-03-02 (Mon) + 100 weekdays
+    // With no skip, just 100 calendar days from 3/2 → 6/10
+    const result = computeDateRotationForDate(
+      { mode: "date", startDate: "2026-03-02", cycleDays: 1 },
+      3,
+      new Date(2026, 5, 10), // June 10 = 100 days later
+    );
+    // 100 cycles % 3 = 1
+    expect(result).toBe(1);
+  });
+
+  it("startDate on a skipped Sunday: target on next Monday", () => {
+    // 2026-03-01 is a Sunday
+    const result = computeDateRotationForDate(
+      { mode: "date", startDate: "2026-03-01", cycleDays: 1, skipSunday: true },
+      3,
+      new Date(2026, 2, 2), // Monday March 2
+    );
+    // diffDays = 1, skipDays: 3/1 (Sun) is in range and skipped → 1 skip
+    // effectiveDays = 1 - 1 = 0 → 0 cycles → 0
+    expect(result).toBe(0);
+  });
+
+  it("memberCount=1 always returns 0", () => {
+    expect(
+      computeDateRotationForDate(
+        { mode: "date", startDate: "2026-03-01", cycleDays: 1 },
+        1,
+        new Date(2026, 5, 15),
+      ),
+    ).toBe(0);
   });
 });
 

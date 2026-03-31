@@ -21,7 +21,7 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function sanitizeTaskGroup(group: unknown): TaskGroup | null {
+export function sanitizeTaskGroup(group: unknown): TaskGroup | null {
   if (!isRecord(group)) return null;
 
   const tasks = Array.isArray(group.tasks)
@@ -52,7 +52,7 @@ function sanitizeTaskGroup(group: unknown): TaskGroup | null {
   return result;
 }
 
-function sanitizeMember(member: unknown): Member | null {
+export function sanitizeMember(member: unknown): Member | null {
   if (!isRecord(member)) return null;
 
   if (
@@ -78,7 +78,7 @@ function sanitizeMember(member: unknown): Member | null {
   return result;
 }
 
-function sanitizeSchedule(schedule: unknown): Schedule | null {
+export function sanitizeSchedule(schedule: unknown): Schedule | null {
   if (!isRecord(schedule)) return null;
 
   const groups = Array.isArray(schedule.groups)
@@ -157,7 +157,7 @@ function sanitizeSchedule(schedule: unknown): Schedule | null {
   return result;
 }
 
-function sanitizeAppState(state: unknown): AppState | null {
+export function sanitizeAppState(state: unknown): AppState | null {
   if (!isRecord(state) || !Array.isArray(state.schedules)) {
     return null;
   }

@@ -38,6 +38,7 @@
 ├── client/src/
 │   ├── pages/                # ページコンポーネント
 │   │   ├── Home.tsx          # メインページ（/ — 当番表の作成・編集）
+│   │   ├── useHomeState.ts   # Homeページの状態管理・hook集約
 │   │   ├── LandingPage.tsx   # ランディングページ（/about）
 │   │   ├── SharedScheduleView.tsx  # 共有リンクの閲覧ページ
 │   │   ├── TemplatesPage.tsx # テンプレート一覧（SEO用LP）
