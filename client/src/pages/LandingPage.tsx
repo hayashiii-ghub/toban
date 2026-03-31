@@ -308,7 +308,7 @@ export default function LandingPage() {
           <div className="relative">
             <button
               onClick={handleShare}
-              className="inline-flex items-center justify-center gap-2 rounded-xl font-bold px-8 py-3 text-base sm:text-lg border-2 transition-colors cursor-pointer min-w-[200px] sm:min-w-[220px]"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl font-bold px-8 py-3 text-base sm:text-lg border-2 transition-colors cursor-pointer min-w-[200px] sm:min-w-[220px]"
               style={{ borderColor: C.heroText, color: C.heroText }}
             >
               <Share2 className="w-5 h-5" />
@@ -318,7 +318,7 @@ export default function LandingPage() {
           </div>
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2 rounded-xl font-bold px-8 py-3 text-base sm:text-lg shadow-lg transition-colors min-w-[200px] sm:min-w-[220px]"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl font-bold px-8 py-3 text-base sm:text-lg shadow-lg transition-colors min-w-[200px] sm:min-w-[220px]"
             style={{ backgroundColor: C.heroText, color: C.primary }}
           >
             当番表を作る
