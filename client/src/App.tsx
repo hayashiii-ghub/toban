@@ -2,9 +2,11 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import SharedScheduleView from "@/pages/SharedScheduleView";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
+import { CircleHelp } from "lucide-react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import LandingPage from "./pages/LandingPage";
 import Home from "./pages/Home";
 import TemplatesPage from "./pages/TemplatesPage";
 import TemplateDetailPage from "./pages/TemplateDetailPage";
@@ -14,7 +16,8 @@ import Transfer from "./pages/Transfer";
 function Router() {
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
+      <Route path={"/"} component={LandingPage} />
+      <Route path={"/app"} component={Home} />
       <Route path={"/templates"} component={TemplatesPage} />
       <Route path={"/templates/:slug"} component={TemplateDetailPage} />
       <Route path={"/s/:slug"} component={SharedScheduleView} />
@@ -23,6 +26,37 @@ function Router() {
       {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
+  );
+}
+
+function AppFooter() {
+  const [location] = useLocation();
+  // LP は独自のフッターを持つため非表示
+  if (location === "/") return null;
+
+  return (
+    <footer className="py-2 pr-3 text-right print:hidden md:fixed md:bottom-0 md:right-0 md:z-50">
+      <div className="flex items-center justify-end gap-1 md:inline-flex">
+        <a
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center w-8 h-8 rounded-full text-muted-foreground/60 hover:text-muted-foreground/80 hover:bg-muted/40 transition-colors"
+          title="toban について"
+        >
+          <CircleHelp className="w-5 h-5" />
+        </a>
+        <a
+          href="https://shigoto.dev"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-0 px-2 text-sm text-muted-foreground/60 hover:text-muted-foreground/80 transition-colors"
+        >
+          <img src="/hayashigoto-logo.png" alt="はやしごと" className="h-9 w-auto" />
+          <span>hay@shigoto.dev</span>
+        </a>
+      </div>
+    </footer>
   );
 }
 
@@ -41,17 +75,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
-          <footer className="py-2 pr-3 text-right print:hidden md:fixed md:bottom-0 md:right-0 md:z-50">
-            <a
-              href="https://shigoto.dev"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-0 px-2 text-sm text-muted-foreground/60 hover:text-muted-foreground/80 transition-colors md:inline-flex"
-            >
-              <img src="/hayashigoto-logo.png" alt="はやしごと" className="h-9 w-auto" />
-              <span>hay@shigoto.dev</span>
-            </a>
-          </footer>
+          <AppFooter />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

@@ -77,7 +77,7 @@ class ErrorBoundary extends Component<Props, State> {
 
             <div className="flex gap-3">
               <a
-                href="/"
+                href="/app"
                 className="theme-border theme-shadow-sm inline-flex items-center gap-2 px-5 py-2.5 font-bold text-sm transition-all duration-150 theme-hover-lift"
                 style={{ borderRadius: "10px", backgroundColor: "#fff", color: "#1a1a1a" }}
               >

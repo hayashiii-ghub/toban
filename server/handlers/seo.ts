@@ -78,6 +78,92 @@ export async function handleScheduleOgp(
   });
 }
 
+// ─── LP のプリレンダリング (bot用) ───
+
+export function renderLandingPageHtml(origin: string): string {
+  const title = "toban（トバン）｜無料で当番表を作成・印刷・共有";
+  const desc = "掃除当番・給食当番・日直のローテーション表を無料でかんたんに作成・印刷・共有できるWebアプリ。アカウント登録不要、ブラウザだけで完結します。";
+
+  const faqHtml = COMMON_FAQ.map(
+    (f) => `<dt>${escapeHtml(f.question)}</dt><dd>${escapeHtml(f.answer)}</dd>`,
+  ).join("");
+
+  const templateListHtml = TEMPLATE_SEO_DATA.slice(0, 6)
+    .map(
+      (t) =>
+        `<li><a href="${origin}/templates/${t.slug}">${escapeHtml(t.heading)}</a></li>`,
+    )
+    .join("");
+
+  const schema = JSON.stringify([
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      name: "toban",
+      url: `${origin}/`,
+      description: desc,
+      applicationCategory: "UtilitiesApplication",
+      operatingSystem: "All",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: COMMON_FAQ.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: { "@type": "Answer", text: faq.answer },
+      })),
+    },
+  ]);
+
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${escapeHtml(title)}</title>
+<meta name="description" content="${escapeHtml(desc)}">
+<link rel="canonical" href="${origin}/">
+<meta property="og:title" content="${escapeHtml(title)}">
+<meta property="og:description" content="${escapeHtml(desc)}">
+<meta property="og:url" content="${origin}/">
+<meta property="og:type" content="website">
+<meta property="og:image" content="${origin}/pwa-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:site_name" content="toban">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtml(title)}">
+<meta name="twitter:description" content="${escapeHtml(desc)}">
+<meta name="twitter:image" content="${origin}/pwa-512.png">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<script type="application/ld+json">${schema}</script>
+</head>
+<body>
+<main>
+<h1>${escapeHtml(title)}</h1>
+<p>${escapeHtml(desc)}</p>
+<a href="${origin}/app">当番表を作る</a>
+<h2>tobanの特徴</h2>
+<ul>
+<li>登録不要 — アカウント不要、ブラウザだけで完結</li>
+<li>印刷がきれい — カード・一覧表・カレンダーの3形式</li>
+<li>URLで共有 — LINEやメールで送れる</li>
+<li>完全無料 — すべての機能を無料で利用可能</li>
+</ul>
+<h2>すぐ使えるテンプレート</h2>
+<ul>${templateListHtml}</ul>
+<a href="${origin}/templates">テンプレート一覧を見る</a>
+<h2>よくある質問</h2>
+<dl>${faqHtml}</dl>
+</main>
+<footer><a href="${origin}/app">当番表を作る</a> | <a href="${origin}/templates">テンプレート一覧</a></footer>
+</body>
+</html>`;
+}
+
 // ─── テンプレートページのプリレンダリング (bot用) ───
 
 export function renderTemplateListHtml(origin: string): string {
@@ -190,7 +276,7 @@ export function renderTemplateDetailHtml(origin: string, slug: string): string |
 ${cat ? `<p>${cat.emoji} ${escapeHtml(cat.label)}</p>` : ""}
 <h1>${escapeHtml(seo.heading)}</h1>
 <p>${escapeHtml(seo.intro)}</p>
-<a href="${origin}/?template=${seo.templateIndex}">このテンプレートで当番表を作る</a>
+<a href="${origin}/app?template=${seo.templateIndex}">このテンプレートで当番表を作る</a>
 <h2>よくある質問</h2>
 <dl>${COMMON_FAQ.map((f) => `<dt>${escapeHtml(f.question)}</dt><dd>${escapeHtml(f.answer)}</dd>`).join("")}</dl>
 </main>
@@ -270,6 +356,7 @@ export function handleRobots(origin: string): Response {
   const text = `User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /app
 Disallow: /transfer
 
 Sitemap: ${origin}/sitemap.xml

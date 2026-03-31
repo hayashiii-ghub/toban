@@ -1,0 +1,19 @@
+/* LP: 日本語の改行制御 */
+
+/* Chrome 119+ / Edge: フレーズ単位で改行 */
+.lp {
+  word-break: auto-phrase;
+}
+
+/* 見出し・短文: 行の長さを均等化し、孤立文字を防止 */
+.lp h1,
+.lp h2,
+.lp .lp-balance {
+  text-wrap: balance;
+}
+
+/* 説明文: 末尾の孤立を抑制 */
+.lp p,
+.lp .lp-pretty {
+  text-wrap: pretty;
+}

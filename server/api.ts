@@ -2,9 +2,10 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { bodyLimit } from "hono/body-limit";
 import scheduleRoutes from "./routes/schedules";
+import contactRoutes from "./routes/contact";
 import { getLastSchedulesSchemaRepair, getSchedulesSchemaStatus } from "./db/ensureSchema";
 
-type Env = { Bindings: { DB: D1Database; ENVIRONMENT?: string } };
+type Env = { Bindings: { DB: D1Database; ENVIRONMENT?: string; RESEND_API_KEY: string } };
 
 const app = new Hono<Env>();
 
@@ -98,5 +99,6 @@ app.get("/api/health/schema", async (c) => {
 });
 
 app.route("/api/schedules", scheduleRoutes);
+app.route("/api/contact", contactRoutes);
 
 export default app;

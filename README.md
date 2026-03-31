@@ -6,6 +6,7 @@
 
 ## 主な機能
 
+- **ランディングページ** — サービス紹介・特徴・テンプレート紹介・Q&A・お問い合わせフォーム
 - **32種類のテンプレート** — 学校・PTA・介護施設・自治会・飲食店・家庭など幅広いシーンをカバー（チェックリスト系テンプレートも対応）
 - **3つの表示形式** — カード・早見表・カレンダーを切り替え
 - **日付自動ローテーション** — 土日・祝日スキップ対応。開始日と周期を設定すれば手動操作不要
@@ -36,7 +37,8 @@
 ```
 ├── client/src/
 │   ├── pages/                # ページコンポーネント
-│   │   ├── Home.tsx          # メインページ（当番表の作成・編集）
+│   │   ├── LandingPage.tsx   # ランディングページ（/）
+│   │   ├── Home.tsx          # メインページ（/app — 当番表の作成・編集）
 │   │   ├── SharedScheduleView.tsx  # 共有リンクの閲覧ページ
 │   │   ├── TemplatesPage.tsx # テンプレート一覧（SEO用LP）
 │   │   ├── TemplateDetailPage.tsx # テンプレート詳細（個別LP）
@@ -49,7 +51,7 @@
 ├── server/
 │   ├── worker.ts             # Cloudflare Workers エントリーポイント
 │   ├── api.ts                # Hono APIアプリ定義
-│   ├── routes/               # APIルートハンドラ
+│   ├── routes/               # APIルートハンドラ（schedules, contact）
 │   └── db/                   # Drizzle スキーマ・マイグレーション
 ├── shared/                   # フロント・バックエンド共有の型定義・Zodスキーマ
 └── functions/                # Cloudflare Pages Functions エントリーポイント
@@ -81,6 +83,7 @@ pnpm run deploy:cf     # migration 適用込みで Cloudflare へデプロイ
 
 - `CLOUDFLARE_D1_DATABASE_ID` — D1 データベースID
 - `CLOUDFLARE_D1_PREVIEW_DATABASE_ID` — プレビュー用 D1 データベースID（任意）
+- `RESEND_API_KEY` — Resend APIキー（お問い合わせフォーム送信用、`wrangler secret put RESEND_API_KEY`）
 
 ## ライセンス
 
