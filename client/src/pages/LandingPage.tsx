@@ -269,8 +269,10 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", close);
   }, [showShareMenu]);
 
+  const isMobile = typeof navigator !== "undefined" && /iPhone|iPad|Android/i.test(navigator.userAgent);
+
   const handleShare = async () => {
-    if (navigator.share) {
+    if (isMobile && navigator.share) {
       try {
         await navigator.share({ title: SHARE_TITLE, text: SHARE_TEXT, url: SHARE_URL });
         return;
