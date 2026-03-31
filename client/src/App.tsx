@@ -31,8 +31,9 @@ function Router() {
 
 function AppFooter() {
   const [location] = useLocation();
-  // LP は独自のフッターを持つため非表示
-  if (location === "/") return null;
+  // アプリ本体と共有ページのみ表示
+  const showFooter = location === "/app" || location.startsWith("/s/");
+  if (!showFooter) return null;
 
   return (
     <footer className="py-2 pr-3 text-right print:hidden md:fixed md:bottom-0 md:right-0 md:z-50">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import {
   ArrowRight,
@@ -183,14 +183,29 @@ const featuredTemplates = TEMPLATE_CATEGORIES
   .slice(0, 6);
 
 export default function LandingPage() {
+  const heroRef = useRef<HTMLElement>(null);
+  const [showFloatingCta, setShowFloatingCta] = useState(false);
+
   useEffect(() => {
     document.title = "toban（トバン）｜無料で当番表を作成・印刷・共有";
+  }, []);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowFloatingCta(!entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(hero);
+    return () => observer.disconnect();
   }, []);
 
   return (
     <main className="lp min-h-screen" style={{ backgroundColor: C.pageBg, fontFamily: "'M PLUS Rounded 1c', sans-serif" }}>
       {/* ── ヒーロー ── */}
       <section
+        ref={heroRef}
         className="px-4 py-16 sm:py-24 text-center"
         style={{ backgroundColor: C.heroBg }}
       >
@@ -357,20 +372,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 最終CTA ── */}
-      <section className="px-4 py-12 sm:py-16 text-center" style={{ backgroundColor: C.heroBg }}>
-        <p className="text-base sm:text-lg font-bold mb-4" style={{ color: C.heroText }}>
-          当番表をかんたんに作ってみませんか？
-        </p>
+      {/* ── フローティングCTA（ヒーローが見えなくなったら表示） ── */}
+      {showFloatingCta && (
         <Link
           href="/app"
-          className="inline-flex items-center justify-center gap-2 rounded-xl font-bold px-8 py-3 text-base sm:text-lg shadow-lg transition-colors"
-          style={{ backgroundColor: C.heroText, color: C.primary }}
+          className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-xl bg-[#2E6B4F] hover:bg-[#245A41] text-white font-bold px-5 py-3 shadow-lg transition-colors print:hidden"
         >
           当番表を作る
-          <ArrowRight className="w-5 h-5" />
+          <ArrowRight className="w-4 h-4" />
         </Link>
-      </section>
+      )}
 
       {/* JSON-LD */}
       <script

@@ -1,10 +1,9 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
-import { ArrowRight, FileText, Printer, Share2, RotateCcw } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import {
   TEMPLATE_CATEGORIES,
   TEMPLATE_SEO_DATA,
-  COMMON_FAQ,
   type TemplateSEO,
 } from "@shared/seo-templates";
 import { TEMPLATES } from "@/rotation/constants";
@@ -37,29 +36,8 @@ export default function TemplatesPage() {
         </p>
       </div>
 
-      {/* 特徴セクション */}
-      <div className="px-4 pb-8">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { icon: FileText, label: "登録不要", sub: "ブラウザだけで完結" },
-            { icon: Printer, label: "印刷対応", sub: "画像保存もOK" },
-            { icon: Share2, label: "URL共有", sub: "QRコードも対応" },
-            { icon: RotateCcw, label: "自動ローテーション", sub: "日付で自動切替" },
-          ].map(({ icon: Icon, label, sub }) => (
-            <div
-              key={label}
-              className="rounded-xl border border-amber-200 bg-white/80 p-3 text-center"
-            >
-              <Icon className="w-5 h-5 mx-auto mb-1 text-amber-600" />
-              <div className="text-sm font-bold text-gray-800">{label}</div>
-              <div className="text-xs text-gray-500">{sub}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* カテゴリ別テンプレート */}
-      <div className="px-4 pb-12">
+      <div className="px-4 pb-24">
         <div className="max-w-4xl mx-auto flex flex-col gap-10">
           {TEMPLATE_CATEGORIES.map((cat) => {
             const templates = byCategory.get(cat.id);
@@ -110,52 +88,15 @@ export default function TemplatesPage() {
         </div>
       </div>
 
-      {/* FAQ */}
-      <div className="px-4 pb-16 bg-amber-50/50">
-        <div className="max-w-3xl mx-auto pt-10">
-          <h2 className="text-lg font-extrabold text-gray-900 mb-6 text-center">
-            よくある質問
-          </h2>
-          <dl className="flex flex-col gap-4">
-            {COMMON_FAQ.map((faq) => (
-              <div key={faq.question} className="rounded-xl bg-white border border-gray-200 p-4">
-                <dt className="text-sm font-bold text-gray-900">{faq.question}</dt>
-                <dd className="text-sm text-gray-600 mt-2 leading-relaxed">{faq.answer}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </div>
+      {/* 固定CTAボタン */}
+      <a
+        href="/app"
+        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-xl bg-[#2E6B4F] hover:bg-[#245A41] text-white font-bold px-5 py-3 shadow-lg transition-colors print:hidden"
+      >
+        当番表を作る
+        <ArrowRight className="w-4 h-4" />
+      </a>
 
-      {/* CTA */}
-      <div className="px-4 pb-12 text-center">
-        <a
-          href="/app"
-          className="inline-flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3 shadow-md transition-colors"
-        >
-          当番表を作成する
-          <ArrowRight className="w-4 h-4" />
-        </a>
-      </div>
-
-      {/* JSON-LD: FAQPage */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            mainEntity: COMMON_FAQ.map((faq) => ({
-              "@type": "Question",
-              name: faq.question,
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: faq.answer,
-              },
-            })),
-          }),
-        }}
-      />
     </main>
   );
 }
