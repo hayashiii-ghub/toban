@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowLeft } from "lucide-react";
 import {
   TEMPLATE_CATEGORIES,
   TEMPLATE_SEO_DATA,
@@ -23,23 +23,29 @@ export default function TemplatesPage() {
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#FFF8E7" }}>
+      {/* パンくず */}
+      <nav className="px-4 pt-6 pb-2 max-w-3xl mx-auto" aria-label="パンくず">
+        <ol className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
+          <li><Link href="/about" className="hover:underline text-amber-700">toban について</Link></li>
+          <li aria-hidden="true">/</li>
+          <li className="text-gray-700 font-bold">テンプレート一覧</li>
+        </ol>
+      </nav>
+
       {/* ヘッダー */}
-      <div className="px-4 pt-8 pb-6 text-center">
-        <Link href="/about" className="inline-block mb-4 text-sm font-bold text-amber-700 hover:underline">
-          ← toban について
-        </Link>
+      <div className="px-4 pb-6 max-w-3xl mx-auto">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
           当番表テンプレート一覧
         </h1>
-        <p className="mt-3 text-sm sm:text-base text-gray-600 max-w-2xl mx-auto leading-relaxed">
+        <p className="mt-4 text-sm sm:text-base text-gray-600 leading-relaxed">
           掃除当番・給食当番・日直など、すぐ使える<strong>無料テンプレート</strong>を{TEMPLATE_SEO_DATA.length}種類ご用意しました。
           テンプレートを選んで、メンバーや担当を自由に編集するだけで当番表が完成します。
         </p>
       </div>
 
       {/* カテゴリ別テンプレート */}
-      <div className="px-4 pb-24">
-        <div className="max-w-4xl mx-auto flex flex-col gap-10">
+      <div className="px-4 pb-10">
+        <div className="max-w-3xl mx-auto flex flex-col gap-10">
           {TEMPLATE_CATEGORIES.map((cat) => {
             const templates = byCategory.get(cat.id);
             if (!templates || templates.length === 0) return null;
@@ -87,6 +93,17 @@ export default function TemplatesPage() {
             );
           })}
         </div>
+      </div>
+
+      {/* toban についてに戻るリンク */}
+      <div className="px-4 pb-24 max-w-3xl mx-auto text-center">
+        <Link
+          href="/about"
+          className="inline-flex items-center gap-2 text-sm font-bold text-amber-700 hover:underline"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          toban について
+        </Link>
       </div>
 
       {/* 固定CTAボタン */}
