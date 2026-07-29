@@ -9,7 +9,12 @@ import {
   TEMPLATE_CATEGORIES_EN,
   type TemplateSEO,
 } from "@shared/seo-templates";
-import { breadcrumbSchema, serializeJsonLd } from "@shared/jsonLd";
+import { TEMPLATE_CONTENT } from "@shared/template-content";
+import {
+  breadcrumbSchema,
+  faqPageSchema,
+  serializeJsonLd,
+} from "@shared/jsonLd";
 import { TEMPLATES } from "@/rotation/constants";
 import type { ScheduleTemplate } from "@/rotation/types";
 import { useT, useLocale } from "@/i18n";
@@ -40,9 +45,9 @@ function TemplateDetailContent({
   const { locale } = useLocale();
   const category = TEMPLATE_CATEGORIES.find(c => c.id === seo.categoryId);
   const en = locale === "en" ? TEMPLATE_SEO_EN[seo.slug] : undefined;
-  const titleBase = en?.heading ?? seo.title;
+  // ブランド名は付けない。SERP の表示幅で末尾が切れ、差別化語のほうが落ちるため
   usePageMeta({
-    title: titleBase + t("templates.titleSuffix"),
+    title: en?.heading ?? seo.title,
     description: en?.intro ?? seo.description,
     path: `/templates/${slug}`,
   });
@@ -53,6 +58,8 @@ function TemplateDetailContent({
 
   const heading = en?.heading ?? seo.heading;
   const intro = en?.intro ?? seo.intro;
+  // 本文・FAQ は日本語のみ用意しているため、英語表示では出さない
+  const content = locale === "ja" ? TEMPLATE_CONTENT[seo.slug] : undefined;
   const catLabel = category
     ? locale === "en"
       ? (TEMPLATE_CATEGORIES_EN[category.id]?.label ?? category.label)
@@ -176,6 +183,51 @@ function TemplateDetailContent({
         </div>
       </section>
 
+      {/* 本文（テンプレート固有の運用解説） */}
+      {content && (
+        <section className="px-4 pb-10 max-w-3xl mx-auto">
+          {content.body.map(section => (
+            <div key={section.heading} className="mb-8 last:mb-0">
+              <h2 className="text-lg font-extrabold text-gray-900 mb-3">
+                {section.heading}
+              </h2>
+              {section.paragraphs.map((paragraph, i) => (
+                <p
+                  key={i}
+                  className="text-sm sm:text-base text-gray-600 leading-relaxed mb-3 last:mb-0"
+                >
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* よくある質問 */}
+      {content && content.faq.length > 0 && (
+        <section className="px-4 pb-10 max-w-3xl mx-auto">
+          <h2 className="text-lg font-extrabold text-gray-900 mb-4">
+            {heading}のよくある質問
+          </h2>
+          <dl>
+            {content.faq.map(item => (
+              <div
+                key={item.question}
+                className="rounded-xl border border-gray-200 bg-white p-4 mb-3 last:mb-0"
+              >
+                <dt className="text-sm font-bold text-gray-800 mb-2">
+                  {item.question}
+                </dt>
+                <dd className="text-sm text-gray-600 leading-relaxed">
+                  {item.answer}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
       {/* 一覧に戻るリンク */}
       <div className="px-4 pb-6 max-w-3xl mx-auto text-center">
         <Link
@@ -195,11 +247,14 @@ function TemplateDetailContent({
         <RelatedTemplates currentSlug={seo.slug} categoryId={seo.categoryId} />
       </section>
 
-      {/* JSON-LD: BreadcrumbList（serializeJsonLd が < をエスケープ） */}
+      {/* JSON-LD: BreadcrumbList + FAQPage（serializeJsonLd が < をエスケープ） */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: serializeJsonLd(
+          __html: serializeJsonLd([
+            ...(content && content.faq.length > 0
+              ? [faqPageSchema(content.faq)]
+              : []),
             breadcrumbSchema([
               {
                 name: "toban について",
@@ -210,8 +265,8 @@ function TemplateDetailContent({
                 item: window.location.origin + "/templates",
               },
               { name: template.name },
-            ])
-          ),
+            ]),
+          ]),
         }}
       />
 

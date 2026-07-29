@@ -57,6 +57,8 @@
 │   ├── routes/               # APIルートハンドラ（schedules, contact）
 │   └── db/                   # Drizzle スキーマ・マイグレーション
 └── shared/                   # フロント・バックエンド共有の型定義・Zodスキーマ
+    ├── seo-templates.ts      # テンプレLPのメタ情報（title/description/intro）と共通FAQ
+    └── template-content.ts   # テンプレLPごとの本文・FAQ（ページ固有の読み物）
 ```
 
 ## コマンド

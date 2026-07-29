@@ -15,6 +15,7 @@ import {
   serializeJsonLd,
 } from "../../shared/jsonLd";
 import { TEMPLATES } from "../../shared/templates";
+import { TEMPLATE_CONTENT } from "../../shared/template-content";
 
 interface Env {
   ASSETS: { fetch: typeof fetch };
@@ -244,6 +245,8 @@ ${buildSocialMetaTags({ title, description: desc, url: `${origin}/`, origin, typ
 
 export function renderTemplateListHtml(origin: string): string {
   const title = "当番表テンプレート一覧｜無料で使えるtoban（トバン）";
+  // h1 は見出しであってタイトルタグではない。ブランドサフィックスを含めない
+  const h1 = "当番表テンプレート一覧";
   const desc = `学校・保育園・介護施設・自治会・飲食店・家庭など、すぐ使える無料テンプレートを${TEMPLATE_SEO_DATA.length}種類ご用意。テンプレートを選んで、メンバーや担当を編集するだけで当番表が完成します。`;
 
   const categoryHtml = TEMPLATE_CATEGORIES.map(cat => {
@@ -272,7 +275,7 @@ ${buildSocialMetaTags({ title, description: desc, url: `${origin}/templates`, or
 <body>
 <header><nav><a href="${origin}/about">toban について</a> / <span>テンプレート一覧</span></nav></header>
 <main>
-<h1>${escapeHtml(title)}</h1>
+<h1>${escapeHtml(h1)}</h1>
 <p>${escapeHtml(desc)}</p>
 ${categoryHtml}
 </main>
@@ -289,15 +292,17 @@ export function renderTemplateDetailHtml(
   if (!seo) return null;
 
   const cat = TEMPLATE_CATEGORIES.find(c => c.id === seo.categoryId);
-  const fullTitle = `${seo.title}｜toban（トバン）`;
+  const content = TEMPLATE_CONTENT[slug];
 
-  const breadcrumb = serializeJsonLd(
+  // FAQ を持つページだけ FAQPage を出す（構造化データと本文の不一致を避ける）
+  const schema = serializeJsonLd([
+    ...(content && content.faq.length > 0 ? [faqPageSchema(content.faq)] : []),
     breadcrumbSchema([
       { name: "toban について", item: `${origin}/about` },
       { name: "テンプレート一覧", item: `${origin}/templates` },
       { name: seo.heading },
-    ])
-  );
+    ]),
+  ]);
 
   const template = TEMPLATES[seo.templateIndex];
   const previewHtml = template
@@ -338,17 +343,38 @@ export function renderTemplateDetailHtml(
           .join("")}</ul></section>`
       : "";
 
+  const bodyHtml = content
+    ? content.body
+        .map(
+          section =>
+            `<section><h2>${escapeHtml(section.heading)}</h2>${section.paragraphs
+              .map(p => `<p>${escapeHtml(p)}</p>`)
+              .join("")}</section>`
+        )
+        .join("")
+    : "";
+
+  const faqHtml =
+    content && content.faq.length > 0
+      ? `<section><h2>${escapeHtml(seo.heading)}のよくある質問</h2><dl>${content.faq
+          .map(
+            f =>
+              `<dt>${escapeHtml(f.question)}</dt><dd>${escapeHtml(f.answer)}</dd>`
+          )
+          .join("")}</dl></section>`
+      : "";
+
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>${escapeHtml(fullTitle)}</title>
+<title>${escapeHtml(seo.title)}</title>
 <meta name="description" content="${escapeHtml(seo.description)}">
 <link rel="canonical" href="${origin}/templates/${slug}">
-${buildSocialMetaTags({ title: fullTitle, description: seo.description, url: `${origin}/templates/${slug}`, origin, type: "article" })}
+${buildSocialMetaTags({ title: seo.title, description: seo.description, url: `${origin}/templates/${slug}`, origin, type: "article" })}
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<script type="application/ld+json">${breadcrumb}</script>
+<script type="application/ld+json">${schema}</script>
 </head>
 <body>
 <header><nav><a href="${origin}/about">toban について</a> / <a href="${origin}/templates">テンプレート一覧</a> / <span>${escapeHtml(seo.heading)}</span></nav></header>
@@ -358,6 +384,8 @@ ${cat ? `<p>${cat.emoji} ${escapeHtml(cat.label)}</p>` : ""}
 <p>${escapeHtml(seo.intro)}</p>
 <a href="${origin}/?template=${seo.templateIndex}">このテンプレートで当番表を作る</a>
 ${previewHtml}
+${bodyHtml}
+${faqHtml}
 ${relatedHtml}
 </main>
 <footer><a href="${origin}/templates">テンプレート一覧に戻る</a> | <a href="${origin}/about">toban について</a></footer>
