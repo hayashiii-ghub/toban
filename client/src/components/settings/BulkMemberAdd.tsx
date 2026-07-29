@@ -16,15 +16,24 @@ interface Props {
   onClose: () => void;
 }
 
-export function BulkMemberAdd({ members, groups, activeMemberIds, isTaskMode, onMembersChange, onGroupsChange, onClose }: Props) {
+export function BulkMemberAdd({
+  members,
+  groups,
+  activeMemberIds,
+  isTaskMode,
+  onMembersChange,
+  onGroupsChange,
+  onClose,
+}: Props) {
   const t = useT();
   const [bulkText, setBulkText] = useState("");
   const bulkNames = useMemo(
-    () => bulkText.split(/[\n,、\t]+/).flatMap((s) => {
-      const trimmed = s.trim();
-      return trimmed ? [trimmed] : [];
-    }),
-    [bulkText],
+    () =>
+      bulkText.split(/[\n,、\t]+/).flatMap(s => {
+        const trimmed = s.trim();
+        return trimmed ? [trimmed] : [];
+      }),
+    [bulkText]
   );
 
   const handleBulkAdd = () => {
@@ -38,7 +47,8 @@ export function BulkMemberAdd({ members, groups, activeMemberIds, isTaskMode, on
       return;
     }
     const newMembers = bulkNames.map((name, i) => {
-      const preset = MEMBER_PRESETS[(members.length + i) % MEMBER_PRESETS.length];
+      const preset =
+        MEMBER_PRESETS[(members.length + i) % MEMBER_PRESETS.length];
       return { id: generateId("m"), name, ...preset } as Member;
     });
     if (isTaskMode) {
@@ -51,11 +61,14 @@ export function BulkMemberAdd({ members, groups, activeMemberIds, isTaskMode, on
       }
       onGroupsChange(next);
     } else {
-      const newGroups = newMembers.map(() => ({
-        id: generateId("g"),
-        tasks: [t("settings.newTask")],
-        emoji: "✨",
-      } as TaskGroup));
+      const newGroups = newMembers.map(
+        () =>
+          ({
+            id: generateId("g"),
+            tasks: [t("settings.newTask")],
+            emoji: "✨",
+          }) as TaskGroup
+      );
       onMembersChange([...members, ...newMembers]);
       onGroupsChange([...groups, ...newGroups]);
     }
@@ -67,19 +80,28 @@ export function BulkMemberAdd({ members, groups, activeMemberIds, isTaskMode, on
     <div className="flex flex-col gap-2">
       <textarea
         value={bulkText}
-        onChange={(e) => setBulkText(e.target.value)}
-        placeholder={isTaskMode ? t("bulk.placeholderTask") : t("bulk.placeholderMember")}
+        onChange={e => setBulkText(e.target.value)}
+        placeholder={
+          isTaskMode ? t("bulk.placeholderTask") : t("bulk.placeholderMember")
+        }
         rows={5}
         className="theme-border px-3 py-2 text-sm font-medium resize-none"
-        style={{ borderRadius: "var(--dt-border-radius-sm)", backgroundColor: "#fff" }}
+        style={{
+          borderRadius: "var(--dt-border-radius-sm)",
+          backgroundColor: "#fff",
+        }}
         aria-label={isTaskMode ? t("bulk.ariaTask") : t("bulk.ariaMember")}
       />
       {bulkNames.length > 0 && (
-        <p className="text-xs font-bold" style={{ color: "var(--dt-text-secondary)" }}>
+        <p
+          className="text-xs font-bold"
+          style={{ color: "var(--dt-text-secondary)" }}
+        >
           {t("bulk.willAdd", { n: bulkNames.length })}
         </p>
       )}
-      <button type="button"
+      <button
+        type="button"
         onClick={handleBulkAdd}
         disabled={bulkNames.length === 0}
         className="theme-border theme-shadow-sm flex items-center justify-center gap-2 px-4 py-2.5 font-bold text-sm text-white transition-all duration-150 hover:translate-x-[-2px] hover:translate-y-[-2px] disabled:opacity-40 disabled:hover:translate-x-0 disabled:hover:translate-y-0"

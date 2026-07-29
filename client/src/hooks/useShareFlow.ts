@@ -1,8 +1,17 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { createSchedule, updateSchedule, publishSchedule, toScheduleData } from "@/lib/api";
+import {
+  createSchedule,
+  updateSchedule,
+  publishSchedule,
+  toScheduleData,
+} from "@/lib/api";
 import { getShareErrorMessage, type ShareStage } from "@/lib/shareFlow";
-import { clearPendingSync, pauseScheduleSync, resumeScheduleSync } from "@/lib/syncManager";
+import {
+  clearPendingSync,
+  pauseScheduleSync,
+  resumeScheduleSync,
+} from "@/lib/syncManager";
 import type { Schedule } from "@/rotation/types";
 
 interface UseShareFlowOptions {
@@ -11,7 +20,11 @@ interface UseShareFlowOptions {
   updateActiveSchedule: (updater: (schedule: Schedule) => Schedule) => void;
 }
 
-export function useShareFlow({ activeSchedule, prepareForManualSave, updateActiveSchedule }: UseShareFlowOptions) {
+export function useShareFlow({
+  activeSchedule,
+  prepareForManualSave,
+  updateActiveSchedule,
+}: UseShareFlowOptions) {
   const [isSharing, setIsSharing] = useState(false);
   const [showShare, setShowShare] = useState(false);
 
@@ -23,15 +36,20 @@ export function useShareFlow({ activeSchedule, prepareForManualSave, updateActiv
     setIsSharing(true);
     let stage: ShareStage = "save";
     try {
-      const preparedSchedule = (await prepareForManualSave()) ?? initialSchedule;
+      const preparedSchedule =
+        (await prepareForManualSave()) ?? initialSchedule;
       const data = toScheduleData(preparedSchedule);
 
       let shareTarget = preparedSchedule;
       if (preparedSchedule.slug && preparedSchedule.editToken) {
-        await updateSchedule(preparedSchedule.slug, preparedSchedule.editToken, data);
+        await updateSchedule(
+          preparedSchedule.slug,
+          preparedSchedule.editToken,
+          data
+        );
       } else {
         const result = await createSchedule(data);
-        updateActiveSchedule((s) => ({
+        updateActiveSchedule(s => ({
           ...s,
           slug: result.slug,
           editToken: result.editToken,

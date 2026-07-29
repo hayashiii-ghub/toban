@@ -53,7 +53,8 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
   }, [step.selector, updateTargetRect]);
 
   const tooltipStyle = useMemo(() => {
-    if (!targetRect) return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
+    if (!targetRect)
+      return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
 
     const padding = 12;
     const tooltipWidth = Math.min(280, window.innerWidth - 24);
@@ -81,7 +82,7 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
 
   const handleNext = useCallback(() => {
     if (currentStep < STEPS.length - 1) {
-      setCurrentStep((s) => s + 1);
+      setCurrentStep(s => s + 1);
     } else {
       onComplete();
     }
@@ -89,7 +90,7 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
 
   const handleBack = useCallback(() => {
     if (currentStep > 0) {
-      setCurrentStep((s) => s - 1);
+      setCurrentStep(s => s - 1);
     }
   }, [currentStep]);
 
@@ -174,8 +175,13 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ duration: 0.2 }}
-          onClick={(e) => e.stopPropagation()}
-          aria-label={t("onboarding.stepAria", { current: currentStep + 1, total: STEPS.length, title: stepTitle, desc: stepDescription })}
+          onClick={e => e.stopPropagation()}
+          aria-label={t("onboarding.stepAria", {
+            current: currentStep + 1,
+            total: STEPS.length,
+            title: stepTitle,
+            desc: stepDescription,
+          })}
         >
           <div
             className="theme-border p-4"
@@ -186,7 +192,10 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
               boxShadow: "var(--dt-shadow-card)",
             }}
           >
-            <div className="font-extrabold text-base mb-1" style={{ color: "var(--dt-text)" }}>
+            <div
+              className="font-extrabold text-base mb-1"
+              style={{ color: "var(--dt-text)" }}
+            >
               {stepTitle}
             </div>
             <div className="text-sm mb-4" style={{ color: "#444" }}>
@@ -201,8 +210,14 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
                     className="size-2.5 rounded-full"
                     style={
                       i === currentStep
-                        ? { backgroundColor: "var(--dt-current-highlight)", border: "2px solid var(--dt-border-color)" }
-                        : { backgroundColor: "transparent", border: "2px solid #ccc" }
+                        ? {
+                            backgroundColor: "var(--dt-current-highlight)",
+                            border: "2px solid var(--dt-border-color)",
+                          }
+                        : {
+                            backgroundColor: "transparent",
+                            border: "2px solid #ccc",
+                          }
                     }
                   />
                 ))}
@@ -210,7 +225,8 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
 
               <div className="flex items-center gap-2">
                 {currentStep === 0 ? (
-                  <button type="button"
+                  <button
+                    type="button"
                     onClick={onComplete}
                     className="px-3 py-1.5 text-xs font-bold"
                     style={{ color: "var(--dt-text-muted)" }}
@@ -218,7 +234,8 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
                     {t("onboarding.skip")}
                   </button>
                 ) : (
-                  <button type="button"
+                  <button
+                    type="button"
                     onClick={handleBack}
                     className="theme-border px-3 py-1.5 text-xs font-bold transition-all duration-150 theme-hover-lift"
                     style={{
@@ -231,7 +248,8 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
                     {t("onboarding.back")}
                   </button>
                 )}
-                <button type="button"
+                <button
+                  type="button"
                   onClick={handleNext}
                   className="px-3 py-1.5 text-xs font-bold transition-all duration-150 theme-hover-lift"
                   style={{
@@ -242,7 +260,9 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
                     color: "var(--dt-text)",
                   }}
                 >
-                  {currentStep === STEPS.length - 1 ? t("onboarding.start") : t("onboarding.next")}
+                  {currentStep === STEPS.length - 1
+                    ? t("onboarding.start")
+                    : t("onboarding.next")}
                 </button>
               </div>
             </div>

@@ -25,13 +25,19 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("[ErrorBoundary] キャッチされたエラー:", error);
-    console.error("[ErrorBoundary] コンポーネントスタック:", errorInfo.componentStack);
-    Sentry.captureException(error, { contexts: { react: { componentStack: errorInfo.componentStack ?? "" } } });
+    console.error(
+      "[ErrorBoundary] コンポーネントスタック:",
+      errorInfo.componentStack
+    );
+    Sentry.captureException(error, {
+      contexts: { react: { componentStack: errorInfo.componentStack ?? "" } },
+    });
   }
 
   render() {
     if (this.state.hasError) {
-      const errorMessage = this.state.error?.message || tStandalone("error.unknown");
+      const errorMessage =
+        this.state.error?.message || tStandalone("error.unknown");
       const errorStack = this.state.error?.stack;
 
       return (
@@ -41,39 +47,63 @@ class ErrorBoundary extends Component<Props, State> {
         >
           <div
             className="theme-border theme-shadow w-full max-w-xl p-8 flex flex-col items-center"
-            style={{ borderRadius: "var(--dt-border-radius)", backgroundColor: "var(--dt-card-bg)" }}
+            style={{
+              borderRadius: "var(--dt-border-radius)",
+              backgroundColor: "var(--dt-card-bg)",
+            }}
           >
             {/* クラッシュ画面でも警告は注意系のアンバー（ShareModal の注意チップと同系統）。赤は破壊操作専用 */}
             <div
               className="theme-border size-14 flex items-center justify-center mb-6"
               style={{ borderRadius: "50%", backgroundColor: "#FEF3C7" }}
             >
-              <AlertTriangle className="size-7" style={{ color: "#D97706" }} aria-hidden="true" />
+              <AlertTriangle
+                className="size-7"
+                style={{ color: "#D97706" }}
+                aria-hidden="true"
+              />
             </div>
 
-            <h2 className="text-xl font-extrabold mb-2" style={{ color: "var(--dt-text)" }}>
+            <h2
+              className="text-xl font-extrabold mb-2"
+              style={{ color: "var(--dt-text)" }}
+            >
               {tStandalone("error.unexpected")}
             </h2>
 
-            <p className="text-sm mb-6 text-center" style={{ color: "var(--dt-text-secondary)" }}>
+            <p
+              className="text-sm mb-6 text-center"
+              style={{ color: "var(--dt-text-secondary)" }}
+            >
               {errorMessage}
             </p>
 
             {errorStack && (
               <div className="w-full mb-6">
-                <button type="button"
-                  onClick={() => this.setState((s) => ({ showDetails: !s.showDetails }))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    this.setState(s => ({ showDetails: !s.showDetails }))
+                  }
                   className="text-xs font-medium mb-2 underline underline-offset-2"
                   style={{ color: "var(--dt-text-muted)" }}
                 >
-                  {this.state.showDetails ? tStandalone("error.hideDetails") : tStandalone("error.showDetails")}
+                  {this.state.showDetails
+                    ? tStandalone("error.hideDetails")
+                    : tStandalone("error.showDetails")}
                 </button>
                 {this.state.showDetails && (
                   <div
                     className="w-full p-4 overflow-auto text-left text-xs font-medium rounded-lg"
-                    style={{ backgroundColor: "#F5F5F5", color: "#555", maxHeight: "200px" }}
+                    style={{
+                      backgroundColor: "#F5F5F5",
+                      color: "#555",
+                      maxHeight: "200px",
+                    }}
                   >
-                    <pre className="whitespace-pre-wrap break-all">{errorStack}</pre>
+                    <pre className="whitespace-pre-wrap break-all">
+                      {errorStack}
+                    </pre>
                   </div>
                 )}
               </div>
@@ -83,12 +113,17 @@ class ErrorBoundary extends Component<Props, State> {
               <a
                 href="/"
                 className="theme-border theme-shadow-sm inline-flex items-center gap-2 px-5 py-2.5 font-bold text-sm transition-all duration-150 theme-hover-lift"
-                style={{ borderRadius: "10px", backgroundColor: "var(--dt-card-bg)", color: "var(--dt-text)" }}
+                style={{
+                  borderRadius: "10px",
+                  backgroundColor: "var(--dt-card-bg)",
+                  color: "var(--dt-text)",
+                }}
               >
                 <Home className="size-4" aria-hidden="true" />
                 {tStandalone("error.backHome")}
               </a>
-              <button type="button"
+              <button
+                type="button"
                 onClick={() => window.location.reload()}
                 className="theme-border theme-shadow-sm inline-flex items-center gap-2 px-5 py-2.5 font-bold text-sm text-white transition-all duration-150 theme-hover-lift"
                 style={{ borderRadius: "10px", backgroundColor: "#1a1a1a" }}

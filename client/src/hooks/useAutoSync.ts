@@ -38,7 +38,7 @@ function useSyncStatusSubscription(scheduleId: string | undefined): {
 function useAutoBackup(
   schedule: Schedule | undefined,
   onScheduleUpdate: ((updater: (s: Schedule) => Schedule) => void) | undefined,
-  setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>,
+  setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>
 ): {
   cancelPendingBackup: () => void;
   prepareForManualSave: () => Promise<Schedule | undefined>;
@@ -54,49 +54,53 @@ function useAutoBackup(
     scheduleRef.current = schedule;
   }, [schedule]);
 
-  const attemptAutoBackup = useCallback(async (s: Schedule) => {
-    // 最新の状態を再チェック — 別の経路で既に slug が付与されていたらスキップ
-    const latest = scheduleRef.current;
-    if (latest && latest.id === s.id && latest.slug && latest.editToken) return latest;
+  const attemptAutoBackup = useCallback(
+    async (s: Schedule) => {
+      // 最新の状態を再チェック — 別の経路で既に slug が付与されていたらスキップ
+      const latest = scheduleRef.current;
+      if (latest && latest.id === s.id && latest.slug && latest.editToken)
+        return latest;
 
-    if (isScheduleSyncPaused(s.id)) return s;
-    if (backupInFlightRef.current && backupPromiseRef.current) {
-      return backupPromiseRef.current;
-    }
-    // Only auto-backup if there are real members (at least 1 with a name)
-    const hasMembers = s.members.some(m => m.name.trim() !== "");
-    if (!hasMembers) return s;
-
-    // eslint-disable-next-line prefer-const -- assigned after IIFE captures the closure
-    let currentBackupPromise!: Promise<Schedule | undefined>;
-    const backupPromise = (async () => {
-      backupInFlightRef.current = true;
-      setSyncStatus("syncing");
-      try {
-        const result = await createSchedule(toScheduleData(s));
-        const updatedSchedule = {
-          ...s,
-          slug: result.slug,
-          editToken: result.editToken,
-        };
-        onScheduleUpdate?.(() => updatedSchedule);
-        setSyncStatus("synced");
-        return updatedSchedule;
-      } catch {
-        setSyncStatus("error");
-        return s;
-      } finally {
-        backupInFlightRef.current = false;
-        if (backupPromiseRef.current === currentBackupPromise) {
-          backupPromiseRef.current = null;
-        }
+      if (isScheduleSyncPaused(s.id)) return s;
+      if (backupInFlightRef.current && backupPromiseRef.current) {
+        return backupPromiseRef.current;
       }
-    })();
+      // Only auto-backup if there are real members (at least 1 with a name)
+      const hasMembers = s.members.some(m => m.name.trim() !== "");
+      if (!hasMembers) return s;
 
-    currentBackupPromise = backupPromise;
-    backupPromiseRef.current = backupPromise;
-    return backupPromise;
-  }, [onScheduleUpdate, setSyncStatus]);
+      // eslint-disable-next-line prefer-const -- assigned after IIFE captures the closure
+      let currentBackupPromise!: Promise<Schedule | undefined>;
+      const backupPromise = (async () => {
+        backupInFlightRef.current = true;
+        setSyncStatus("syncing");
+        try {
+          const result = await createSchedule(toScheduleData(s));
+          const updatedSchedule = {
+            ...s,
+            slug: result.slug,
+            editToken: result.editToken,
+          };
+          onScheduleUpdate?.(() => updatedSchedule);
+          setSyncStatus("synced");
+          return updatedSchedule;
+        } catch {
+          setSyncStatus("error");
+          return s;
+        } finally {
+          backupInFlightRef.current = false;
+          if (backupPromiseRef.current === currentBackupPromise) {
+            backupPromiseRef.current = null;
+          }
+        }
+      })();
+
+      currentBackupPromise = backupPromise;
+      backupPromiseRef.current = backupPromise;
+      return backupPromise;
+    },
+    [onScheduleUpdate, setSyncStatus]
+  );
 
   // Cleanup backup timer on unmount
   useEffect(() => {
@@ -122,7 +126,13 @@ function useAutoBackup(
     return scheduleRef.current;
   }, [cancelPendingBackup]);
 
-  return { cancelPendingBackup, prepareForManualSave, attemptAutoBackup, scheduleRef, backupTimerRef };
+  return {
+    cancelPendingBackup,
+    prepareForManualSave,
+    attemptAutoBackup,
+    scheduleRef,
+    backupTimerRef,
+  };
 }
 
 function useSyncOnChange(
@@ -130,7 +140,7 @@ function useSyncOnChange(
   attemptAutoBackup: (s: Schedule) => Promise<Schedule | undefined>,
   onScheduleUpdate: ((updater: (s: Schedule) => Schedule) => void) | undefined,
   scheduleRef: React.MutableRefObject<Schedule | undefined>,
-  backupTimerRef: React.MutableRefObject<number | null>,
+  backupTimerRef: React.MutableRefObject<number | null>
 ): void {
   const prevJsonRef = useRef<string>("");
 
@@ -162,7 +172,7 @@ function useSyncOnChange(
         attemptAutoBackup(current);
       }, BACKUP_DEBOUNCE_MS);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleRef and backupTimerRef are stable refs
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleRef and backupTimerRef are stable refs
   }, [schedule, attemptAutoBackup, onScheduleUpdate]);
 
   useEffect(() => {
@@ -177,7 +187,7 @@ function useSyncOnChange(
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- backupTimerRef is a stable ref
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- backupTimerRef is a stable ref
   }, [schedule?.id, schedule?.slug, schedule?.editToken]);
 
   useEffect(() => {
@@ -207,20 +217,32 @@ function useSyncOnChange(
       window.removeEventListener("online", retrySync);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleRef is a stable ref
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleRef is a stable ref
   }, [attemptAutoBackup, onScheduleUpdate]);
 }
 
 export function useAutoSync(
   schedule: Schedule | undefined,
-  onScheduleUpdate?: (updater: (s: Schedule) => Schedule) => void,
+  onScheduleUpdate?: (updater: (s: Schedule) => Schedule) => void
 ): {
   syncStatus: SyncStatus;
   cancelPendingBackup: () => void;
   prepareForManualSave: () => Promise<Schedule | undefined>;
 } {
   const { syncStatus, setSyncStatus } = useSyncStatusSubscription(schedule?.id);
-  const { cancelPendingBackup, prepareForManualSave, attemptAutoBackup, scheduleRef, backupTimerRef } = useAutoBackup(schedule, onScheduleUpdate, setSyncStatus);
-  useSyncOnChange(schedule, attemptAutoBackup, onScheduleUpdate, scheduleRef, backupTimerRef);
+  const {
+    cancelPendingBackup,
+    prepareForManualSave,
+    attemptAutoBackup,
+    scheduleRef,
+    backupTimerRef,
+  } = useAutoBackup(schedule, onScheduleUpdate, setSyncStatus);
+  useSyncOnChange(
+    schedule,
+    attemptAutoBackup,
+    onScheduleUpdate,
+    scheduleRef,
+    backupTimerRef
+  );
   return { syncStatus, cancelPendingBackup, prepareForManualSave };
 }

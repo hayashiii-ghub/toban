@@ -3,10 +3,17 @@ import { faqPageSchema, breadcrumbSchema, serializeJsonLd } from "./jsonLd";
 
 describe("faqPageSchema", () => {
   it("FAQPage に Question/acceptedAnswer をマップする", () => {
-    const s = faqPageSchema([{ question: "Q1", answer: "A1" }]) as Record<string, unknown>;
+    const s = faqPageSchema([{ question: "Q1", answer: "A1" }]) as Record<
+      string,
+      unknown
+    >;
     expect(s["@type"]).toBe("FAQPage");
     expect(s.mainEntity).toEqual([
-      { "@type": "Question", name: "Q1", acceptedAnswer: { "@type": "Answer", text: "A1" } },
+      {
+        "@type": "Question",
+        name: "Q1",
+        acceptedAnswer: { "@type": "Answer", text: "A1" },
+      },
     ]);
   });
 });
@@ -19,7 +26,12 @@ describe("breadcrumbSchema", () => {
     ]) as Record<string, unknown>;
     expect(s["@type"]).toBe("BreadcrumbList");
     expect(s.itemListElement).toEqual([
-      { "@type": "ListItem", position: 1, name: "toban について", item: "https://toban.app/about" },
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "toban について",
+        item: "https://toban.app/about",
+      },
       { "@type": "ListItem", position: 2, name: "現在ページ" },
     ]);
   });

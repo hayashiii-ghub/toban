@@ -5,7 +5,9 @@ interface DesignThemeContextType {
   theme: DesignTheme;
 }
 
-const DesignThemeContext = createContext<DesignThemeContextType | undefined>(undefined);
+const DesignThemeContext = createContext<DesignThemeContextType | undefined>(
+  undefined
+);
 
 // フォント（--dt-font-family と太字トークン）は色テーマから独立したアプリ全体設定で、
 // client/src/fonts.ts が単独で所有・適用する。ここでは触らない（テーマ切替でフォントが
@@ -50,7 +52,10 @@ interface DesignThemeProviderProps {
   children: React.ReactNode;
 }
 
-export function DesignThemeProvider({ themeId, children }: DesignThemeProviderProps) {
+export function DesignThemeProvider({
+  themeId,
+  children,
+}: DesignThemeProviderProps) {
   const theme = useMemo(() => getThemeById(themeId), [themeId]);
 
   useEffect(() => {

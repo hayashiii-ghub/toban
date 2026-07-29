@@ -4,7 +4,11 @@ import { toast } from "sonner";
 import { getSchedule, ApiError } from "@/lib/api";
 import type { ScheduleDTO } from "@/rotation/types";
 import { APP_TITLE } from "@/rotation/constants";
-import { computeAssignments, computeDateRotation, generateId } from "@/rotation/utils";
+import {
+  computeAssignments,
+  computeDateRotation,
+  generateId,
+} from "@/rotation/utils";
 import { loadState, saveState } from "@/lib/appState";
 import { ScheduleViews } from "@/features/home/ScheduleViews";
 import { ViewTabs, type ViewTabValue } from "@/features/home/ViewTabs";
@@ -37,7 +41,7 @@ export default function SharedScheduleView() {
     setErrorKey(null);
     setSchedule(null);
     getSchedule(slug)
-      .then((data) => {
+      .then(data => {
         if (cancelled) return;
         setSchedule(data);
       })
@@ -59,7 +63,9 @@ export default function SharedScheduleView() {
         if (cancelled) return;
         setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   const scheduleName = schedule?.name;
@@ -83,7 +89,12 @@ export default function SharedScheduleView() {
 
   const assignments = useMemo(() => {
     if (!schedule) return [];
-    return computeAssignments(schedule.groups, schedule.members, effectiveRotation, schedule.assignmentMode);
+    return computeAssignments(
+      schedule.groups,
+      schedule.members,
+      effectiveRotation,
+      schedule.assignmentMode
+    );
   }, [schedule, effectiveRotation]);
 
   const handleImport = useCallback(() => {
@@ -92,7 +103,7 @@ export default function SharedScheduleView() {
     const state = loadState();
     // メンバーIDマッピング（旧ID → 新ID）
     const memberIdMap = new Map<string, string>();
-    const newMembers = schedule.members.map((m) => {
+    const newMembers = schedule.members.map(m => {
       const newId = generateId("m");
       memberIdMap.set(m.id, newId);
       return { ...m, id: newId };
@@ -102,11 +113,11 @@ export default function SharedScheduleView() {
       id: generateId("s"),
       name: schedule.name,
       rotation: schedule.rotation,
-      groups: schedule.groups.map((g) => ({
+      groups: schedule.groups.map(g => ({
         ...g,
         id: generateId("g"),
         // グループ専用メンバーIDも新IDに変換
-        memberIds: g.memberIds?.map((id) => memberIdMap.get(id) ?? id),
+        memberIds: g.memberIds?.map(id => memberIdMap.get(id) ?? id),
       })),
       members: newMembers,
       assignmentMode: schedule.assignmentMode,
@@ -125,15 +136,24 @@ export default function SharedScheduleView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--dt-page-bg)" }}>
-        <Loader2 className="size-8 animate-spin" style={{ color: "var(--dt-current-highlight)" }} />
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "var(--dt-page-bg)" }}
+      >
+        <Loader2
+          className="size-8 animate-spin"
+          style={{ color: "var(--dt-current-highlight)" }}
+        />
       </div>
     );
   }
 
   if (errorKey || !schedule) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: "var(--dt-page-bg)" }}>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4"
+        style={{ backgroundColor: "var(--dt-page-bg)" }}
+      >
         <div className="text-6xl">😢</div>
         <h1 className="text-xl font-bold" style={{ color: "var(--dt-text)" }}>
           {t(errorKey ?? "shared.error.notFound")}
@@ -141,7 +161,10 @@ export default function SharedScheduleView() {
         <a
           href="/"
           className="theme-border theme-shadow-sm px-4 py-2 font-bold text-sm transition-all duration-150 theme-hover-lift"
-          style={{ backgroundColor: "var(--dt-current-highlight)", borderRadius: "var(--dt-border-radius-sm)" }}
+          style={{
+            backgroundColor: "var(--dt-current-highlight)",
+            borderRadius: "var(--dt-border-radius-sm)",
+          }}
         >
           {t("shared.createYourOwn")}
         </a>
@@ -156,74 +179,99 @@ export default function SharedScheduleView() {
 
   return (
     <DesignThemeProvider themeId={schedule?.designThemeId}>
-    <main className="rotation-page min-h-screen" style={{ backgroundColor: "var(--dt-page-bg)" }}>
-      <header className="rotation-print-header pt-6 sm:pt-8 pb-6 sm:pb-8 px-3 sm:px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1
-            className="text-2xl sm:text-3xl font-extrabold rotation-no-print"
-            style={{ color: "var(--dt-text)" }}
-          >
-            {schedule.name}
-          </h1>
-          <div
-            className="rotation-print-only text-2xl sm:text-3xl md:text-4xl tracking-tight"
-            style={{ color: "var(--dt-text)", fontWeight: "var(--dt-font-weight-extra)" }}
-            aria-hidden="true"
-          >
-            {schedule.name}
+      <main
+        className="rotation-page min-h-screen"
+        style={{ backgroundColor: "var(--dt-page-bg)" }}
+      >
+        <header className="rotation-print-header pt-6 sm:pt-8 pb-6 sm:pb-8 px-3 sm:px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1
+              className="text-2xl sm:text-3xl font-extrabold rotation-no-print"
+              style={{ color: "var(--dt-text)" }}
+            >
+              {schedule.name}
+            </h1>
+            <div
+              className="rotation-print-only text-2xl sm:text-3xl md:text-4xl tracking-tight"
+              style={{
+                color: "var(--dt-text)",
+                fontWeight: "var(--dt-font-weight-extra)",
+              }}
+              aria-hidden="true"
+            >
+              {schedule.name}
+            </div>
+            <p
+              className="text-sm font-bold mt-1 rotation-no-print"
+              style={{ color: "var(--dt-text-secondary)" }}
+            >
+              {rotationLabel}
+            </p>
+            <div
+              className="rotation-print-only mt-3 pt-2 text-sm font-bold"
+              style={{
+                color: "var(--dt-text-secondary)",
+                borderBottom: "3px solid var(--dt-border-color)",
+              }}
+            >
+              <span className="inline-block pb-2">
+                {t("shared.printHeader", {
+                  label: rotationLabel,
+                  date: printDate,
+                })}
+              </span>
+            </div>
           </div>
-          <p className="text-sm font-bold mt-1 rotation-no-print" style={{ color: "var(--dt-text-secondary)" }}>
-            {rotationLabel}
-          </p>
-          <div
-            className="rotation-print-only mt-3 pt-2 text-sm font-bold"
-            style={{ color: "var(--dt-text-secondary)", borderBottom: "3px solid var(--dt-border-color)" }}
-          >
-            <span className="inline-block pb-2">
-              {t("shared.printHeader", { label: rotationLabel, date: printDate })}
-            </span>
+        </header>
+
+        <ViewTabs viewTab={viewTab} onChangeTab={setViewTab} />
+
+        <ScheduleViews
+          viewTab={viewTab}
+          assignments={assignments}
+          groups={schedule.groups}
+          members={schedule.members}
+          rotation={effectiveRotation}
+          rotationConfig={schedule.rotationConfig}
+          assignmentMode={schedule.assignmentMode}
+          scheduleId={schedule.slug}
+          direction="forward"
+          stagger={false}
+        />
+
+        <AdBanner />
+
+        <div className="px-3 sm:px-4 pb-8 sm:pb-12 rotation-no-print">
+          <div className="max-w-4xl mx-auto text-center flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
+            <PrintMenu
+              onPrint={() => handlePrint(viewTab, schedule.name, rotationLabel)}
+            />
+            <button
+              type="button"
+              onClick={handleImport}
+              className="theme-border theme-shadow-sm inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 font-bold text-sm transition-all duration-150 theme-hover-lift"
+              style={{
+                backgroundColor: "#10B981",
+                color: "#fff",
+                borderRadius: "var(--dt-border-radius-sm)",
+              }}
+            >
+              <Copy className="size-4" />
+              {t("shared.copyToMine")}
+            </button>
+            <a
+              href="/"
+              className="theme-border theme-shadow-sm inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 font-bold text-sm transition-all duration-150 theme-hover-lift"
+              style={{
+                backgroundColor: "var(--dt-current-highlight)",
+                borderRadius: "var(--dt-border-radius-sm)",
+              }}
+            >
+              {t("shared.createYourOwn")}
+            </a>
           </div>
         </div>
-      </header>
-
-      <ViewTabs viewTab={viewTab} onChangeTab={setViewTab} />
-
-      <ScheduleViews
-        viewTab={viewTab}
-        assignments={assignments}
-        groups={schedule.groups}
-        members={schedule.members}
-        rotation={effectiveRotation}
-        rotationConfig={schedule.rotationConfig}
-        assignmentMode={schedule.assignmentMode}
-        scheduleId={schedule.slug}
-        direction="forward"
-        stagger={false}
-      />
-
-      <AdBanner />
-
-      <div className="px-3 sm:px-4 pb-8 sm:pb-12 rotation-no-print">
-        <div className="max-w-4xl mx-auto text-center flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
-          <PrintMenu onPrint={() => handlePrint(viewTab, schedule.name, rotationLabel)} />
-          <button type="button"
-            onClick={handleImport}
-            className="theme-border theme-shadow-sm inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 font-bold text-sm transition-all duration-150 theme-hover-lift"
-            style={{ backgroundColor: "#10B981", color: "#fff", borderRadius: "var(--dt-border-radius-sm)" }}
-          >
-            <Copy className="size-4" />
-            {t("shared.copyToMine")}
-          </button>
-          <a
-            href="/"
-            className="theme-border theme-shadow-sm inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 font-bold text-sm transition-all duration-150 theme-hover-lift"
-            style={{ backgroundColor: "var(--dt-current-highlight)", borderRadius: "var(--dt-border-radius-sm)" }}
-          >
-            {t("shared.createYourOwn")}
-          </a>
-        </div>
-      </div>
-    </main>
+      </main>
     </DesignThemeProvider>
   );
 }

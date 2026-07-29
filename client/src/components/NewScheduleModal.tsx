@@ -32,7 +32,8 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
   const t = useT();
   const modalRef = useRef<HTMLDivElement>(null);
   const [openSections, setOpenSections] = useState<Set<string>>(
-    () => new Set(TEMPLATE_SECTIONS.flatMap((s) => (s.defaultOpen ? [s.label] : [])))
+    () =>
+      new Set(TEMPLATE_SECTIONS.flatMap(s => (s.defaultOpen ? [s.label] : [])))
   );
 
   const handleEscape = useCallback(() => onClose(), [onClose]);
@@ -46,7 +47,7 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
   };
 
   const toggleSection = (label: string) => {
-    setOpenSections((prev) => {
+    setOpenSections(prev => {
       const next = new Set(prev);
       if (next.has(label)) {
         next.delete(label);
@@ -78,35 +79,69 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
         exit={{ scale: 0.9, y: 20 }}
       >
         {/* ヘッダー */}
-        <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4" style={{ borderBottom: "var(--dt-border-width) solid var(--dt-border-color)" }}>
-          <h2 id="new-schedule-title" className="text-lg font-extrabold" style={{ color: "var(--dt-text)" }}>
-            <FileText className="size-5 inline-block mr-2 -mt-0.5" aria-hidden="true" />
+        <div
+          className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4"
+          style={{
+            borderBottom: "var(--dt-border-width) solid var(--dt-border-color)",
+          }}
+        >
+          <h2
+            id="new-schedule-title"
+            className="text-lg font-extrabold"
+            style={{ color: "var(--dt-text)" }}
+          >
+            <FileText
+              className="size-5 inline-block mr-2 -mt-0.5"
+              aria-hidden="true"
+            />
             {t("newSchedule.title")}
           </h2>
-          <button type="button" onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors" aria-label={t("common.close")}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label={t("common.close")}
+          >
             <X className="size-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* テンプレート一覧 */}
         <div className="p-4 sm:p-5 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pb-5 overflow-y-auto flex flex-col gap-1">
-          <p className="text-sm font-bold mb-2" style={{ color: "var(--dt-text-muted)" }}>
+          <p
+            className="text-sm font-bold mb-2"
+            style={{ color: "var(--dt-text-muted)" }}
+          >
             {t("newSchedule.instruction")}
           </p>
 
           {/* 新しくつくる（カスタム） */}
-          <button type="button"
+          <button
+            type="button"
             onClick={() => onSelect(CUSTOM_TEMPLATE)}
             className="theme-border theme-shadow-sm p-3 sm:p-4 w-full text-left transition-all duration-150 theme-hover-lift mb-2"
-            style={{ borderRadius: "var(--dt-border-radius)", backgroundColor: "var(--dt-current-highlight)" }}
+            style={{
+              borderRadius: "var(--dt-border-radius)",
+              backgroundColor: "var(--dt-current-highlight)",
+            }}
           >
             <div className="flex items-center gap-3">
-              <Plus className="size-6" style={{ color: "var(--dt-text)" }} aria-hidden="true" />
+              <Plus
+                className="size-6"
+                style={{ color: "var(--dt-text)" }}
+                aria-hidden="true"
+              />
               <div className="min-w-0">
-                <div className="text-sm font-extrabold" style={{ color: "var(--dt-text)" }}>
+                <div
+                  className="text-sm font-extrabold"
+                  style={{ color: "var(--dt-text)" }}
+                >
                   {t("newSchedule.createBlank")}
                 </div>
-                <div className="text-xs font-medium mt-0.5" style={{ color: "var(--dt-text-secondary)" }}>
+                <div
+                  className="text-xs font-medium mt-0.5"
+                  style={{ color: "var(--dt-text-secondary)" }}
+                >
                   {t("newSchedule.createBlankDesc")}
                 </div>
               </div>
@@ -114,7 +149,7 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
           </button>
 
           {/* テンプレートセクション */}
-          {TEMPLATE_SECTIONS.map((section) => {
+          {TEMPLATE_SECTIONS.map(section => {
             const isOpen = openSections.has(section.label);
             const templates = TEMPLATES.slice(section.from, section.to);
             return (
@@ -132,7 +167,10 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
                   </span>
                   <ChevronDown
                     className="size-4 transition-transform duration-200"
-                    style={{ color: "var(--dt-text-muted)", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                    style={{
+                      color: "var(--dt-text-muted)",
+                      transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    }}
                     aria-hidden="true"
                   />
                 </button>
@@ -147,22 +185,44 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
                     >
                       <div className="flex flex-col gap-2 p-1">
                         {templates.map((template, idx) => (
-                          <button type="button"
+                          <button
+                            type="button"
                             key={section.from + idx}
                             onClick={() => onSelect(template)}
                             className="theme-border theme-shadow-sm p-3 sm:p-4 w-full text-left transition-all duration-150 theme-hover-lift"
-                            style={{ borderRadius: "var(--dt-border-radius)", backgroundColor: "#FAFAFA" }}
+                            style={{
+                              borderRadius: "var(--dt-border-radius)",
+                              backgroundColor: "#FAFAFA",
+                            }}
                           >
                             <div className="flex items-center gap-3">
-                              <span className="text-2xl" aria-hidden="true">{template.emoji}</span>
+                              <span className="text-2xl" aria-hidden="true">
+                                {template.emoji}
+                              </span>
                               <div className="min-w-0">
-                                <div className="text-sm font-extrabold" style={{ color: "var(--dt-text)" }}>
+                                <div
+                                  className="text-sm font-extrabold"
+                                  style={{ color: "var(--dt-text)" }}
+                                >
                                   {template.name}
                                 </div>
-                                <div className="text-xs font-medium mt-0.5 truncate" style={{ color: "var(--dt-text-muted)" }}>
-                                  {template.groups.length}{template.assignmentMode === "task" ? "タスク" : "グループ"} ・ {template.members.length}人
+                                <div
+                                  className="text-xs font-medium mt-0.5 truncate"
+                                  style={{ color: "var(--dt-text-muted)" }}
+                                >
+                                  {template.groups.length}
+                                  {template.assignmentMode === "task"
+                                    ? "タスク"
+                                    : "グループ"}{" "}
+                                  ・ {template.members.length}人
                                   {template.groups.length > 0 && (
-                                    <span> ・ {template.groups.map((g) => g.tasks.join("、")).join(" / ")}</span>
+                                    <span>
+                                      {" "}
+                                      ・{" "}
+                                      {template.groups
+                                        .map(g => g.tasks.join("、"))
+                                        .join(" / ")}
+                                    </span>
                                   )}
                                 </div>
                               </div>

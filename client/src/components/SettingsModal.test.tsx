@@ -10,8 +10,15 @@ vi.mock("framer-motion", () => {
   const createMotionComponent = (tag: string) =>
     ReactMod.forwardRef((props: Record<string, unknown>, ref: unknown) => {
       const {
-        initial: _initial, animate: _animate, exit: _exit, transition: _transition, variants: _variants,
-        whileHover: _whileHover, whileTap: _whileTap, layout: _layout, onAnimationComplete: _onAnimationComplete,
+        initial: _initial,
+        animate: _animate,
+        exit: _exit,
+        transition: _transition,
+        variants: _variants,
+        whileHover: _whileHover,
+        whileTap: _whileTap,
+        layout: _layout,
+        onAnimationComplete: _onAnimationComplete,
         ...rest
       } = props;
       return ReactMod.createElement(tag, { ref, ...rest });
@@ -47,13 +54,23 @@ vi.mock("./settings/RotationConfigEditor", () => ({
   RotationConfigEditor: () => <div data-testid="rotation-config-editor" />,
 }));
 
-const testGroups: TaskGroup[] = [
-  { id: "g1", tasks: ["掃除"], emoji: "🧹" },
-];
+const testGroups: TaskGroup[] = [{ id: "g1", tasks: ["掃除"], emoji: "🧹" }];
 
 const testMembers: Member[] = [
-  { id: "m1", name: "田中", color: "#F87171", bgColor: "#FEE2E2", textColor: "#991B1B" },
-  { id: "m2", name: "鈴木", color: "#60A5FA", bgColor: "#DBEAFE", textColor: "#1E3A8A" },
+  {
+    id: "m1",
+    name: "田中",
+    color: "#F87171",
+    bgColor: "#FEE2E2",
+    textColor: "#991B1B",
+  },
+  {
+    id: "m2",
+    name: "鈴木",
+    color: "#60A5FA",
+    bgColor: "#DBEAFE",
+    textColor: "#1E3A8A",
+  },
 ];
 
 const createProps = (overrides: Record<string, unknown> = {}) => ({
@@ -80,12 +97,12 @@ function queryDialog(container: HTMLElement) {
     getByLabel: (label: string) =>
       dialog.querySelector(`[aria-label="${label}"]`) as HTMLElement,
     getByText: (text: string) =>
-      Array.from(dialog.querySelectorAll("button")).find(
-        (el) => el.textContent?.includes(text)
+      Array.from(dialog.querySelectorAll("button")).find(el =>
+        el.textContent?.includes(text)
       ) as HTMLElement | undefined,
     queryByText: (text: string) =>
-      Array.from(dialog.querySelectorAll("button")).find(
-        (el) => el.textContent?.includes(text)
+      Array.from(dialog.querySelectorAll("button")).find(el =>
+        el.textContent?.includes(text)
       ) ?? null,
   };
 }

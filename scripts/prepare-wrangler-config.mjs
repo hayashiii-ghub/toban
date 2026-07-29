@@ -32,13 +32,13 @@ if (!databaseId) {
         "Missing CLOUDFLARE_D1_DATABASE_ID.",
         "Create a D1 database with `wrangler d1 create toban-maker-db`,",
         "then set its UUID in the Cloudflare deploy environment variables.",
-      ].join(" "),
+      ].join(" ")
     );
     process.exit(1);
   }
 
   console.warn(
-    "Skipping Wrangler D1 config injection because CLOUDFLARE_D1_DATABASE_ID is not set.",
+    "Skipping Wrangler D1 config injection because CLOUDFLARE_D1_DATABASE_ID is not set."
   );
   process.exit(0);
 }
@@ -51,10 +51,12 @@ let preparedConfig = config
 if (!/"vars"\s*:/.test(preparedConfig)) {
   preparedConfig = preparedConfig.replace(
     /^(\s*)\{/,
-    '$1{\n  "vars": { "ENVIRONMENT": "production" },',
+    '$1{\n  "vars": { "ENVIRONMENT": "production" },'
   );
 }
 
 await mkdir(path.dirname(outputConfigPath), { recursive: true });
 await writeFile(outputConfigPath, preparedConfig);
-console.log(`Prepared ${path.relative(process.cwd(), outputConfigPath)} for deployment.`);
+console.log(
+  `Prepared ${path.relative(process.cwd(), outputConfigPath)} for deployment.`
+);

@@ -1,7 +1,15 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { m, AnimatePresence } from "framer-motion";
-import type { AssignmentMode, Member, RotationConfig, TaskGroup } from "@/rotation/types";
-import { computeAssignments, computeDateRotationForDate } from "@/rotation/utils";
+import type {
+  AssignmentMode,
+  Member,
+  RotationConfig,
+  TaskGroup,
+} from "@/rotation/types";
+import {
+  computeAssignments,
+  computeDateRotationForDate,
+} from "@/rotation/utils";
 import { getHolidaysForMonth } from "@/rotation/holidays";
 import { useT, useDateLocale } from "@/i18n";
 
@@ -27,7 +35,11 @@ function getCalendarDays(year: number, month: number) {
 }
 
 function isSameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 export function RotationCalendar({
@@ -40,8 +52,13 @@ export function RotationCalendar({
   const t = useT();
   const dateLocale = useDateLocale();
   const weekdayLabels = [
-    t("cal.wd0"), t("cal.wd1"), t("cal.wd2"), t("cal.wd3"),
-    t("cal.wd4"), t("cal.wd5"), t("cal.wd6"),
+    t("cal.wd0"),
+    t("cal.wd1"),
+    t("cal.wd2"),
+    t("cal.wd3"),
+    t("cal.wd4"),
+    t("cal.wd5"),
+    t("cal.wd6"),
   ];
   const today = useMemo(() => {
     const d = new Date();
@@ -49,42 +66,81 @@ export function RotationCalendar({
     return d;
   }, []);
 
-  const [viewDate, setViewDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [viewDate, setViewDate] = useState(
+    () => new Date(today.getFullYear(), today.getMonth(), 1)
+  );
   const [selectedDayIdx, setSelectedDayIdx] = useState<number | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
-  const monthLabel = new Date(year, month, 1).toLocaleDateString(dateLocale, { year: "numeric", month: "long" });
+  const monthLabel = new Date(year, month, 1).toLocaleDateString(dateLocale, {
+    year: "numeric",
+    month: "long",
+  });
   const isDateMode = rotationConfig?.mode === "date";
 
-  const activeMembers = useMemo(() => members.filter(m => !m.skipped), [members]);
+  const activeMembers = useMemo(
+    () => members.filter(m => !m.skipped),
+    [members]
+  );
 
-  const calendarDays = useMemo(() => getCalendarDays(year, month), [year, month]);
-  const holidayMap = useMemo(() => getHolidaysForMonth(year, month), [year, month]);
+  const calendarDays = useMemo(
+    () => getCalendarDays(year, month),
+    [year, month]
+  );
+  const holidayMap = useMemo(
+    () => getHolidaysForMonth(year, month),
+    [year, month]
+  );
 
   const dayAssignments = useMemo(() => {
     return calendarDays.map(day => {
       if (!day) return null;
-      const rot = rotationConfig?.mode === "date"
-        ? computeDateRotationForDate(rotationConfig, activeMembers.length, day)
-        : rotation;
+      const rot =
+        rotationConfig?.mode === "date"
+          ? computeDateRotationForDate(
+              rotationConfig,
+              activeMembers.length,
+              day
+            )
+          : rotation;
       return computeAssignments(groups, members, rot, assignmentMode);
     });
-  }, [calendarDays, rotation, rotationConfig, activeMembers.length, groups, members, assignmentMode]);
+  }, [
+    calendarDays,
+    rotation,
+    rotationConfig,
+    activeMembers.length,
+    groups,
+    members,
+    assignmentMode,
+  ]);
 
-  const prevMonth = () => { setViewDate(new Date(year, month - 1, 1)); setSelectedDayIdx(null); };
-  const nextMonth = () => { setViewDate(new Date(year, month + 1, 1)); setSelectedDayIdx(null); };
-  const goToday = () => { setViewDate(new Date(today.getFullYear(), today.getMonth(), 1)); setSelectedDayIdx(null); };
+  const prevMonth = () => {
+    setViewDate(new Date(year, month - 1, 1));
+    setSelectedDayIdx(null);
+  };
+  const nextMonth = () => {
+    setViewDate(new Date(year, month + 1, 1));
+    setSelectedDayIdx(null);
+  };
+  const goToday = () => {
+    setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
+    setSelectedDayIdx(null);
+  };
 
   const handleDayClick = useCallback((idx: number) => {
-    setSelectedDayIdx(prev => prev === idx ? null : idx);
+    setSelectedDayIdx(prev => (prev === idx ? null : idx));
   }, []);
 
   useEffect(() => {
     if (selectedDayIdx === null) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node)
+      ) {
         setSelectedDayIdx(null);
       }
     };
@@ -97,7 +153,10 @@ export function RotationCalendar({
       <div className="max-w-4xl mx-auto">
         <m.div
           className="theme-border theme-shadow-sm p-3 sm:p-5 rotation-print-card"
-          style={{ backgroundColor: "var(--dt-card-bg)", borderRadius: "var(--dt-border-radius)" }}
+          style={{
+            backgroundColor: "var(--dt-card-bg)",
+            borderRadius: "var(--dt-border-radius)",
+          }}
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.15, duration: 0.25 }}
@@ -106,12 +165,22 @@ export function RotationCalendar({
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <h2
               className="text-sm tracking-wider uppercase"
-              style={{ color: "var(--dt-text-secondary)", fontWeight: "var(--dt-font-weight-extra)" }}
+              style={{
+                color: "var(--dt-text-secondary)",
+                fontWeight: "var(--dt-font-weight-extra)",
+              }}
             >
               {t("view.calendar")}
             </h2>
             {!isDateMode && (
-              <span className="text-xs font-bold px-2 py-1 rounded-md rotation-no-print" style={{ backgroundColor: "color-mix(in srgb, var(--dt-current-highlight) 20%, var(--dt-card-bg))", color: "var(--dt-text-secondary)" }}>
+              <span
+                className="text-xs font-bold px-2 py-1 rounded-md rotation-no-print"
+                style={{
+                  backgroundColor:
+                    "color-mix(in srgb, var(--dt-current-highlight) 20%, var(--dt-card-bg))",
+                  color: "var(--dt-text-secondary)",
+                }}
+              >
                 {t("cal.manualNote")}
               </span>
             )}
@@ -119,31 +188,49 @@ export function RotationCalendar({
 
           {/* Month navigation */}
           <div className="flex items-center justify-between mb-3">
-            <button type="button"
+            <button
+              type="button"
               onClick={prevMonth}
               className="theme-border px-3 py-1.5 font-bold text-sm theme-hover-lift transition-all duration-150 rotation-no-print"
-              style={{ backgroundColor: "var(--dt-button-bg)", borderRadius: "var(--dt-border-radius-sm)" }}
+              style={{
+                backgroundColor: "var(--dt-button-bg)",
+                borderRadius: "var(--dt-border-radius-sm)",
+              }}
             >
               ◀
             </button>
             <div className="flex items-center gap-2">
-              <span className="text-base sm:text-lg" style={{ color: "var(--dt-text)", fontWeight: "var(--dt-font-weight-extra)" }}>
+              <span
+                className="text-base sm:text-lg"
+                style={{
+                  color: "var(--dt-text)",
+                  fontWeight: "var(--dt-font-weight-extra)",
+                }}
+              >
                 {monthLabel}
               </span>
               {(year !== today.getFullYear() || month !== today.getMonth()) && (
-                <button type="button"
+                <button
+                  type="button"
                   onClick={goToday}
                   className="theme-border px-2 py-1 font-bold text-xs theme-hover-lift transition-all duration-150 rotation-no-print"
-                  style={{ backgroundColor: "var(--dt-current-highlight)", borderRadius: "6px" }}
+                  style={{
+                    backgroundColor: "var(--dt-current-highlight)",
+                    borderRadius: "6px",
+                  }}
                 >
                   {t("cal.thisMonth")}
                 </button>
               )}
             </div>
-            <button type="button"
+            <button
+              type="button"
               onClick={nextMonth}
               className="theme-border px-3 py-1.5 font-bold text-sm theme-hover-lift transition-all duration-150 rotation-no-print"
-              style={{ backgroundColor: "var(--dt-button-bg)", borderRadius: "var(--dt-border-radius-sm)" }}
+              style={{
+                backgroundColor: "var(--dt-button-bg)",
+                borderRadius: "var(--dt-border-radius-sm)",
+              }}
             >
               ▶
             </button>
@@ -155,7 +242,15 @@ export function RotationCalendar({
               <div
                 key={label}
                 className="text-center py-1.5 text-xs"
-                style={{ color: i === 0 ? "#EF4444" : i === 6 ? "#3B82F6" : "var(--dt-text-secondary)", fontWeight: "var(--dt-font-weight-extra)" }}
+                style={{
+                  color:
+                    i === 0
+                      ? "#EF4444"
+                      : i === 6
+                        ? "#3B82F6"
+                        : "var(--dt-text-secondary)",
+                  fontWeight: "var(--dt-font-weight-extra)",
+                }}
               >
                 {label}
               </div>
@@ -163,27 +258,37 @@ export function RotationCalendar({
           </div>
 
           {/* Calendar grid */}
-          <div className="grid grid-cols-7" style={{ border: `1px solid var(--dt-table-border-strong)` }}>
+          <div
+            className="grid grid-cols-7"
+            style={{ border: `1px solid var(--dt-table-border-strong)` }}
+          >
             {calendarDays.map((day, idx) => {
               const isToday = day && isSameDay(day, today);
               const dow = idx % 7;
               const assignments = dayAssignments[idx];
-              const holidayName = day ? holidayMap.get(day.getDate()) : undefined;
+              const holidayName = day
+                ? holidayMap.get(day.getDate())
+                : undefined;
 
-              const isSkipped = !!(day && isDateMode && (
-                (rotationConfig?.skipSaturday && dow === 6) ||
-                (rotationConfig?.skipSunday && dow === 0) ||
-                (rotationConfig?.skipHolidays && holidayName)
-              ));
+              const isSkipped = !!(
+                day &&
+                isDateMode &&
+                ((rotationConfig?.skipSaturday && dow === 6) ||
+                  (rotationConfig?.skipSunday && dow === 0) ||
+                  (rotationConfig?.skipHolidays && holidayName))
+              );
               const isSelected = selectedDayIdx === idx;
               const interactive = day && !isSkipped;
               const cellStyle = {
                 borderRight: `1px solid var(--dt-table-border-light)`,
                 borderBottom: `1px solid var(--dt-table-border-light)`,
-                backgroundColor: !day ? "color-mix(in srgb, var(--dt-page-bg) 50%, var(--dt-card-bg))"
-                  : isSelected ? "color-mix(in srgb, var(--dt-current-highlight) 15%, var(--dt-card-bg))"
-                  : isToday ? "color-mix(in srgb, var(--dt-current-highlight) 8%, var(--dt-card-bg))"
-                  : "var(--dt-card-bg)",
+                backgroundColor: !day
+                  ? "color-mix(in srgb, var(--dt-page-bg) 50%, var(--dt-card-bg))"
+                  : isSelected
+                    ? "color-mix(in srgb, var(--dt-current-highlight) 15%, var(--dt-card-bg))"
+                    : isToday
+                      ? "color-mix(in srgb, var(--dt-current-highlight) 8%, var(--dt-card-bg))"
+                      : "var(--dt-card-bg)",
               };
               const cellKey = day ? day.toISOString() : `empty-${idx}`;
               const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -208,17 +313,31 @@ export function RotationCalendar({
                       <div className="flex items-center gap-0.5 mb-0.5 min-h-[16px] sm:min-h-[20px]">
                         <span
                           className={`text-xs sm:text-sm font-bold leading-none shrink-0 ${
-                            isToday ? "rounded-full min-w-[1rem] sm:min-w-[1.25rem] h-4 sm:h-5 flex items-center justify-center px-0.5" : ""
+                            isToday
+                              ? "rounded-full min-w-[1rem] sm:min-w-[1.25rem] h-4 sm:h-5 flex items-center justify-center px-0.5"
+                              : ""
                           }`}
                           style={{
-                            color: isToday ? "var(--dt-card-bg)" : (holidayName || dow === 0) ? "#EF4444" : dow === 6 ? "#3B82F6" : "var(--dt-text)",
-                            backgroundColor: isToday ? "var(--dt-text)" : undefined,
+                            color: isToday
+                              ? "var(--dt-card-bg)"
+                              : holidayName || dow === 0
+                                ? "#EF4444"
+                                : dow === 6
+                                  ? "#3B82F6"
+                                  : "var(--dt-text)",
+                            backgroundColor: isToday
+                              ? "var(--dt-text)"
+                              : undefined,
                           }}
                         >
                           {day.getDate()}
                         </span>
                         {holidayName && (
-                          <span className="text-[8px] sm:text-[10px] leading-tight truncate" style={{ color: "#EF4444" }} title={holidayName}>
+                          <span
+                            className="text-[8px] sm:text-[10px] leading-tight truncate"
+                            style={{ color: "#EF4444" }}
+                            title={holidayName}
+                          >
                             {holidayName}
                           </span>
                         )}
@@ -229,10 +348,16 @@ export function RotationCalendar({
                             <div
                               key={group.id}
                               className="text-[11px] sm:text-xs leading-tight font-bold truncate rounded px-0.5"
-                              style={{ backgroundColor: member.bgColor, color: member.textColor }}
+                              style={{
+                                backgroundColor: member.bgColor,
+                                color: member.textColor,
+                              }}
                               title={`${group.emoji} ${group.tasks.join("・")}：${member.name}`}
                             >
-                              <span className="hidden sm:inline">{group.emoji} </span>{member.name}
+                              <span className="hidden sm:inline">
+                                {group.emoji}{" "}
+                              </span>
+                              {member.name}
                             </div>
                           ))}
                         </div>
@@ -255,22 +380,48 @@ export function RotationCalendar({
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -4 }}
                             transition={{ duration: 0.15 }}
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={e => e.stopPropagation()}
                           >
-                            <div className="text-xs mb-1.5" style={{ color: "var(--dt-text)", fontWeight: "var(--dt-font-weight-extra)" }}>
-                              {t("cal.dayLabel", { month: day.getMonth() + 1, day: day.getDate(), weekday: weekdayLabels[dow] })}
-                              {holidayName && <span style={{ color: "#EF4444" }}> {holidayName}</span>}
+                            <div
+                              className="text-xs mb-1.5"
+                              style={{
+                                color: "var(--dt-text)",
+                                fontWeight: "var(--dt-font-weight-extra)",
+                              }}
+                            >
+                              {t("cal.dayLabel", {
+                                month: day.getMonth() + 1,
+                                day: day.getDate(),
+                                weekday: weekdayLabels[dow],
+                              })}
+                              {holidayName && (
+                                <span style={{ color: "#EF4444" }}>
+                                  {" "}
+                                  {holidayName}
+                                </span>
+                              )}
                             </div>
                             <div className="flex flex-col gap-1">
                               {assignments.map(({ group, member }) => (
-                                <div key={group.id} className="flex items-center gap-1.5">
+                                <div
+                                  key={group.id}
+                                  className="flex items-center gap-1.5"
+                                >
                                   <span
                                     className="text-xs font-bold px-1.5 py-0.5 rounded"
-                                    style={{ backgroundColor: member.bgColor, color: member.textColor }}
+                                    style={{
+                                      backgroundColor: member.bgColor,
+                                      color: member.textColor,
+                                    }}
                                   >
                                     {member.name}
                                   </span>
-                                  <span className="text-xs" style={{ color: "var(--dt-text-secondary)" }}>
+                                  <span
+                                    className="text-xs"
+                                    style={{
+                                      color: "var(--dt-text-secondary)",
+                                    }}
+                                  >
                                     {group.emoji} {group.tasks.join("・")}
                                   </span>
                                 </div>
@@ -292,17 +443,31 @@ export function RotationCalendar({
                     <div className="flex items-center gap-0.5 mb-0.5 min-h-[16px] sm:min-h-[20px]">
                       <span
                         className={`text-xs sm:text-sm font-bold leading-none shrink-0 ${
-                          isToday ? "rounded-full min-w-[1rem] sm:min-w-[1.25rem] h-4 sm:h-5 flex items-center justify-center px-0.5" : ""
+                          isToday
+                            ? "rounded-full min-w-[1rem] sm:min-w-[1.25rem] h-4 sm:h-5 flex items-center justify-center px-0.5"
+                            : ""
                         }`}
                         style={{
-                          color: isToday ? "var(--dt-card-bg)" : (holidayName || dow === 0) ? "#EF4444" : dow === 6 ? "#3B82F6" : "var(--dt-text)",
-                          backgroundColor: isToday ? "var(--dt-text)" : undefined,
+                          color: isToday
+                            ? "var(--dt-card-bg)"
+                            : holidayName || dow === 0
+                              ? "#EF4444"
+                              : dow === 6
+                                ? "#3B82F6"
+                                : "var(--dt-text)",
+                          backgroundColor: isToday
+                            ? "var(--dt-text)"
+                            : undefined,
                         }}
                       >
                         {day.getDate()}
                       </span>
                       {holidayName && (
-                        <span className="text-[8px] sm:text-[10px] leading-tight truncate" style={{ color: "#EF4444" }} title={holidayName}>
+                        <span
+                          className="text-[8px] sm:text-[10px] leading-tight truncate"
+                          style={{ color: "#EF4444" }}
+                          title={holidayName}
+                        >
                           {holidayName}
                         </span>
                       )}
@@ -319,7 +484,11 @@ export function RotationCalendar({
               <div
                 key={group.id}
                 className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded"
-                style={{ backgroundColor: "color-mix(in srgb, var(--dt-page-bg) 60%, var(--dt-card-bg))", color: "var(--dt-text-secondary)" }}
+                style={{
+                  backgroundColor:
+                    "color-mix(in srgb, var(--dt-page-bg) 60%, var(--dt-card-bg))",
+                  color: "var(--dt-text-secondary)",
+                }}
               >
                 <span>{group.emoji}</span>
                 {group.tasks.join("・")}

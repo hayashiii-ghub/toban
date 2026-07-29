@@ -17,36 +17,80 @@ describe("isBot", () => {
   // 生成AI検索のクローラーは JS を実行しない。bot 判定を外すとプリレンダリングが返らず、
   // 本文が届かないまま「JavaScriptを有効にしてください」だけをインデックスされる。
   it.each([
-    ["GPTBot", "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.1; +https://openai.com/gptbot"],
-    ["OAI-SearchBot", "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot"],
-    ["ChatGPT-User", "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot"],
-    ["PerplexityBot", "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)"],
-    ["Perplexity-User", "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Perplexity-User/1.0; +https://perplexity.ai/perplexity-user)"],
-    ["ClaudeBot", "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)"],
-    ["Claude-User", "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +Claude-User@anthropic.com)"],
-    ["Claude-SearchBot", "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-SearchBot/1.0; +Claude-SearchBot@anthropic.com)"],
-    ["Amazonbot", "Mozilla/5.0 (Linux; like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 (compatible; Amazonbot/0.1; +https://developer.amazon.com/support/amazonbot)"],
-    ["meta-externalagent", "meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)"],
+    [
+      "GPTBot",
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.1; +https://openai.com/gptbot",
+    ],
+    [
+      "OAI-SearchBot",
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot",
+    ],
+    [
+      "ChatGPT-User",
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot",
+    ],
+    [
+      "PerplexityBot",
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)",
+    ],
+    [
+      "Perplexity-User",
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Perplexity-User/1.0; +https://perplexity.ai/perplexity-user)",
+    ],
+    [
+      "ClaudeBot",
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)",
+    ],
+    [
+      "Claude-User",
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +Claude-User@anthropic.com)",
+    ],
+    [
+      "Claude-SearchBot",
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-SearchBot/1.0; +Claude-SearchBot@anthropic.com)",
+    ],
+    [
+      "Amazonbot",
+      "Mozilla/5.0 (Linux; like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 (compatible; Amazonbot/0.1; +https://developer.amazon.com/support/amazonbot)",
+    ],
+    [
+      "meta-externalagent",
+      "meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)",
+    ],
     ["CCBot", "CCBot/2.0 (https://commoncrawl.org/faq/)"],
-    ["DuckAssistBot", "Mozilla/5.0 (compatible; DuckAssistBot/1.0; +https://duckduckgo.com/duckassistbot/)"],
+    [
+      "DuckAssistBot",
+      "Mozilla/5.0 (compatible; DuckAssistBot/1.0; +https://duckduckgo.com/duckassistbot/)",
+    ],
     ["YouBot", "Mozilla/5.0 (compatible; YouBot (+http://www.you.com))"],
-    ["Bytespider", "Mozilla/5.0 (compatible; Bytespider; spider-feedback@bytedance.com)"],
+    [
+      "Bytespider",
+      "Mozilla/5.0 (compatible; Bytespider; spider-feedback@bytedance.com)",
+    ],
   ])("生成AIクローラー %s を bot と判定する", (_name, ua) => {
     expect(isBot(ua)).toBe(true);
   });
 
   it("従来の検索エンジン・SNS クローラーを bot と判定する", () => {
-    expect(isBot("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")).toBe(true);
+    expect(
+      isBot(
+        "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+      )
+    ).toBe(true);
     expect(isBot("facebookexternalhit/1.1")).toBe(true);
   });
 
   it("通常のブラウザを bot と判定しない", () => {
     // AppleWebKit を含むが Applebot ではない、Chrome を含むが Chrome-Lighthouse ではない、を踏む
     expect(
-      isBot("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
+      isBot(
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+      )
     ).toBe(false);
     expect(
-      isBot("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1")
+      isBot(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+      )
     ).toBe(false);
   });
 });
@@ -491,6 +535,8 @@ describe("renderTemplateListHtml", () => {
   it("title にはブランド名を残す", () => {
     // 一覧ページはブランド想起の受け皿として残す（個別LPとは扱いが違う）
     const html = renderTemplateListHtml(origin);
-    expect(html).toContain("<title>当番表テンプレート一覧｜無料で使えるtoban（トバン）</title>");
+    expect(html).toContain(
+      "<title>当番表テンプレート一覧｜無料で使えるtoban（トバン）</title>"
+    );
   });
 });

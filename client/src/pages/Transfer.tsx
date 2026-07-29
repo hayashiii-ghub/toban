@@ -40,9 +40,15 @@ export default function Transfer() {
         return;
       }
 
-      const parseResult = transferDataSchema.safeParse((() => {
-        try { return JSON.parse(decoded); } catch { return null; }
-      })());
+      const parseResult = transferDataSchema.safeParse(
+        (() => {
+          try {
+            return JSON.parse(decoded);
+          } catch {
+            return null;
+          }
+        })()
+      );
       if (!parseResult.success) {
         setErrorKey("transfer.error.badFormat");
         return;
@@ -54,7 +60,9 @@ export default function Transfer() {
         if (cancelled) return;
 
         const state = loadState();
-        const existing = state.schedules.find((schedule) => schedule.slug === parsed.slug);
+        const existing = state.schedules.find(
+          schedule => schedule.slug === parsed.slug
+        );
         const nextSchedule = {
           id: existing?.id ?? generateId("s"),
           name: fetched.name,
@@ -70,8 +78,8 @@ export default function Transfer() {
         };
 
         const schedules = existing
-          ? state.schedules.map((schedule) =>
-              schedule.slug === parsed.slug ? nextSchedule : schedule,
+          ? state.schedules.map(schedule =>
+              schedule.slug === parsed.slug ? nextSchedule : schedule
             )
           : [...state.schedules, nextSchedule];
 
@@ -81,7 +89,9 @@ export default function Transfer() {
         });
 
         toast.success(
-          tStandalone(existing ? "transfer.updated" : "transfer.added", { name: fetched.name }),
+          tStandalone(existing ? "transfer.updated" : "transfer.added", {
+            name: fetched.name,
+          })
         );
         navigate("/");
       } catch (error) {
@@ -104,13 +114,21 @@ export default function Transfer() {
 
   if (errorKey) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: "var(--dt-page-bg)" }}>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4"
+        style={{ backgroundColor: "var(--dt-page-bg)" }}
+      >
         <div className="text-6xl">😢</div>
-        <h1 className="text-xl font-bold" style={{ color: "var(--dt-text)" }}>{t(errorKey)}</h1>
+        <h1 className="text-xl font-bold" style={{ color: "var(--dt-text)" }}>
+          {t(errorKey)}
+        </h1>
         <a
           href="/"
           className="theme-border theme-shadow-sm px-4 py-2 font-bold text-sm transition-all duration-150 theme-hover-lift"
-          style={{ backgroundColor: "var(--dt-current-highlight)", borderRadius: "var(--dt-border-radius-sm)" }}
+          style={{
+            backgroundColor: "var(--dt-current-highlight)",
+            borderRadius: "var(--dt-border-radius-sm)",
+          }}
         >
           {t("error.backHome")}
         </a>
@@ -119,8 +137,14 @@ export default function Transfer() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--dt-page-bg)" }}>
-      <Loader2 className="size-8 animate-spin" style={{ color: "var(--dt-current-highlight)" }} />
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{ backgroundColor: "var(--dt-page-bg)" }}
+    >
+      <Loader2
+        className="size-8 animate-spin"
+        style={{ color: "var(--dt-current-highlight)" }}
+      />
     </div>
   );
 }

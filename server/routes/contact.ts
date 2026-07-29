@@ -24,7 +24,7 @@ function sanitizeControlChars(str: string): string {
 
 const app = new Hono<Env>();
 
-app.post("/", async (c) => {
+app.post("/", async c => {
   const body = await c.req.json().catch(() => null);
   if (!body) {
     return c.json({ error: "Invalid JSON" }, 400);
@@ -32,7 +32,13 @@ app.post("/", async (c) => {
 
   const parsed = contactSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json({ error: "入力内容を確認してください", details: parsed.error.flatten().fieldErrors }, 400);
+    return c.json(
+      {
+        error: "入力内容を確認してください",
+        details: parsed.error.flatten().fieldErrors,
+      },
+      400
+    );
   }
 
   // ハニーポットに値がある場合は bot とみなして静かに成功を返す
@@ -56,7 +62,10 @@ app.post("/", async (c) => {
 
   if (error) {
     console.error("Resend error:", error);
-    return c.json({ error: "送信に失敗しました。しばらくしてからお試しください。" }, 500);
+    return c.json(
+      { error: "送信に失敗しました。しばらくしてからお試しください。" },
+      500
+    );
   }
 
   return c.json({ ok: true });

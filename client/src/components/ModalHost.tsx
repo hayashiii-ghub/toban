@@ -14,7 +14,13 @@ interface ModalHostProps {
   showShare: boolean;
   activeSchedule: Schedule;
   schedules: Schedule[];
-  onAddSchedule: (template: Parameters<typeof NewScheduleModal>[0]["onSelect"] extends (t: infer T) => void ? T : never) => void;
+  onAddSchedule: (
+    template: Parameters<typeof NewScheduleModal>[0]["onSelect"] extends (
+      t: infer T
+    ) => void
+      ? T
+      : never
+  ) => void;
   onDeleteSchedule: (id: string) => void;
   onDuplicateSchedule: () => void;
   onSaveSettings: (settings: ScheduleSettings) => void;
@@ -45,19 +51,21 @@ export function ModalHost({
             <NewScheduleModal onSelect={onAddSchedule} onClose={onCloseModal} />
           )}
         </AnimatePresence>,
-        document.body,
+        document.body
       )}
       {createPortal(
         <AnimatePresence>
           {modalType === "confirmDelete" && deleteTargetId && (
             <ConfirmDeleteDialog
-              scheduleName={schedules.find((s) => s.id === deleteTargetId)?.name ?? ""}
+              scheduleName={
+                schedules.find(s => s.id === deleteTargetId)?.name ?? ""
+              }
               onConfirm={() => onDeleteSchedule(deleteTargetId)}
               onCancel={onCloseModal}
             />
           )}
         </AnimatePresence>,
-        document.body,
+        document.body
       )}
       {createPortal(
         <AnimatePresence>
@@ -78,7 +86,7 @@ export function ModalHost({
             />
           )}
         </AnimatePresence>,
-        document.body,
+        document.body
       )}
       {createPortal(
         <AnimatePresence>
@@ -91,7 +99,7 @@ export function ModalHost({
             />
           )}
         </AnimatePresence>,
-        document.body,
+        document.body
       )}
     </>
   );

@@ -70,4 +70,6 @@ export const createScheduleResponseSchema = z.object({
 // Derived types
 export type ScheduleData = z.infer<typeof scheduleDataSchema>;
 export type ScheduleResponse = z.infer<typeof scheduleResponseSchema>;
-export type CreateScheduleResponse = z.infer<typeof createScheduleResponseSchema>;
+export type CreateScheduleResponse = z.infer<
+  typeof createScheduleResponseSchema
+>;

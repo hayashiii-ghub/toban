@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, cleanup, within } from "@testing-library/react";
 import { AssignmentsGrid } from "./AssignmentsGrid";
-import type { Assignment, AssignmentMode, Member, TaskGroup } from "@shared/types";
+import type {
+  Assignment,
+  AssignmentMode,
+  Member,
+  TaskGroup,
+} from "@shared/types";
 
 vi.mock("framer-motion", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -12,12 +17,19 @@ vi.mock("framer-motion", () => {
       get: (_target: unknown, prop: string) =>
         ReactMod.forwardRef((props: Record<string, unknown>, ref: unknown) => {
           const {
-            initial: _initial, animate: _animate, exit: _exit, transition: _transition, variants: _variants,
-            whileHover: _whileHover, whileTap: _whileTap, layout: _layout, ...rest
+            initial: _initial,
+            animate: _animate,
+            exit: _exit,
+            transition: _transition,
+            variants: _variants,
+            whileHover: _whileHover,
+            whileTap: _whileTap,
+            layout: _layout,
+            ...rest
           } = props;
           return ReactMod.createElement(prop, { ...rest, ref });
         }),
-    },
+    }
   );
   return {
     motion: motionProxy,
@@ -55,15 +67,24 @@ const baseProps = {
 };
 
 const sampleAssignments: Assignment[] = [
-  { group: makeGroup("g1", ["掃除", "ゴミ捨て"], "🧹"), member: makeMember("m1", "田中太郎") },
-  { group: makeGroup("g2", ["配膳"], "🍽️"), member: makeMember("m2", "鈴木花子") },
-  { group: makeGroup("g3", ["日直"], "📋"), member: makeMember("m3", "佐藤次郎") },
+  {
+    group: makeGroup("g1", ["掃除", "ゴミ捨て"], "🧹"),
+    member: makeMember("m1", "田中太郎"),
+  },
+  {
+    group: makeGroup("g2", ["配膳"], "🍽️"),
+    member: makeMember("m2", "鈴木花子"),
+  },
+  {
+    group: makeGroup("g3", ["日直"], "📋"),
+    member: makeMember("m3", "佐藤次郎"),
+  },
 ];
 
 describe("AssignmentsGrid", () => {
   it("正しい数のカードが表示される", () => {
     const { container } = render(
-      <AssignmentsGrid {...baseProps} assignments={sampleAssignments} />,
+      <AssignmentsGrid {...baseProps} assignments={sampleAssignments} />
     );
     const cards = container.querySelectorAll(".rotation-print-card");
     expect(cards).toHaveLength(sampleAssignments.length);
@@ -71,7 +92,7 @@ describe("AssignmentsGrid", () => {
 
   it("各カードにメンバー名が表示される", () => {
     const { container } = render(
-      <AssignmentsGrid {...baseProps} assignments={sampleAssignments} />,
+      <AssignmentsGrid {...baseProps} assignments={sampleAssignments} />
     );
     const view = within(container);
     expect(view.getByText("田中太郎")).toBeInTheDocument();
@@ -81,7 +102,7 @@ describe("AssignmentsGrid", () => {
 
   it("各カードにタスク名が表示される", () => {
     const { container } = render(
-      <AssignmentsGrid {...baseProps} assignments={sampleAssignments} />,
+      <AssignmentsGrid {...baseProps} assignments={sampleAssignments} />
     );
     const view = within(container);
     expect(view.getByText("掃除")).toBeInTheDocument();
@@ -92,7 +113,7 @@ describe("AssignmentsGrid", () => {
 
   it("空のassignments配列で空の状態が表示される", () => {
     const { container } = render(
-      <AssignmentsGrid {...baseProps} assignments={[]} />,
+      <AssignmentsGrid {...baseProps} assignments={[]} />
     );
     const grid = container.querySelector(".rotation-print-card-grid");
     expect(grid).toBeInTheDocument();

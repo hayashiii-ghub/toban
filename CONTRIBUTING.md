@@ -23,16 +23,16 @@ pnpm dev:full
 
 ## 開発コマンド
 
-| コマンド | 説明 |
-| --- | --- |
-| `pnpm dev` | Vite 開発サーバー（ポート 3000） |
-| `pnpm dev:api` | Wrangler Workers 開発サーバー（ポート 8788） |
-| `pnpm dev:full` | フロントエンド + API を同時起動 |
-| `pnpm build` | プロダクションビルド |
-| `pnpm check` | TypeScript 型検査 |
-| `pnpm test` | テスト実行 |
-| `pnpm lint` | ESLint によるコード検査 |
-| `pnpm format` | Prettier によるコード整形 |
+| コマンド        | 説明                                         |
+| --------------- | -------------------------------------------- |
+| `pnpm dev`      | Vite 開発サーバー（ポート 3000）             |
+| `pnpm dev:api`  | Wrangler Workers 開発サーバー（ポート 8788） |
+| `pnpm dev:full` | フロントエンド + API を同時起動              |
+| `pnpm build`    | プロダクションビルド                         |
+| `pnpm check`    | TypeScript 型検査                            |
+| `pnpm test`     | テスト実行                                   |
+| `pnpm lint`     | ESLint によるコード検査                      |
+| `pnpm format`   | Prettier によるコード整形                    |
 
 ## PR の出し方
 

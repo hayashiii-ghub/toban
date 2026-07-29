@@ -34,7 +34,7 @@ export function FontPicker({ onChange }: FontPickerProps) {
 
   return (
     <div className="grid grid-cols-2 gap-2 p-0.5">
-      {APP_FONTS.map((font) => {
+      {APP_FONTS.map(font => {
         const isSelected = selected === font.id;
         return (
           <button
@@ -48,7 +48,9 @@ export function FontPicker({ onChange }: FontPickerProps) {
               borderRadius: "var(--dt-border-radius-sm)",
               backgroundColor: "var(--dt-card-bg)",
               ...(isSelected
-                ? ({ "--tw-ring-color": "var(--dt-current-highlight)" } as React.CSSProperties)
+                ? ({
+                    "--tw-ring-color": "var(--dt-current-highlight)",
+                  } as React.CSSProperties)
                 : {}),
             }}
             aria-pressed={isSelected}
@@ -56,11 +58,18 @@ export function FontPicker({ onChange }: FontPickerProps) {
           >
             <div
               className="text-xl leading-tight"
-              style={{ fontFamily: font.family, fontWeight: font.weights.bold, color: "var(--dt-text)" }}
+              style={{
+                fontFamily: font.family,
+                fontWeight: font.weights.bold,
+                color: "var(--dt-text)",
+              }}
             >
               あいう Aa
             </div>
-            <div className="text-xs mt-1.5 font-bold" style={{ color: "var(--dt-text-secondary)" }}>
+            <div
+              className="text-xs mt-1.5 font-bold"
+              style={{ color: "var(--dt-text-secondary)" }}
+            >
               {t(font.labelKey)}
             </div>
             {isSelected && (

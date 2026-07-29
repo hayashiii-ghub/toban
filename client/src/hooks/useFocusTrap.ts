@@ -1,22 +1,30 @@
 import { useEffect, type RefObject } from "react";
 
 const FOCUSABLE_SELECTOR = [
-  'a[href]:not([disabled]):not([hidden])',
-  'button:not([disabled]):not([hidden])',
-  'input:not([disabled]):not([hidden])',
-  'textarea:not([disabled]):not([hidden])',
-  'select:not([disabled]):not([hidden])',
+  "a[href]:not([disabled]):not([hidden])",
+  "button:not([disabled]):not([hidden])",
+  "input:not([disabled]):not([hidden])",
+  "textarea:not([disabled]):not([hidden])",
+  "select:not([disabled]):not([hidden])",
   '[tabindex]:not([tabindex="-1"]):not([disabled]):not([hidden])',
 ].join(", ");
 
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
-  const elements = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+  const elements = Array.from(
+    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+  );
   return elements.filter(
-    (el) => el.offsetParent !== null && !el.closest('[hidden]') && !el.closest('[aria-hidden="true"]')
+    el =>
+      el.offsetParent !== null &&
+      !el.closest("[hidden]") &&
+      !el.closest('[aria-hidden="true"]')
   );
 }
 
-export function useFocusTrap(ref: RefObject<HTMLElement | null>, isActive: boolean): void {
+export function useFocusTrap(
+  ref: RefObject<HTMLElement | null>,
+  isActive: boolean
+): void {
   useEffect(() => {
     if (!isActive || !ref.current) return;
 
@@ -51,12 +59,18 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, isActive: boole
       const last = focusable[focusable.length - 1];
 
       if (e.shiftKey) {
-        if (document.activeElement === first || !container.contains(document.activeElement)) {
+        if (
+          document.activeElement === first ||
+          !container.contains(document.activeElement)
+        ) {
           e.preventDefault();
           last.focus();
         }
       } else {
-        if (document.activeElement === last || !container.contains(document.activeElement)) {
+        if (
+          document.activeElement === last ||
+          !container.contains(document.activeElement)
+        ) {
           e.preventDefault();
           first.focus();
         }

@@ -48,7 +48,7 @@ export const DEFAULT_FONT_ID = "standard";
 const FONT_STORAGE_KEY = "toban-font";
 
 export function getFontById(id: string | null | undefined): AppFont {
-  return APP_FONTS.find((f) => f.id === id) ?? APP_FONTS[0];
+  return APP_FONTS.find(f => f.id === id) ?? APP_FONTS[0];
 }
 
 export function getSavedFontId(): string {

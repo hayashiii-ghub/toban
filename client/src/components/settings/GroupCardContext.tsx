@@ -64,7 +64,9 @@ export const GroupCardProvider = GroupCardContext.Provider;
 export function useGroupCardContext(): GroupCardContextValue {
   const ctx = use(GroupCardContext);
   if (!ctx) {
-    throw new Error("useGroupCardContext must be used within a GroupCardProvider");
+    throw new Error(
+      "useGroupCardContext must be used within a GroupCardProvider"
+    );
   }
   return ctx;
 }

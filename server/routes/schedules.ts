@@ -5,7 +5,11 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { schedules } from "../db/schema";
 import { ensureSchedulesSchema } from "../db/ensureSchema";
-import { hashToken, authenticateEditRequest, SLUG_PATTERN } from "../middleware/auth";
+import {
+  hashToken,
+  authenticateEditRequest,
+  SLUG_PATTERN,
+} from "../middleware/auth";
 import {
   taskGroupSchema,
   memberSchema,
@@ -24,16 +28,22 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-function logDatabaseError(scope: string, error: unknown, context: Record<string, unknown> = {}) {
-  const serializedError = error instanceof Error
-    ? { name: error.name, message: error.message, stack: error.stack }
-    : error;
+function logDatabaseError(
+  scope: string,
+  error: unknown,
+  context: Record<string, unknown> = {}
+) {
+  const serializedError =
+    error instanceof Error
+      ? { name: error.name, message: error.message, stack: error.stack }
+      : error;
   console.error(`[schedules:${scope}]`, { ...context, error: serializedError });
 }
 
-async function parseJsonBody(
-  c: { req: { json(): Promise<unknown> }; json: (data: unknown, status: number) => Response },
-): Promise<{ ok: true; data: unknown } | { ok: false; response: Response }> {
+async function parseJsonBody(c: {
+  req: { json(): Promise<unknown> };
+  json: (data: unknown, status: number) => Response;
+}): Promise<{ ok: true; data: unknown } | { ok: false; response: Response }> {
   try {
     return { ok: true, data: await c.req.json() };
   } catch {
@@ -71,13 +81,16 @@ function serializeSchedule(row: typeof schedules.$inferSelect) {
 }
 
 // POST /api/schedules - Create
-app.post("/", async (c) => {
+app.post("/", async c => {
   const body = await parseJsonBody(c);
   if (!body.ok) return body.response;
 
   const parsed = createScheduleSchema.safeParse(body.data);
   if (!parsed.success) {
-    return c.json({ error: "Invalid request", details: parsed.error.flatten() }, 400);
+    return c.json(
+      { error: "Invalid request", details: parsed.error.flatten() },
+      400
+    );
   }
 
   const data = parsed.data;
@@ -92,7 +105,8 @@ app.post("/", async (c) => {
       const slug = nanoid(10);
       try {
         await db.insert(schedules).values({
-          id, slug,
+          id,
+          slug,
           editToken: "",
           editTokenHash,
           isPublic: false,
@@ -100,7 +114,9 @@ app.post("/", async (c) => {
           rotation: data.rotation,
           groupsJson: JSON.stringify(data.groups),
           membersJson: JSON.stringify(data.members),
-          rotationConfigJson: data.rotationConfig ? JSON.stringify(data.rotationConfig) : null,
+          rotationConfigJson: data.rotationConfig
+            ? JSON.stringify(data.rotationConfig)
+            : null,
           assignmentMode: data.assignmentMode ?? null,
           designThemeId: data.designThemeId ?? null,
           createdAt: now,
@@ -108,7 +124,8 @@ app.post("/", async (c) => {
         });
         return c.json({ slug, editToken }, 201);
       } catch (error) {
-        if (!(error instanceof Error) || !error.message.includes("UNIQUE")) throw error;
+        if (!(error instanceof Error) || !error.message.includes("UNIQUE"))
+          throw error;
       }
     }
   } catch (error) {
@@ -120,13 +137,17 @@ app.post("/", async (c) => {
 });
 
 // GET /api/schedules/:slug/edit - Read (requires edit token)
-app.get("/:slug/edit", async (c) => {
+app.get("/:slug/edit", async c => {
   const auth = await authenticateEditRequest(c);
   if ("error" in auth) return auth.error;
   const { slug, db } = auth;
 
   try {
-    const [row] = await db.select().from(schedules).where(eq(schedules.slug, slug)).limit(1);
+    const [row] = await db
+      .select()
+      .from(schedules)
+      .where(eq(schedules.slug, slug))
+      .limit(1);
     if (!row) return c.json({ error: "Not found" }, 404);
     return c.json(serializeSchedule(row));
   } catch (error) {
@@ -136,14 +157,18 @@ app.get("/:slug/edit", async (c) => {
 });
 
 // GET /api/schedules/:slug - Read (public)
-app.get("/:slug", async (c) => {
+app.get("/:slug", async c => {
   const slug = c.req.param("slug");
   if (!SLUG_PATTERN.test(slug)) return c.json({ error: "Invalid slug" }, 400);
 
   const db = drizzle(c.env.DB);
 
   try {
-    const [row] = await db.select().from(schedules).where(eq(schedules.slug, slug)).limit(1);
+    const [row] = await db
+      .select()
+      .from(schedules)
+      .where(eq(schedules.slug, slug))
+      .limit(1);
     if (!row || !row.isPublic) return c.json({ error: "Not found" }, 404);
     return c.json(serializeSchedule(row));
   } catch (error) {
@@ -153,13 +178,16 @@ app.get("/:slug", async (c) => {
 });
 
 // POST /api/schedules/:slug/publish - Publish schedule
-app.post("/:slug/publish", async (c) => {
+app.post("/:slug/publish", async c => {
   const auth = await authenticateEditRequest(c);
   if ("error" in auth) return auth.error;
   const { slug, db } = auth;
 
   try {
-    await db.update(schedules).set({ isPublic: true, updatedAt: new Date().toISOString() }).where(eq(schedules.slug, slug));
+    await db
+      .update(schedules)
+      .set({ isPublic: true, updatedAt: new Date().toISOString() })
+      .where(eq(schedules.slug, slug));
   } catch (error) {
     logDatabaseError("publish", error, { slug });
     return c.json({ error: "Database error" }, 500);
@@ -168,7 +196,7 @@ app.post("/:slug/publish", async (c) => {
 });
 
 // PUT /api/schedules/:slug - Update (requires edit token)
-app.put("/:slug", async (c) => {
+app.put("/:slug", async c => {
   const auth = await authenticateEditRequest(c);
   if ("error" in auth) return auth.error;
   const { slug, db } = auth;
@@ -178,21 +206,29 @@ app.put("/:slug", async (c) => {
 
   const parsed = updateScheduleSchema.safeParse(body.data);
   if (!parsed.success) {
-    return c.json({ error: "Invalid request", details: parsed.error.flatten() }, 400);
+    return c.json(
+      { error: "Invalid request", details: parsed.error.flatten() },
+      400
+    );
   }
 
   const data = parsed.data;
   try {
-    await db.update(schedules).set({
-      name: data.name,
-      rotation: data.rotation,
-      groupsJson: JSON.stringify(data.groups),
-      membersJson: JSON.stringify(data.members),
-      rotationConfigJson: data.rotationConfig ? JSON.stringify(data.rotationConfig) : null,
-      assignmentMode: data.assignmentMode ?? null,
-      designThemeId: data.designThemeId ?? null,
-      updatedAt: new Date().toISOString(),
-    }).where(eq(schedules.slug, slug));
+    await db
+      .update(schedules)
+      .set({
+        name: data.name,
+        rotation: data.rotation,
+        groupsJson: JSON.stringify(data.groups),
+        membersJson: JSON.stringify(data.members),
+        rotationConfigJson: data.rotationConfig
+          ? JSON.stringify(data.rotationConfig)
+          : null,
+        assignmentMode: data.assignmentMode ?? null,
+        designThemeId: data.designThemeId ?? null,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(schedules.slug, slug));
   } catch (error) {
     logDatabaseError("update", error, { slug, name: data.name });
     return c.json({ error: "Database error" }, 500);
@@ -201,7 +237,7 @@ app.put("/:slug", async (c) => {
 });
 
 // DELETE /api/schedules/:slug - Delete (requires edit token)
-app.delete("/:slug", async (c) => {
+app.delete("/:slug", async c => {
   const auth = await authenticateEditRequest(c);
   if ("error" in auth) return auth.error;
   const { slug, db } = auth;

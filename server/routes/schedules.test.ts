@@ -49,7 +49,13 @@ function fakeScheduleRow(overrides: Partial<Record<string, unknown>> = {}) {
     rotation: 0,
     groups_json: JSON.stringify([{ id: "g1", tasks: ["掃除"], emoji: "🧹" }]),
     members_json: JSON.stringify([
-      { id: "m1", name: "田中", color: "#FF0000", bgColor: "#FFEEEE", textColor: "#000000" },
+      {
+        id: "m1",
+        name: "田中",
+        color: "#FF0000",
+        bgColor: "#FFEEEE",
+        textColor: "#000000",
+      },
     ]),
     rotation_config_json: null,
     assignment_mode: null,
@@ -65,7 +71,7 @@ function fakeScheduleRow(overrides: Partial<Record<string, unknown>> = {}) {
  * `queryHandler` receives (sql, params) and should return { results: [...] } or throw.
  */
 function createMockD1(
-  queryHandler: (sql: string, params: unknown[]) => { results: unknown[] },
+  queryHandler: (sql: string, params: unknown[]) => { results: unknown[] }
 ): D1Database {
   const mockStatement = (sql: string) => {
     let boundParams: unknown[] = [];
@@ -94,8 +100,9 @@ function createMockD1(
         }
         const rows = result.results as Record<string, unknown>[];
         const columns = Object.keys(rows[0]);
-        const dataRows = rows.map((row) => columns.map((col) => row[col]));
-        if (opts?.columnNames) return { results: dataRows, columnNames: columns };
+        const dataRows = rows.map(row => columns.map(col => row[col]));
+        if (opts?.columnNames)
+          return { results: dataRows, columnNames: columns };
         return dataRows;
       },
     };
@@ -226,9 +233,15 @@ describe("POST /api/schedules (Create)", () => {
       body: JSON.stringify(
         validScheduleData({
           members: [
-            { id: "m1", name: "田中", color: "red", bgColor: "#FFEEEE", textColor: "#000000" },
+            {
+              id: "m1",
+              name: "田中",
+              color: "red",
+              bgColor: "#FFEEEE",
+              textColor: "#000000",
+            },
           ],
-        }),
+        })
       ),
     });
 
@@ -244,8 +257,15 @@ describe("POST /api/schedules (Create)", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(
         validScheduleData({
-          groups: [{ id: "g1", tasks: ["掃除"], emoji: "🧹", memberIds: ["nonexistent"] }],
-        }),
+          groups: [
+            {
+              id: "g1",
+              tasks: ["掃除"],
+              emoji: "🧹",
+              memberIds: ["nonexistent"],
+            },
+          ],
+        })
       ),
     });
 
@@ -256,7 +276,7 @@ describe("POST /api/schedules (Create)", () => {
 describe("GET /api/schedules/:slug (Public read)", () => {
   it("returns 200 for a public schedule", async () => {
     const row = fakeScheduleRow({ is_public: 1 });
-    const mockDB = createMockD1((sql) => {
+    const mockDB = createMockD1(sql => {
       if (sql.includes("select")) return { results: [row] };
       return { results: [] };
     });
@@ -270,13 +290,19 @@ describe("GET /api/schedules/:slug (Public read)", () => {
     expect(json.name).toBe("テスト当番表");
     expect(json.groups).toEqual([{ id: "g1", tasks: ["掃除"], emoji: "🧹" }]);
     expect(json.members).toEqual([
-      { id: "m1", name: "田中", color: "#FF0000", bgColor: "#FFEEEE", textColor: "#000000" },
+      {
+        id: "m1",
+        name: "田中",
+        color: "#FF0000",
+        bgColor: "#FFEEEE",
+        textColor: "#000000",
+      },
     ]);
   });
 
   it("returns 404 for a non-public schedule", async () => {
     const row = fakeScheduleRow({ is_public: 0 });
-    const mockDB = createMockD1((sql) => {
+    const mockDB = createMockD1(sql => {
       if (sql.includes("select")) return { results: [row] };
       return { results: [] };
     });
@@ -331,7 +357,7 @@ describe("PUT /api/schedules/:slug (Update)", () => {
     const { hashToken } = await import("../middleware/auth");
     const tokenHash = await hashToken(editToken);
 
-    const mockDB = createMockD1((sql) => {
+    const mockDB = createMockD1(sql => {
       if (sql.includes("select")) {
         // Auth middleware query selects only edit_token, edit_token_hash.
         // Drizzle uses positional mapping from raw(), so the returned object
@@ -340,7 +366,11 @@ describe("PUT /api/schedules/:slug (Update)", () => {
           return { results: [{ edit_token: "", edit_token_hash: tokenHash }] };
         }
         // Full select query (if needed)
-        return { results: [fakeScheduleRow({ slug: validSlug, edit_token_hash: tokenHash })] };
+        return {
+          results: [
+            fakeScheduleRow({ slug: validSlug, edit_token_hash: tokenHash }),
+          ],
+        };
       }
       return { results: [] };
     });
@@ -419,7 +449,7 @@ describe("DELETE /api/schedules/:slug", () => {
     const { hashToken } = await import("../middleware/auth");
     const tokenHash = await hashToken(editToken);
 
-    const mockDB = createMockD1((sql) => {
+    const mockDB = createMockD1(sql => {
       if (sql.includes("select")) {
         return { results: [{ edit_token: "", edit_token_hash: tokenHash }] };
       }
@@ -441,7 +471,7 @@ describe("DELETE /api/schedules/:slug", () => {
     const { hashToken } = await import("../middleware/auth");
     const tokenHash = await hashToken(editToken);
 
-    const mockDB = createMockD1((sql) => {
+    const mockDB = createMockD1(sql => {
       if (sql.includes("select")) {
         return { results: [{ edit_token: "", edit_token_hash: tokenHash }] };
       }

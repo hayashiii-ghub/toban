@@ -22,8 +22,20 @@ const makeTemplate = (name = "テスト"): ScheduleTemplate => ({
   emoji: "🧹",
   groups: [{ id: "g1", tasks: ["タスクA"], emoji: "🧹" }],
   members: [
-    { id: "m1", name: "太郎", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" },
-    { id: "m2", name: "花子", color: "#10B981", bgColor: "#D1FAE5", textColor: "#064E3B" },
+    {
+      id: "m1",
+      name: "太郎",
+      color: "#3B82F6",
+      bgColor: "#DBEAFE",
+      textColor: "#1E3A5F",
+    },
+    {
+      id: "m2",
+      name: "花子",
+      color: "#10B981",
+      bgColor: "#D1FAE5",
+      textColor: "#064E3B",
+    },
   ],
 });
 
@@ -36,7 +48,9 @@ describe("useScheduleManager", () => {
     const { result } = renderHook(() => useScheduleManager());
     expect(result.current.state.schedules.length).toBeGreaterThanOrEqual(1);
     expect(result.current.activeSchedule).toBeDefined();
-    expect(result.current.state.activeScheduleId).toBe(result.current.state.schedules[0].id);
+    expect(result.current.state.activeScheduleId).toBe(
+      result.current.state.schedules[0].id
+    );
   });
 
   it("handleAddScheduleでスケジュールを追加しアクティブにする", () => {
@@ -68,7 +82,9 @@ describe("useScheduleManager", () => {
       result.current.handleDeleteSchedule(second!.id);
     });
     expect(result.current.state.schedules.length).toBe(countBefore - 1);
-    expect(result.current.state.schedules.find((s) => s.id === second!.id)).toBeUndefined();
+    expect(
+      result.current.state.schedules.find(s => s.id === second!.id)
+    ).toBeUndefined();
 
     // 最後の1つは削除できない
     const lastId = result.current.state.schedules[0].id;
@@ -120,7 +136,7 @@ describe("useScheduleManager", () => {
       result.current.handleTabDrop(s3!.id, firstId);
     });
 
-    const ids = result.current.state.schedules.map((s) => s.id);
+    const ids = result.current.state.schedules.map(s => s.id);
     expect(ids.indexOf(s3!.id)).toBeLessThan(ids.indexOf(firstId));
   });
 
@@ -134,9 +150,11 @@ describe("useScheduleManager", () => {
     });
 
     expect(result.current.state.schedules.length).toBe(countBefore + 1);
-    expect(result.current.activeSchedule?.name).toBe(`${originalName}（コピー）`);
+    expect(result.current.activeSchedule?.name).toBe(
+      `${originalName}（コピー）`
+    );
     // コピーには新しいIDが割り当てられる
-    const ids = result.current.state.schedules.map((s) => s.id);
+    const ids = result.current.state.schedules.map(s => s.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
@@ -145,7 +163,13 @@ describe("useScheduleManager", () => {
 
     const newGroups = [{ id: "g_new", tasks: ["新タスク"], emoji: "🎯" }];
     const newMembers = [
-      { id: "m_new", name: "新メンバー", color: "#F00", bgColor: "#FEE", textColor: "#900" },
+      {
+        id: "m_new",
+        name: "新メンバー",
+        color: "#F00",
+        bgColor: "#FEE",
+        textColor: "#900",
+      },
     ];
 
     act(() => {

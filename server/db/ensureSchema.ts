@@ -10,26 +10,47 @@ export type SchedulesSchemaStatus = {
 };
 
 const REQUIRED_SCHEDULE_COLUMNS: RequiredColumn[] = [
-  { name: "edit_token_hash", sql: "ALTER TABLE schedules ADD COLUMN edit_token_hash text" },
-  { name: "rotation_config_json", sql: "ALTER TABLE schedules ADD COLUMN rotation_config_json text" },
-  { name: "assignment_mode", sql: "ALTER TABLE schedules ADD COLUMN assignment_mode text" },
-  { name: "design_theme_id", sql: "ALTER TABLE schedules ADD COLUMN design_theme_id text" },
-  { name: "is_public", sql: "ALTER TABLE schedules ADD COLUMN is_public integer DEFAULT 0 NOT NULL" },
+  {
+    name: "edit_token_hash",
+    sql: "ALTER TABLE schedules ADD COLUMN edit_token_hash text",
+  },
+  {
+    name: "rotation_config_json",
+    sql: "ALTER TABLE schedules ADD COLUMN rotation_config_json text",
+  },
+  {
+    name: "assignment_mode",
+    sql: "ALTER TABLE schedules ADD COLUMN assignment_mode text",
+  },
+  {
+    name: "design_theme_id",
+    sql: "ALTER TABLE schedules ADD COLUMN design_theme_id text",
+  },
+  {
+    name: "is_public",
+    sql: "ALTER TABLE schedules ADD COLUMN is_public integer DEFAULT 0 NOT NULL",
+  },
 ];
 
 let schemaReady = false;
 let schemaReadyPromise: Promise<void> | null = null;
 
 async function readSchedulesColumnNames(db: D1Database): Promise<string[]> {
-  const tableInfo = await db.prepare("PRAGMA table_info(schedules)").all<{ name: string }>();
-  return (tableInfo.results ?? []).map((column) => String(column.name));
+  const tableInfo = await db
+    .prepare("PRAGMA table_info(schedules)")
+    .all<{ name: string }>();
+  return (tableInfo.results ?? []).map(column => String(column.name));
 }
 
-export async function getSchedulesSchemaStatus(db: D1Database): Promise<SchedulesSchemaStatus> {
+export async function getSchedulesSchemaStatus(
+  db: D1Database
+): Promise<SchedulesSchemaStatus> {
   const existingColumns = await readSchedulesColumnNames(db);
   const existingColumnSet = new Set(existingColumns);
-  const requiredColumns = REQUIRED_SCHEDULE_COLUMNS.map((column) => column.name);
-  const missingColumns = requiredColumns.filter((column) => !existingColumnSet.has(column));
+  const requiredColumns = REQUIRED_SCHEDULE_COLUMNS.map(column => column.name);
+  const missingColumns = requiredColumns.filter(
+    column => !existingColumnSet.has(column)
+  );
 
   return {
     requiredColumns,
@@ -39,7 +60,7 @@ export async function getSchedulesSchemaStatus(db: D1Database): Promise<Schedule
 }
 
 export async function ensureSchedulesSchema(
-  db: D1Database,
+  db: D1Database
 ): Promise<{ appliedColumns: string[] }> {
   if (schemaReady) return { appliedColumns: [] };
   if (schemaReadyPromise) {
@@ -57,7 +78,10 @@ export async function ensureSchedulesSchema(
       try {
         await db.prepare(column.sql).run();
       } catch (error) {
-        if (!(error instanceof Error) || !error.message.toLowerCase().includes("duplicate column")) {
+        if (
+          !(error instanceof Error) ||
+          !error.message.toLowerCase().includes("duplicate column")
+        ) {
           throw error;
         }
       }
@@ -67,7 +91,9 @@ export async function ensureSchedulesSchema(
     }
 
     if (appliedColumns.length > 0) {
-      console.warn("[schema] Auto-repaired schedules table", { appliedColumns });
+      console.warn("[schema] Auto-repaired schedules table", {
+        appliedColumns,
+      });
     }
 
     schemaReady = true;

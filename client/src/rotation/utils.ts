@@ -1,6 +1,20 @@
-import type { AppState, Assignment, AssignmentMode, Member, RotationConfig, Schedule, ScheduleTemplate, TaskGroup } from "./types";
+import type {
+  AppState,
+  Assignment,
+  AssignmentMode,
+  Member,
+  RotationConfig,
+  Schedule,
+  ScheduleTemplate,
+  TaskGroup,
+} from "./types";
 import { countSkipDays, isSkippedDate } from "./holidays";
-import { addDays, diffLocalCalendarDays, parseIsoDateLocal, startOfLocalDay } from "./dateUtils";
+import {
+  addDays,
+  diffLocalCalendarDays,
+  parseIsoDateLocal,
+  startOfLocalDay,
+} from "./dateUtils";
 
 export function generateId(prefix: string): string {
   return `${prefix}${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
@@ -22,7 +36,7 @@ export function sanitizeTaskGroup(group: unknown): TaskGroup | null {
   if (!isRecord(group)) return null;
 
   const tasks = Array.isArray(group.tasks)
-    ? group.tasks.flatMap((task) => (isNonEmptyString(task) ? [task.trim()] : []))
+    ? group.tasks.flatMap(task => (isNonEmptyString(task) ? [task.trim()] : []))
     : [];
 
   if (
@@ -79,10 +93,14 @@ export function sanitizeSchedule(schedule: unknown): Schedule | null {
   if (!isRecord(schedule)) return null;
 
   const groups = Array.isArray(schedule.groups)
-    ? schedule.groups.map(sanitizeTaskGroup).filter((group): group is TaskGroup => group !== null)
+    ? schedule.groups
+        .map(sanitizeTaskGroup)
+        .filter((group): group is TaskGroup => group !== null)
     : [];
   const members = Array.isArray(schedule.members)
-    ? schedule.members.map(sanitizeMember).filter((member): member is Member => member !== null)
+    ? schedule.members
+        .map(sanitizeMember)
+        .filter((member): member is Member => member !== null)
     : [];
 
   if (
@@ -99,7 +117,10 @@ export function sanitizeSchedule(schedule: unknown): Schedule | null {
   const result: Schedule = {
     id: schedule.id,
     name: schedule.name.trim(),
-    rotation: normalizeRotation(schedule.rotation, members.filter(m => !m.skipped).length || members.length),
+    rotation: normalizeRotation(
+      schedule.rotation,
+      members.filter(m => !m.skipped).length || members.length
+    ),
     groups,
     members,
   };
@@ -111,7 +132,10 @@ export function sanitizeSchedule(schedule: unknown): Schedule | null {
     result.editToken = schedule.editToken;
   }
 
-  if (schedule.assignmentMode === "member" || schedule.assignmentMode === "task") {
+  if (
+    schedule.assignmentMode === "member" ||
+    schedule.assignmentMode === "task"
+  ) {
     result.assignmentMode = schedule.assignmentMode;
   }
 
@@ -131,7 +155,11 @@ export function sanitizeSchedule(schedule: unknown): Schedule | null {
     if (typeof rc.startDate === "string" && rc.startDate) {
       config.startDate = rc.startDate;
     }
-    if (typeof rc.cycleDays === "number" && Number.isFinite(rc.cycleDays) && rc.cycleDays > 0) {
+    if (
+      typeof rc.cycleDays === "number" &&
+      Number.isFinite(rc.cycleDays) &&
+      rc.cycleDays > 0
+    ) {
       config.cycleDays = rc.cycleDays;
     }
     if (typeof rc.skipSaturday === "boolean") {
@@ -167,15 +195,19 @@ export function sanitizeAppState(state: unknown): AppState | null {
     return null;
   }
 
-  const activeScheduleId = isNonEmptyString(state.activeScheduleId)
-    && schedules.some((schedule) => schedule.id === state.activeScheduleId)
-    ? state.activeScheduleId
-    : schedules[0].id;
+  const activeScheduleId =
+    isNonEmptyString(state.activeScheduleId) &&
+    schedules.some(schedule => schedule.id === state.activeScheduleId)
+      ? state.activeScheduleId
+      : schedules[0].id;
 
   return { schedules, activeScheduleId };
 }
 
-export function normalizeRotation(rotation: number, memberCount: number): number {
+export function normalizeRotation(
+  rotation: number,
+  memberCount: number
+): number {
   if (memberCount <= 0 || !Number.isFinite(rotation)) {
     return 0;
   }
@@ -184,7 +216,9 @@ export function normalizeRotation(rotation: number, memberCount: number): number
   return ((normalizedRotation % memberCount) + memberCount) % memberCount;
 }
 
-export function createScheduleFromTemplate(template: ScheduleTemplate): Schedule {
+export function createScheduleFromTemplate(
+  template: ScheduleTemplate
+): Schedule {
   const schedule: Schedule = {
     id: generateId("s"),
     name: template.name,
@@ -205,7 +239,7 @@ export function computeAssignments(
   groups: TaskGroup[],
   members: Member[],
   rotation: number,
-  assignmentMode?: AssignmentMode,
+  assignmentMode?: AssignmentMode
 ): Assignment[] {
   const activeMembers = members.filter(m => !m.skipped);
   if (activeMembers.length === 0) return [];
@@ -235,16 +269,24 @@ export function getGridCols(): string {
   return "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4";
 }
 
-export function computeDateRotation(config: RotationConfig, memberCount: number): number {
+export function computeDateRotation(
+  config: RotationConfig,
+  memberCount: number
+): number {
   return computeDateRotationForDate(config, memberCount, new Date());
 }
 
 export function computeDateRotationForDate(
   config: RotationConfig,
   memberCount: number,
-  targetDate: Date,
+  targetDate: Date
 ): number {
-  if (!config.startDate || !config.cycleDays || config.cycleDays <= 0 || memberCount <= 0) {
+  if (
+    !config.startDate ||
+    !config.cycleDays ||
+    config.cycleDays <= 0 ||
+    memberCount <= 0
+  ) {
     return 0;
   }
 
@@ -267,24 +309,37 @@ export function computeDateRotationForDate(
   return ((cycles % memberCount) + memberCount) % memberCount;
 }
 
-export function addMemberToSchedule(schedule: Schedule, member: Member, newGroupTaskLabel: string): Schedule {
+export function addMemberToSchedule(
+  schedule: Schedule,
+  member: Member,
+  newGroupTaskLabel: string
+): Schedule {
   const members = [...schedule.members, member];
   if (schedule.assignmentMode === "task") {
     return { ...schedule, members };
   }
-  const newGroup: TaskGroup = { id: generateId("g"), emoji: "✨", tasks: [newGroupTaskLabel] };
+  const newGroup: TaskGroup = {
+    id: generateId("g"),
+    emoji: "✨",
+    tasks: [newGroupTaskLabel],
+  };
   return { ...schedule, members, groups: [...schedule.groups, newGroup] };
 }
 
-export function removeMemberFromSchedule(schedule: Schedule, memberId: string): Schedule {
-  const idx = schedule.members.findIndex((m) => m.id === memberId);
+export function removeMemberFromSchedule(
+  schedule: Schedule,
+  memberId: string
+): Schedule {
+  const idx = schedule.members.findIndex(m => m.id === memberId);
   if (idx === -1) return schedule;
 
-  const members = schedule.members.filter((m) => m.id !== memberId);
+  const members = schedule.members.filter(m => m.id !== memberId);
 
   if (schedule.assignmentMode === "task") {
-    const groups = schedule.groups.map((g) =>
-      g.memberIds ? { ...g, memberIds: g.memberIds.filter((id) => id !== memberId) } : g,
+    const groups = schedule.groups.map(g =>
+      g.memberIds
+        ? { ...g, memberIds: g.memberIds.filter(id => id !== memberId) }
+        : g
     );
     return { ...schedule, members, groups };
   }

@@ -34,7 +34,7 @@ function post(app: Hono, body: Record<string, unknown>) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     },
-    { RESEND_API_KEY: "test-key" },
+    { RESEND_API_KEY: "test-key" }
   );
 }
 
@@ -51,15 +51,20 @@ beforeEach(() => {
 
 describe("POST /api/contact", () => {
   // drift guard: 公開している全種別が server に受理されること
-  it.each(CONTACT_CATEGORIES)("accepts advertised category %s and uses it in the email", async (category) => {
-    const app = await makeApp();
-    const res = await post(app, valid({ category }));
+  it.each(CONTACT_CATEGORIES)(
+    "accepts advertised category %s and uses it in the email",
+    async category => {
+      const app = await makeApp();
+      const res = await post(app, valid({ category }));
 
-    expect(res.status).toBe(200);
-    expect(sentEmails).toHaveLength(1);
-    expect(sentEmails[0].subject).toBe(`[toban] ${category}`);
-    expect((sentEmails[0].text as string).startsWith(`種別: ${category}`)).toBe(true);
-  });
+      expect(res.status).toBe(200);
+      expect(sentEmails).toHaveLength(1);
+      expect(sentEmails[0].subject).toBe(`[toban] ${category}`);
+      expect(
+        (sentEmails[0].text as string).startsWith(`種別: ${category}`)
+      ).toBe(true);
+    }
+  );
 
   it("rejects an unknown category with 400 and sends nothing", async () => {
     const app = await makeApp();

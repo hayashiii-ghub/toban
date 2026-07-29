@@ -22,4 +22,6 @@ await rasterize("favicon.svg", "favicon-32.png", 32);
 await rasterize("pwa-icon.svg", "apple-touch-icon.png", 180);
 await rasterize("pwa-icon.svg", "pwa-192.png", 192);
 await rasterize("pwa-icon.svg", "pwa-512.png", 512);
-console.log("Generated favicon-32 / apple-touch-icon / pwa-192 / pwa-512 from SVG sources");
+console.log(
+  "Generated favicon-32 / apple-touch-icon / pwa-192 / pwa-512 from SVG sources"
+);

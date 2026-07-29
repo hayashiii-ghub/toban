@@ -18,11 +18,16 @@ const SharedScheduleView = lazy(() => import("./pages/SharedScheduleView"));
 const Transfer = lazy(() => import("./pages/Transfer"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-
 function LazyFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--dt-page-bg)" }}>
-      <Loader2 className="size-8 animate-spin" style={{ color: "var(--dt-current-highlight)" }} />
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{ backgroundColor: "var(--dt-page-bg)" }}
+    >
+      <Loader2
+        className="size-8 animate-spin"
+        style={{ color: "var(--dt-current-highlight)" }}
+      />
     </div>
   );
 }
@@ -74,7 +79,11 @@ function AppFooter() {
           rel="noopener noreferrer"
           className="flex items-center gap-0 px-2 text-sm text-muted-foreground/60 hover:text-muted-foreground/80 transition-colors"
         >
-          <img src="/hayashigoto-logo.png" alt="はやしごと" className="h-9 w-auto" />
+          <img
+            src="/hayashigoto-logo.png"
+            alt="はやしごと"
+            className="h-9 w-auto"
+          />
           <span>hay@shigoto.dev</span>
         </a>
       </div>

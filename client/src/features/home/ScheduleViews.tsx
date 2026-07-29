@@ -1,4 +1,10 @@
-import type { Assignment, AssignmentMode, Member, RotationConfig, TaskGroup } from "@/rotation/types";
+import type {
+  Assignment,
+  AssignmentMode,
+  Member,
+  RotationConfig,
+  TaskGroup,
+} from "@/rotation/types";
 import { AssignmentsGrid } from "@/features/home/AssignmentsGrid";
 import { RotationQuickTable } from "@/features/home/RotationQuickTable";
 import { RotationCalendar } from "@/features/home/RotationCalendar";
@@ -52,7 +58,12 @@ export function ScheduleViews({
         />
       )}
       {viewTab === "table" && (
-        <RotationQuickTable groups={groups} members={members} rotation={rotation} assignmentMode={assignmentMode} />
+        <RotationQuickTable
+          groups={groups}
+          members={members}
+          rotation={rotation}
+          assignmentMode={assignmentMode}
+        />
       )}
       {viewTab === "calendar" && (
         <RotationCalendar
@@ -64,7 +75,12 @@ export function ScheduleViews({
         />
       )}
       {viewTab === "disc" && (
-        <RotationDisc groups={groups} members={members} rotation={rotation} assignmentMode={assignmentMode} />
+        <RotationDisc
+          groups={groups}
+          members={members}
+          rotation={rotation}
+          assignmentMode={assignmentMode}
+        />
       )}
     </>
   );

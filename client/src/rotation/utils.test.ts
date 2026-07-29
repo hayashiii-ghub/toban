@@ -34,13 +34,35 @@ describe("computeAssignments", () => {
       { id: "g3", tasks: ["日直"], emoji: "📋" },
     ];
     const members = [
-      { id: "m1", name: "松丸", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" },
-      { id: "m2", name: "山下", color: "#EF4444", bgColor: "#FEE2E2", textColor: "#7F1D1D" },
-      { id: "m3", name: "田中", color: "#10B981", bgColor: "#D1FAE5", textColor: "#064E3B" },
+      {
+        id: "m1",
+        name: "松丸",
+        color: "#3B82F6",
+        bgColor: "#DBEAFE",
+        textColor: "#1E3A5F",
+      },
+      {
+        id: "m2",
+        name: "山下",
+        color: "#EF4444",
+        bgColor: "#FEE2E2",
+        textColor: "#7F1D1D",
+      },
+      {
+        id: "m3",
+        name: "田中",
+        color: "#10B981",
+        bgColor: "#D1FAE5",
+        textColor: "#064E3B",
+      },
     ];
     const assignments = computeAssignments(groups, members, 1);
 
-    expect(assignments.map(({ member }) => member.name)).toEqual(["山下", "田中", "松丸"]);
+    expect(assignments.map(({ member }) => member.name)).toEqual([
+      "山下",
+      "田中",
+      "松丸",
+    ]);
   });
 });
 
@@ -56,8 +78,8 @@ describe("computeDateRotationForDate", () => {
           skipSunday: true,
         },
         3,
-        new Date(2026, 2, 7),
-      ),
+        new Date(2026, 2, 7)
+      )
     ).toBe(1);
   });
 
@@ -67,8 +89,8 @@ describe("computeDateRotationForDate", () => {
       computeDateRotationForDate(
         { mode: "date", startDate: "2026-03-02", cycleDays: 3 },
         4,
-        new Date(2026, 2, 5),
-      ),
+        new Date(2026, 2, 5)
+      )
     ).toBe(1);
   });
 
@@ -77,8 +99,8 @@ describe("computeDateRotationForDate", () => {
       computeDateRotationForDate(
         { mode: "date", startDate: "2026-12-01", cycleDays: 1 },
         3,
-        new Date(2026, 2, 27),
-      ),
+        new Date(2026, 2, 27)
+      )
     ).toBe(0);
   });
 
@@ -86,19 +108,28 @@ describe("computeDateRotationForDate", () => {
     // 2026-01-01(木・元日) → 2026-01-02(金): 有効日数0（元日スキップ）
     expect(
       computeDateRotationForDate(
-        { mode: "date", startDate: "2026-01-01", cycleDays: 1, skipHolidays: true },
+        {
+          mode: "date",
+          startDate: "2026-01-01",
+          cycleDays: 1,
+          skipHolidays: true,
+        },
         3,
-        new Date(2026, 0, 2),
-      ),
+        new Date(2026, 0, 2)
+      )
     ).toBe(0);
   });
 
   it("startDate や cycleDays が未設定なら0を返す", () => {
     expect(
-      computeDateRotationForDate({ mode: "date" }, 3, new Date(2026, 2, 27)),
+      computeDateRotationForDate({ mode: "date" }, 3, new Date(2026, 2, 27))
     ).toBe(0);
     expect(
-      computeDateRotationForDate({ mode: "date", startDate: "2026-03-01" }, 3, new Date(2026, 2, 27)),
+      computeDateRotationForDate(
+        { mode: "date", startDate: "2026-03-01" },
+        3,
+        new Date(2026, 2, 27)
+      )
     ).toBe(0);
   });
 
@@ -107,17 +138,35 @@ describe("computeDateRotationForDate", () => {
       computeDateRotationForDate(
         { mode: "date", startDate: "2026-03-01", cycleDays: 1 },
         0,
-        new Date(2026, 2, 27),
-      ),
+        new Date(2026, 2, 27)
+      )
     ).toBe(0);
   });
 });
 
 describe("computeAssignments - 専用メンバー", () => {
   const members = [
-    { id: "m1", name: "Aさん", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" },
-    { id: "m2", name: "Bさん", color: "#EF4444", bgColor: "#FEE2E2", textColor: "#7F1D1D" },
-    { id: "m3", name: "Cさん", color: "#10B981", bgColor: "#D1FAE5", textColor: "#064E3B" },
+    {
+      id: "m1",
+      name: "Aさん",
+      color: "#3B82F6",
+      bgColor: "#DBEAFE",
+      textColor: "#1E3A5F",
+    },
+    {
+      id: "m2",
+      name: "Bさん",
+      color: "#EF4444",
+      bgColor: "#FEE2E2",
+      textColor: "#7F1D1D",
+    },
+    {
+      id: "m3",
+      name: "Cさん",
+      color: "#10B981",
+      bgColor: "#D1FAE5",
+      textColor: "#064E3B",
+    },
   ];
 
   it("memberIds 指定のグループは専用プールからメンバーを割り当てる", () => {
@@ -136,7 +185,14 @@ describe("computeAssignments - 専用メンバー", () => {
   it("skipped メンバーは割り当てから除外される", () => {
     const membersWithSkip = [
       ...members,
-      { id: "m4", name: "Dさん", color: "#000", bgColor: "#fff", textColor: "#000", skipped: true },
+      {
+        id: "m4",
+        name: "Dさん",
+        color: "#000",
+        bgColor: "#fff",
+        textColor: "#000",
+        skipped: true,
+      },
     ];
     const groups = [{ id: "g1", tasks: ["掃除"], emoji: "🧹" }];
     const assignments = computeAssignments(groups, membersWithSkip, 0);
@@ -157,36 +213,62 @@ describe("sanitizeTaskGroup", () => {
 
   it("returns null when id is missing or empty", () => {
     expect(sanitizeTaskGroup({ emoji: "🧹", tasks: ["掃除"] })).toBeNull();
-    expect(sanitizeTaskGroup({ id: "  ", emoji: "🧹", tasks: ["掃除"] })).toBeNull();
+    expect(
+      sanitizeTaskGroup({ id: "  ", emoji: "🧹", tasks: ["掃除"] })
+    ).toBeNull();
   });
 
   it("returns null when emoji is missing or empty", () => {
     expect(sanitizeTaskGroup({ id: "g1", tasks: ["掃除"] })).toBeNull();
-    expect(sanitizeTaskGroup({ id: "g1", emoji: "", tasks: ["掃除"] })).toBeNull();
+    expect(
+      sanitizeTaskGroup({ id: "g1", emoji: "", tasks: ["掃除"] })
+    ).toBeNull();
   });
 
   it("returns null when all tasks are invalid (empty/non-string)", () => {
-    expect(sanitizeTaskGroup({ id: "g1", emoji: "🧹", tasks: [123, "", "  "] })).toBeNull();
+    expect(
+      sanitizeTaskGroup({ id: "g1", emoji: "🧹", tasks: [123, "", "  "] })
+    ).toBeNull();
   });
 
   it("filters out invalid tasks and trims valid ones", () => {
-    const result = sanitizeTaskGroup({ id: "g1", emoji: "🧹", tasks: [" 掃除 ", 123, "", "給食"] });
+    const result = sanitizeTaskGroup({
+      id: "g1",
+      emoji: "🧹",
+      tasks: [" 掃除 ", 123, "", "給食"],
+    });
     expect(result).toEqual({ id: "g1", emoji: "🧹", tasks: ["掃除", "給食"] });
   });
 
   it("preserves valid memberIds and ignores invalid ones", () => {
-    const result = sanitizeTaskGroup({ id: "g1", emoji: "🧹", tasks: ["掃除"], memberIds: ["m1", 123, "", "m2"] });
+    const result = sanitizeTaskGroup({
+      id: "g1",
+      emoji: "🧹",
+      tasks: ["掃除"],
+      memberIds: ["m1", 123, "", "m2"],
+    });
     expect(result?.memberIds).toEqual(["m1", "m2"]);
   });
 
   it("omits memberIds when all are invalid", () => {
-    const result = sanitizeTaskGroup({ id: "g1", emoji: "🧹", tasks: ["掃除"], memberIds: [123, null] });
+    const result = sanitizeTaskGroup({
+      id: "g1",
+      emoji: "🧹",
+      tasks: ["掃除"],
+      memberIds: [123, null],
+    });
     expect(result?.memberIds).toBeUndefined();
   });
 });
 
 describe("sanitizeMember", () => {
-  const validMember = { id: "m1", name: "田中", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" };
+  const validMember = {
+    id: "m1",
+    name: "田中",
+    color: "#3B82F6",
+    bgColor: "#DBEAFE",
+    textColor: "#1E3A5F",
+  };
 
   it("returns null for non-object input", () => {
     expect(sanitizeMember(null)).toBeNull();
@@ -194,8 +276,12 @@ describe("sanitizeMember", () => {
   });
 
   it("returns null when required color fields are missing", () => {
-    expect(sanitizeMember({ id: "m1", name: "田中", color: "#000" })).toBeNull();
-    expect(sanitizeMember({ id: "m1", name: "田中", color: "#000", bgColor: "#fff" })).toBeNull();
+    expect(
+      sanitizeMember({ id: "m1", name: "田中", color: "#000" })
+    ).toBeNull();
+    expect(
+      sanitizeMember({ id: "m1", name: "田中", color: "#000", bgColor: "#fff" })
+    ).toBeNull();
   });
 
   it("returns null when name is empty or whitespace", () => {
@@ -210,15 +296,31 @@ describe("sanitizeMember", () => {
   });
 
   it("preserves skipped boolean, ignores non-boolean", () => {
-    expect(sanitizeMember({ ...validMember, skipped: true })?.skipped).toBe(true);
-    expect(sanitizeMember({ ...validMember, skipped: "yes" })?.skipped).toBeUndefined();
+    expect(sanitizeMember({ ...validMember, skipped: true })?.skipped).toBe(
+      true
+    );
+    expect(
+      sanitizeMember({ ...validMember, skipped: "yes" })?.skipped
+    ).toBeUndefined();
   });
 });
 
 describe("sanitizeSchedule", () => {
   const validGroup = { id: "g1", emoji: "🧹", tasks: ["掃除"] };
-  const validMember = { id: "m1", name: "田中", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" };
-  const validSchedule = { id: "s1", name: "テスト", rotation: 0, groups: [validGroup], members: [validMember] };
+  const validMember = {
+    id: "m1",
+    name: "田中",
+    color: "#3B82F6",
+    bgColor: "#DBEAFE",
+    textColor: "#1E3A5F",
+  };
+  const validSchedule = {
+    id: "s1",
+    name: "テスト",
+    rotation: 0,
+    groups: [validGroup],
+    members: [validMember],
+  };
 
   it("returns null for non-object input", () => {
     expect(sanitizeSchedule(null)).toBeNull();
@@ -231,26 +333,45 @@ describe("sanitizeSchedule", () => {
 
   it("returns null when rotation is NaN or Infinity", () => {
     expect(sanitizeSchedule({ ...validSchedule, rotation: NaN })).toBeNull();
-    expect(sanitizeSchedule({ ...validSchedule, rotation: Infinity })).toBeNull();
+    expect(
+      sanitizeSchedule({ ...validSchedule, rotation: Infinity })
+    ).toBeNull();
   });
 
   it("returns null when all groups are invalid", () => {
-    expect(sanitizeSchedule({ ...validSchedule, groups: [{ id: "g1" }] })).toBeNull();
+    expect(
+      sanitizeSchedule({ ...validSchedule, groups: [{ id: "g1" }] })
+    ).toBeNull();
   });
 
   it("returns null when all members are invalid", () => {
-    expect(sanitizeSchedule({ ...validSchedule, members: [{ id: "m1" }] })).toBeNull();
+    expect(
+      sanitizeSchedule({ ...validSchedule, members: [{ id: "m1" }] })
+    ).toBeNull();
   });
 
   it("preserves valid assignmentMode, ignores invalid", () => {
-    expect(sanitizeSchedule({ ...validSchedule, assignmentMode: "task" })?.assignmentMode).toBe("task");
-    expect(sanitizeSchedule({ ...validSchedule, assignmentMode: "member" })?.assignmentMode).toBe("member");
-    expect(sanitizeSchedule({ ...validSchedule, assignmentMode: "invalid" })?.assignmentMode).toBeUndefined();
+    expect(
+      sanitizeSchedule({ ...validSchedule, assignmentMode: "task" })
+        ?.assignmentMode
+    ).toBe("task");
+    expect(
+      sanitizeSchedule({ ...validSchedule, assignmentMode: "member" })
+        ?.assignmentMode
+    ).toBe("member");
+    expect(
+      sanitizeSchedule({ ...validSchedule, assignmentMode: "invalid" })
+        ?.assignmentMode
+    ).toBeUndefined();
   });
 
   it("preserves slug, editToken, designThemeId, pinned", () => {
     const result = sanitizeSchedule({
-      ...validSchedule, slug: "abc", editToken: "tok123", designThemeId: "sakura", pinned: true,
+      ...validSchedule,
+      slug: "abc",
+      editToken: "tok123",
+      designThemeId: "sakura",
+      pinned: true,
     });
     expect(result?.slug).toBe("abc");
     expect(result?.editToken).toBe("tok123");
@@ -261,7 +382,12 @@ describe("sanitizeSchedule", () => {
   it("sanitizes rotationConfig and strips invalid cycleDays", () => {
     const result = sanitizeSchedule({
       ...validSchedule,
-      rotationConfig: { mode: "date", startDate: "2026-03-01", cycleDays: 0, skipSaturday: true },
+      rotationConfig: {
+        mode: "date",
+        startDate: "2026-03-01",
+        cycleDays: 0,
+        skipSaturday: true,
+      },
     });
     expect(result?.rotationConfig?.mode).toBe("date");
     expect(result?.rotationConfig?.cycleDays).toBeUndefined();
@@ -280,8 +406,20 @@ describe("sanitizeSchedule", () => {
 
 describe("sanitizeAppState", () => {
   const validGroup = { id: "g1", emoji: "🧹", tasks: ["掃除"] };
-  const validMember = { id: "m1", name: "田中", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" };
-  const validSchedule = { id: "s1", name: "テスト", rotation: 0, groups: [validGroup], members: [validMember] };
+  const validMember = {
+    id: "m1",
+    name: "田中",
+    color: "#3B82F6",
+    bgColor: "#DBEAFE",
+    textColor: "#1E3A5F",
+  };
+  const validSchedule = {
+    id: "s1",
+    name: "テスト",
+    rotation: 0,
+    groups: [validGroup],
+    members: [validMember],
+  };
 
   it("returns null for non-object or missing schedules array", () => {
     expect(sanitizeAppState(null)).toBeNull();
@@ -289,7 +427,12 @@ describe("sanitizeAppState", () => {
   });
 
   it("returns null when all schedules are invalid", () => {
-    expect(sanitizeAppState({ schedules: [{ id: "broken" }], activeScheduleId: "broken" })).toBeNull();
+    expect(
+      sanitizeAppState({
+        schedules: [{ id: "broken" }],
+        activeScheduleId: "broken",
+      })
+    ).toBeNull();
   });
 
   it("drops invalid schedules and keeps valid ones", () => {
@@ -325,9 +468,16 @@ describe("computeDateRotationForDate - edge cases", () => {
     // 2026-01-01 (Thu) → 2026-01-04 (Sun=祝日振替? No, just regular Sun)
     // Use 2026-03-02 (Mon) start → 2026-03-21 (Sat, 春分の日=祝日) → skip both as Saturday and holiday
     const result = computeDateRotationForDate(
-      { mode: "date", startDate: "2026-03-02", cycleDays: 1, skipSaturday: true, skipSunday: true, skipHolidays: true },
+      {
+        mode: "date",
+        startDate: "2026-03-02",
+        cycleDays: 1,
+        skipSaturday: true,
+        skipSunday: true,
+        skipHolidays: true,
+      },
       3,
-      new Date(2026, 2, 23), // Mon after the weekend with holiday
+      new Date(2026, 2, 23) // Mon after the weekend with holiday
     );
     // 3/2(Mon)=day0, 3/3=1, 3/4=2, 3/5=3, 3/6=4, (3/7sat skip, 3/8sun skip)
     // 3/9=5, 3/10=6, 3/11=7, 3/12=8, 3/13=9, (3/14sat skip, 3/15sun skip)
@@ -342,8 +492,8 @@ describe("computeDateRotationForDate - edge cases", () => {
       computeDateRotationForDate(
         { mode: "date", startDate: "2026-03-01", cycleDays: 0 },
         3,
-        new Date(2026, 2, 10),
-      ),
+        new Date(2026, 2, 10)
+      )
     ).toBe(0);
   });
 
@@ -352,8 +502,8 @@ describe("computeDateRotationForDate - edge cases", () => {
       computeDateRotationForDate(
         { mode: "date", startDate: "2026-03-01", cycleDays: -5 },
         3,
-        new Date(2026, 2, 10),
-      ),
+        new Date(2026, 2, 10)
+      )
     ).toBe(0);
   });
 
@@ -362,7 +512,7 @@ describe("computeDateRotationForDate - edge cases", () => {
     const result = computeDateRotationForDate(
       { mode: "date", startDate: "2028-02-28", cycleDays: 1 },
       3,
-      new Date(2028, 2, 1), // Mar 1
+      new Date(2028, 2, 1) // Mar 1
     );
     // 2 effective days / 1 = 2 cycles → 2 % 3 = 2
     expect(result).toBe(2);
@@ -374,7 +524,7 @@ describe("computeDateRotationForDate - edge cases", () => {
     const result = computeDateRotationForDate(
       { mode: "date", startDate: "2026-03-02", cycleDays: 1 },
       3,
-      new Date(2026, 5, 10), // June 10 = 100 days later
+      new Date(2026, 5, 10) // June 10 = 100 days later
     );
     // 100 cycles % 3 = 1
     expect(result).toBe(1);
@@ -385,7 +535,7 @@ describe("computeDateRotationForDate - edge cases", () => {
     const result = computeDateRotationForDate(
       { mode: "date", startDate: "2026-03-01", cycleDays: 1, skipSunday: true },
       3,
-      new Date(2026, 2, 2), // Monday March 2
+      new Date(2026, 2, 2) // Monday March 2
     );
     // diffDays = 1, skipDays: 3/1 (Sun) is in range and skipped → 1 skip
     // effectiveDays = 1 - 1 = 0 → 0 cycles → 0
@@ -397,8 +547,8 @@ describe("computeDateRotationForDate - edge cases", () => {
       computeDateRotationForDate(
         { mode: "date", startDate: "2026-03-01", cycleDays: 1 },
         1,
-        new Date(2026, 5, 15),
-      ),
+        new Date(2026, 5, 15)
+      )
     ).toBe(0);
   });
 });
@@ -406,7 +556,9 @@ describe("computeDateRotationForDate - edge cases", () => {
 describe("getHolidaysForYear", () => {
   it("includes the 2020 olympic holiday overrides", () => {
     const holidays2020 = getHolidaysForYear(2020);
-    const holidayMap2020 = new Map(holidays2020.map((holiday) => [holiday.date, holiday.name]));
+    const holidayMap2020 = new Map(
+      holidays2020.map(holiday => [holiday.date, holiday.name])
+    );
 
     expect(holidayMap2020.get("2020-07-23")).toBe("海の日");
     expect(holidayMap2020.get("2020-07-24")).toBe("スポーツの日");
@@ -416,7 +568,9 @@ describe("getHolidaysForYear", () => {
 
   it("includes the 2021 olympic holiday overrides", () => {
     const holidays2021 = getHolidaysForYear(2021);
-    const holidayMap2021 = new Map(holidays2021.map((holiday) => [holiday.date, holiday.name]));
+    const holidayMap2021 = new Map(
+      holidays2021.map(holiday => [holiday.date, holiday.name])
+    );
 
     expect(holidayMap2021.get("2021-07-22")).toBe("海の日");
     expect(holidayMap2021.get("2021-07-23")).toBe("スポーツの日");
@@ -427,14 +581,30 @@ describe("getHolidaysForYear", () => {
 });
 
 describe("addMemberToSchedule", () => {
-  const baseMember: Member = { id: "m1", name: "A", color: "#000", bgColor: "#fff", textColor: "#000" };
+  const baseMember: Member = {
+    id: "m1",
+    name: "A",
+    color: "#000",
+    bgColor: "#fff",
+    textColor: "#000",
+  };
   const baseGroup = { id: "g1", emoji: "🧹", tasks: ["掃除"] };
-  const newMember: Member = { id: "m2", name: "B", color: "#111", bgColor: "#eee", textColor: "#111" };
+  const newMember: Member = {
+    id: "m2",
+    name: "B",
+    color: "#111",
+    bgColor: "#eee",
+    textColor: "#111",
+  };
 
   it("task モードでは members のみ追加され groups は変わらない", () => {
     const schedule: Schedule = {
-      id: "s1", name: "test", rotation: 0, assignmentMode: "task",
-      groups: [baseGroup], members: [baseMember],
+      id: "s1",
+      name: "test",
+      rotation: 0,
+      assignmentMode: "task",
+      groups: [baseGroup],
+      members: [baseMember],
     };
 
     const result = addMemberToSchedule(schedule, newMember, "新しいタスク");
@@ -445,8 +615,11 @@ describe("addMemberToSchedule", () => {
 
   it("member モード（assignmentMode未指定含む）では対応する空グループも同時追加される", () => {
     const schedule: Schedule = {
-      id: "s1", name: "test", rotation: 0,
-      groups: [baseGroup], members: [baseMember],
+      id: "s1",
+      name: "test",
+      rotation: 0,
+      groups: [baseGroup],
+      members: [baseMember],
     };
 
     const result = addMemberToSchedule(schedule, newMember, "新しいタスク");
@@ -454,22 +627,46 @@ describe("addMemberToSchedule", () => {
     expect(result.members).toEqual([baseMember, newMember]);
     expect(result.groups).toHaveLength(2);
     expect(result.groups[0]).toEqual(baseGroup);
-    expect(result.groups[1]).toMatchObject({ emoji: "✨", tasks: ["新しいタスク"] });
+    expect(result.groups[1]).toMatchObject({
+      emoji: "✨",
+      tasks: ["新しいタスク"],
+    });
     expect(typeof result.groups[1].id).toBe("string");
     expect(result.groups[1].id).not.toBe(baseGroup.id);
   });
 });
 
 describe("removeMemberFromSchedule", () => {
-  const memberA: Member = { id: "m1", name: "A", color: "#000", bgColor: "#fff", textColor: "#000" };
-  const memberB: Member = { id: "m2", name: "B", color: "#111", bgColor: "#eee", textColor: "#111" };
-  const groupA = { id: "g1", emoji: "🧹", tasks: ["掃除"], memberIds: ["m1", "m2"] };
+  const memberA: Member = {
+    id: "m1",
+    name: "A",
+    color: "#000",
+    bgColor: "#fff",
+    textColor: "#000",
+  };
+  const memberB: Member = {
+    id: "m2",
+    name: "B",
+    color: "#111",
+    bgColor: "#eee",
+    textColor: "#111",
+  };
+  const groupA = {
+    id: "g1",
+    emoji: "🧹",
+    tasks: ["掃除"],
+    memberIds: ["m1", "m2"],
+  };
   const groupB = { id: "g2", emoji: "🍽", tasks: ["給食"] };
 
   it("task モードでは members から削除され、各グループの memberIds からも除去される", () => {
     const schedule: Schedule = {
-      id: "s1", name: "test", rotation: 0, assignmentMode: "task",
-      groups: [groupA, groupB], members: [memberA, memberB],
+      id: "s1",
+      name: "test",
+      rotation: 0,
+      assignmentMode: "task",
+      groups: [groupA, groupB],
+      members: [memberA, memberB],
     };
 
     const result = removeMemberFromSchedule(schedule, "m1");
@@ -481,8 +678,11 @@ describe("removeMemberFromSchedule", () => {
 
   it("member モードでは対応するインデックスの groups エントリも削除される", () => {
     const schedule: Schedule = {
-      id: "s1", name: "test", rotation: 0,
-      groups: [groupA, groupB], members: [memberA, memberB],
+      id: "s1",
+      name: "test",
+      rotation: 0,
+      groups: [groupA, groupB],
+      members: [memberA, memberB],
     };
 
     const result = removeMemberFromSchedule(schedule, "m1");
@@ -493,8 +693,11 @@ describe("removeMemberFromSchedule", () => {
 
   it("存在しない memberId を渡すと schedule をそのまま返す", () => {
     const schedule: Schedule = {
-      id: "s1", name: "test", rotation: 0,
-      groups: [groupA, groupB], members: [memberA, memberB],
+      id: "s1",
+      name: "test",
+      rotation: 0,
+      groups: [groupA, groupB],
+      members: [memberA, memberB],
     };
 
     const result = removeMemberFromSchedule(schedule, "nonexistent");

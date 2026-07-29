@@ -67,8 +67,12 @@ describe("translate", () => {
   };
 
   it("returns the entry for the active locale, interpolated", () => {
-    expect(translate(dicts, "en", "greeting", { name: "Mei" })).toBe("Hello Mei");
-    expect(translate(dicts, "ja", "greeting", { name: "メイ" })).toBe("こんにちは メイ");
+    expect(translate(dicts, "en", "greeting", { name: "Mei" })).toBe(
+      "Hello Mei"
+    );
+    expect(translate(dicts, "ja", "greeting", { name: "メイ" })).toBe(
+      "こんにちは メイ"
+    );
   });
 
   it("falls back to ja when the active locale lacks the key", () => {
@@ -76,6 +80,8 @@ describe("translate", () => {
   });
 
   it("returns the key itself when no locale has it", () => {
-    expect(translate(dicts, "en", "missing_everywhere")).toBe("missing_everywhere");
+    expect(translate(dicts, "en", "missing_everywhere")).toBe(
+      "missing_everywhere"
+    );
   });
 });

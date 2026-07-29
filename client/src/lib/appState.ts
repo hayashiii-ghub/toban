@@ -1,6 +1,9 @@
 import type { AppState } from "@/rotation/types";
 import { STORAGE_KEY, TEMPLATES } from "@/rotation/constants";
-import { DEFAULT_APP_STATE, DEFAULT_APP_STATE_EN } from "@/rotation/defaultState";
+import {
+  DEFAULT_APP_STATE,
+  DEFAULT_APP_STATE_EN,
+} from "@/rotation/defaultState";
 import { createScheduleFromTemplate, sanitizeAppState } from "@/rotation/utils";
 import { detectLocale } from "@/i18n/core";
 import { safeGetItem, safeSetItem } from "@/lib/storage";
@@ -14,23 +17,27 @@ export function loadState(): AppState {
         return parsedState;
       }
     }
-  } catch { /* ignore corrupted data */ }
+  } catch {
+    /* ignore corrupted data */
+  }
 
   // 初回（保存データなし）は locale に合わせた default を seed する。
   // key は i18n の LANG_STORAGE_KEY と同じ "toban-lang"（Provider 初回 effect 前でも
   // navigator から英語を拾えるよう detectLocale に navigator.language も渡す）。
   const locale = detectLocale(
     safeGetItem("toban-lang"),
-    typeof navigator !== "undefined" ? navigator.language : undefined,
+    typeof navigator !== "undefined" ? navigator.language : undefined
   );
   const defaultState = sanitizeAppState(
-    locale === "en" ? DEFAULT_APP_STATE_EN : DEFAULT_APP_STATE,
+    locale === "en" ? DEFAULT_APP_STATE_EN : DEFAULT_APP_STATE
   );
   if (defaultState) {
     return defaultState;
   }
 
-  const customSchedule = createScheduleFromTemplate(TEMPLATES[TEMPLATES.length - 1]);
+  const customSchedule = createScheduleFromTemplate(
+    TEMPLATES[TEMPLATES.length - 1]
+  );
   return { schedules: [customSchedule], activeScheduleId: customSchedule.id };
 }
 

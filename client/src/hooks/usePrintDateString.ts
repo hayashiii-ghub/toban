@@ -14,7 +14,7 @@ export function usePrintDateString(): string {
         month: "long",
         day: "numeric",
         weekday: "short",
-      }),
+      })
     );
   }, [dateLocale]);
   return dateStr;
