@@ -11,8 +11,8 @@ toban（かんたん当番表）への貢献に興味を持っていただきあ
 
 ```bash
 # 1. リポジトリをフォーク & クローン
-git clone https://github.com/<your-username>/toban.git
-cd toban
+git clone https://github.com/<your-username>/toban-app.git
+cd toban-app
 
 # 2. 依存パッケージをインストール
 pnpm install

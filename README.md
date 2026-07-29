@@ -7,6 +7,7 @@
 ## 主な機能
 
 - **ランディングページ** — サービス紹介・特徴・テンプレート紹介・Q&A・お問い合わせフォーム
+- **順番決めページ（`/junban`）** — 円盤ビューで当番の順番を決める使い方を紹介する専用ページ。「当番 ルーレット / 順番 決める」の検索意図を受け、`/?view=disc` でホームの円盤ビューへ送る
 - **31種類のテンプレート** — 学校・PTA・介護施設・自治会・飲食店・家庭など幅広いシーンをカバー（チェックリスト系テンプレートも対応）。ほかに空白から作る「カスタム」を用意しており、`shared/templates.ts` の要素数は32になる（カスタムは紹介ページを持たないため `TEMPLATE_SEO_DATA` は31件）
 - **4つの表示形式** — カード・早見表・カレンダー・円盤（回転ディスク）を切り替え。円盤は印刷時に「全体／外円／内円」の3枚を出力し、切り抜いて中心をピンで留めれば回せる
 - **日付自動ローテーション** — 土日・祝日スキップ対応。開始日と周期を設定すれば手動操作不要
@@ -40,24 +41,36 @@
 │   ├── pages/                # ページコンポーネント（ルートに対応）
 │   │   ├── Home.tsx          # メインページ（/ — 当番表の作成・編集）
 │   │   ├── LandingPage.tsx   # ランディングページ（/about）
-│   │   ├── SharedScheduleView.tsx  # 共有リンクの閲覧ページ
-│   │   ├── TemplatesPage.tsx # テンプレート一覧（SEO用LP）
-│   │   ├── TemplateDetailPage.tsx # テンプレート詳細（個別LP）
-│   │   └── Transfer.tsx      # 編集権限の引き継ぎページ
+│   │   ├── SharedScheduleView.tsx  # 共有リンクの閲覧ページ（/s/:slug）
+│   │   ├── TemplatesPage.tsx # テンプレート一覧（/templates — SEO用LP）
+│   │   ├── TemplateDetailPage.tsx # テンプレート詳細（/templates/:slug — 個別LP）
+│   │   ├── JunbanPage.tsx    # 順番決めページ（/junban — 円盤ビューのSEO用LP）
+│   │   ├── Transfer.tsx      # 編集権限の引き継ぎページ（/transfer）
+│   │   └── NotFound.tsx      # 404ページ（/404 と、どのルートにも一致しないパス）
 │   ├── features/home/        # ホーム画面の機能コンポーネント
-│   ├── components/           # モーダル等の機能コンポーネント（ui/ は shadcn/ui）
-│   ├── rotation/             # コア型・ユーティリティ・定数・デフォルト状態
+│   ├── components/           # モーダル等の機能コンポーネント（ui/ は shadcn/ui、settings/ は設定モーダルの部品）
+│   ├── contexts/             # テーマの Context（DesignThemeContext: デザインテーマ / ThemeContext: ライト・ダーク）
+│   ├── rotation/             # コア型・ユーティリティ・定数・デフォルト状態・デザインテーマ定義
 │   ├── hooks/                # カスタムフック（Home の状態集約 useHomeState・useAutoSync・WebMCP登録 useTobanTools 等）
 │   ├── lib/                  # APIクライアント・同期マネージャ
 │   ├── i18n/                 # 多言語対応（自作i18n・辞書 ja/en、UIの枠のみ翻訳）
-│   └── types/                # 型定義（webmcp.d.ts 等）
+│   ├── types/                # 型定義（webmcp.d.ts 等）
+│   └── fonts.ts              # アプリ全体のフォント設定（デザインテーマとは独立した個人設定）
 ├── server/
 │   ├── worker.ts             # Cloudflare Workers エントリーポイント
 │   ├── api.ts                # Hono APIアプリ定義
 │   ├── routes/               # APIルートハンドラ（schedules, contact）
+│   ├── handlers/             # bot向けプリレンダリング・sitemap・robots（seo.ts）
+│   ├── middleware/           # 編集権限トークンの検証（auth.ts）
+│   ├── schemas/              # APIリクエストの Zod スキーマ
 │   └── db/                   # Drizzle スキーマ・マイグレーション
 └── shared/                   # フロント・バックエンド共有の型定義・Zodスキーマ
-    ├── seo-templates.ts      # テンプレLPのメタ情報（title/description/intro）と共通FAQ
+    ├── types.ts              # 共有の型定義
+    ├── schemas.ts            # 共有の Zod スキーマ
+    ├── limits.ts             # 入力の文字数・件数上限（server / UI / WebMCP の単一の真実源）
+    ├── templates.ts          # テンプレート本体のデータ（32件。うちカスタムはLPを持たない）
+    ├── jsonLd.ts             # 構造化データ（FAQPage / BreadcrumbList）の組み立て
+    ├── seo-templates.ts      # テンプレLPのメタ情報（title/description/intro）と共通FAQ、/junban のメタ
     └── template-content.ts   # テンプレLPごとの本文・FAQ（ページ固有の読み物）
 ```
 
@@ -87,8 +100,8 @@ pnpm run deploy:cf     # migration 適用込みで Cloudflare へデプロイ
 
 ## CI / 品質管理
 
-- **GitHub Actions CI** — push / PR で lint・型チェック・ユニットテスト・ビルド・E2Eテストを自動実行
-- **Lighthouse CI** — push / PR でパフォーマンス・アクセシビリティ・SEO のスコアを自動計測
+- **GitHub Actions CI** — push（main）/ PR で lint・型チェック・ユニットテスト・ビルドを自動実行。E2Eテストは PR のときのみ実行
+- **Lighthouse CI** — 毎週月曜 3:00 UTC の定期実行と手動実行（`workflow_dispatch`）でパフォーマンス・アクセシビリティ・SEO のスコアを計測
 - **Sentry** — 本番環境でのランタイムエラーを自動収集（`VITE_SENTRY_DSN` 設定時のみ有効）
 
 ## 環境変数（Cloudflare側で設定）
