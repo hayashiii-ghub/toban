@@ -341,7 +341,6 @@ export const ja: Record<string, string> = {
 
   // テンプレート一覧ページ
   "templates.docTitle": "当番表テンプレート一覧｜無料で使えるtoban（トバン）",
-  "templates.titleSuffix": "｜toban（トバン）",
   "templates.breadcrumb": "テンプレート一覧",
   "templates.breadcrumbAria": "パンくず",
   "templates.heading": "当番表テンプレート一覧",

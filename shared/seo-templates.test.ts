@@ -41,6 +41,39 @@ describe("TEMPLATE_SEO_DATA", () => {
     );
     expect(unknown).toEqual([]);
   });
+
+  // 検索結果での表示幅。これを超えると差別化語が末尾で切れる。
+  // ブランド名を付けない前提の値なので、title へサフィックスを戻すなら見直すこと。
+  it("title が SERP の表示幅に収まる", () => {
+    const over = TEMPLATE_SEO_DATA.filter(t => t.title.length > 30).map(t => `${t.slug}(${t.title.length}字)`);
+    expect(over, `title が長すぎる: ${over.join(", ")}`).toEqual([]);
+  });
+
+  it("title が重複しない", () => {
+    const titles = TEMPLATE_SEO_DATA.map(t => t.title);
+    expect(new Set(titles).size).toBe(titles.length);
+  });
+
+  // エスケープを挟まず title を比較できるようにするための制約。
+  // 解除するなら seo.test.ts の <title> 比較も合わせて見直すこと。
+  it("title に HTML 特殊文字を使わない", () => {
+    const bad = TEMPLATE_SEO_DATA.filter(t => /[&<>"]/.test(t.title)).map(t => `${t.slug}: ${t.title}`);
+    expect(bad, `HTML 特殊文字を含む title: ${bad.join(", ")}`).toEqual([]);
+  });
+
+  it("title に「テンプレート」が入る", () => {
+    const missing = TEMPLATE_SEO_DATA.filter(t => !t.title.includes("テンプレート")).map(t => t.slug);
+    expect(missing).toEqual([]);
+  });
+
+  // 「日直 当番表」のような複合クエリの受け皿。
+  // チェックリスト系は当番表ではないため、入れると内容と食い違う。
+  it("チェックリスト以外の title に「当番表」が入る", () => {
+    const missing = TEMPLATE_SEO_DATA.filter(
+      t => t.categoryId !== "checklist" && !t.title.includes("当番表")
+    ).map(t => `${t.slug}: ${t.title}`);
+    expect(missing, `「当番表」が無い: ${missing.join(", ")}`).toEqual([]);
+  });
 });
 
 describe("COMMON_FAQ", () => {

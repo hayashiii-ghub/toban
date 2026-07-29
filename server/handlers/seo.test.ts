@@ -10,6 +10,8 @@ import {
   isKnownAppRoute,
   renderJunbanHtml,
 } from "./seo";
+import { COMMON_FAQ, TEMPLATE_SEO_DATA } from "../../shared/seo-templates";
+import { TEMPLATE_CONTENT } from "../../shared/template-content";
 
 describe("isBot", () => {
   // 生成AI検索のクローラーは JS を実行しない。bot 判定を外すとプリレンダリングが返らず、
@@ -423,7 +425,72 @@ describe("renderTemplateDetailHtml related templates", () => {
     expect(html).not.toBeNull();
     expect(html).toContain("掃除機・モップ");
     expect(html).toContain("メンバー例（4名）");
-    expect(html).not.toContain('"@type":"FAQPage"');
-    expect(html).not.toContain("<h2>よくある質問</h2>");
+    // トップページ用の共通FAQはテンプレLPに出さない（ページ間で本文が重複するため）
+    expect(html).not.toContain(COMMON_FAQ[0].question);
+  });
+
+  it("テンプレート固有の本文とFAQを出す", () => {
+    const html = renderTemplateDetailHtml(origin, "office-cleaning");
+    const content = TEMPLATE_CONTENT["office-cleaning"];
+    expect(html).not.toBeNull();
+
+    for (const section of content.body) {
+      expect(html).toContain(`<h2>${section.heading}</h2>`);
+      for (const paragraph of section.paragraphs) {
+        expect(html).toContain(paragraph);
+      }
+    }
+    for (const item of content.faq) {
+      expect(html).toContain(`<dt>${item.question}</dt>`);
+      expect(html).toContain(`<dd>${item.answer}</dd>`);
+    }
+  });
+
+  it("固有FAQを持つページは FAQPage 構造化データを出す", () => {
+    const html = renderTemplateDetailHtml(origin, "office-cleaning");
+    expect(html).not.toBeNull();
+    expect(html).toContain('"@type":"FAQPage"');
+    // 構造化データの質問が本文にも存在する（マークアップと本文の不一致を防ぐ）
+    for (const item of TEMPLATE_CONTENT["office-cleaning"].faq) {
+      expect(html).toContain(`<dt>${item.question}</dt>`);
+    }
+  });
+
+  it("title を加工せずそのまま出す", () => {
+    // ブランドサフィックスを付けない。SERP の表示幅で末尾が切れ、
+    // 差別化語のほうが落ちるため。サイト名は og:site_name が伝える。
+    // エスケープを挟まず比較できるのは、seo-templates.test.ts の
+    // 「title に HTML 特殊文字を使わない」が前提を守っているため。
+    for (const seo of TEMPLATE_SEO_DATA) {
+      const html = renderTemplateDetailHtml(origin, seo.slug);
+      expect(html).toContain(`<title>${seo.title}</title>`);
+    }
+  });
+
+  it("すべてのテンプレLPが固有本文を含む", () => {
+    const thin = TEMPLATE_SEO_DATA.filter(seo => {
+      const html = renderTemplateDetailHtml(origin, seo.slug);
+      const content = TEMPLATE_CONTENT[seo.slug];
+      return !html || !content || !html.includes(content.body[0].paragraphs[0]);
+    }).map(seo => seo.slug);
+
+    expect(thin, `本文が出ていないLP: ${thin.join(", ")}`).toEqual([]);
+  });
+});
+
+describe("renderTemplateListHtml", () => {
+  const origin = "https://toban.app";
+
+  it("h1 にタイトルタグを流用しない", () => {
+    // h1 は見出しであってタイトルタグではない。React 側 (templates.heading) と揃える。
+    const html = renderTemplateListHtml(origin);
+    expect(html).toContain("<h1>当番表テンプレート一覧</h1>");
+    expect(html).not.toContain("<h1>当番表テンプレート一覧｜無料で使えるtoban");
+  });
+
+  it("title にはブランド名を残す", () => {
+    // 一覧ページはブランド想起の受け皿として残す（個別LPとは扱いが違う）
+    const html = renderTemplateListHtml(origin);
+    expect(html).toContain("<title>当番表テンプレート一覧｜無料で使えるtoban（トバン）</title>");
   });
 });

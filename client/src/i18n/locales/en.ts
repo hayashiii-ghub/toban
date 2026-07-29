@@ -344,7 +344,6 @@ export const en: Record<string, string> = {
 
   // Templates list page
   "templates.docTitle": "Duty Roster Templates | Free with toban",
-  "templates.titleSuffix": " | toban",
   "templates.breadcrumb": "Templates",
   "templates.breadcrumbAria": "Breadcrumb",
   "templates.heading": "Duty Roster Templates",
