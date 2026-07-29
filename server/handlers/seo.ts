@@ -177,7 +177,7 @@ export async function handleScheduleOgp(
 
 export function renderLandingPageHtml(origin: string): string {
   const title = "当番表作成アプリ toban（トバン）｜無料で作成・印刷・共有";
-  const desc = `学校・保育園・介護施設・自治会・オフィス・家庭の当番表をかんたんに作れる無料の当番表作成アプリ。掃除当番・シフト・家事分担など${TEMPLATE_SEO_DATA.length}種類のテンプレートから選ぶだけ。アカウント登録・インストール不要、エクセルがなくてもブラウザだけで印刷品質の当番表がすぐ完成します。`;
+  const desc = `学校・保育園・介護施設・自治会・オフィス・家庭の当番表をかんたんに作れる無料の当番表作成アプリ。掃除当番・日直・家事分担など${TEMPLATE_SEO_DATA.length}種類のテンプレートを用意。アカウント登録・インストール不要、エクセルがなくてもブラウザだけで印刷品質の当番表がすぐ完成します。`;
 
   const faqHtml = COMMON_FAQ.map(
     f => `<dt>${escapeHtml(f.question)}</dt><dd>${escapeHtml(f.answer)}</dd>`
