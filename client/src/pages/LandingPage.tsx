@@ -647,7 +647,7 @@ export default function LandingPage() {
               name: "toban",
               url: "https://toban.app",
               description:
-                "学校・保育園・介護施設・自治会・オフィス・家庭の当番表を無料で作成・印刷・共有できるWebアプリ",
+                "学校・保育園・介護施設・自治会・オフィス・家庭などの当番表を無料で作成・印刷・共有できるWebアプリ",
               applicationCategory: "UtilitiesApplication",
               operatingSystem: "All",
               offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" },
