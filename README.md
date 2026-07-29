@@ -87,6 +87,8 @@ pnpm test:coverage # ユニットテスト + カバレッジレポート (v8)
 pnpm test:e2e     # E2Eテスト実行 (Playwright)
 pnpm test:e2e:ui  # E2Eテスト (UIモード)
 pnpm lint         # ESLint
+pnpm format       # Prettier で整形
+pnpm format:check # Prettier の整形漏れを検査（CI と同じ）
 pnpm db:migrate:local  # ローカル D1 に migration を適用
 pnpm run deploy:cf     # migration 適用込みで Cloudflare へデプロイ
 ```
@@ -100,7 +102,8 @@ pnpm run deploy:cf     # migration 適用込みで Cloudflare へデプロイ
 
 ## CI / 品質管理
 
-- **GitHub Actions CI** — push（main）/ PR で lint・型チェック・ユニットテスト・ビルドを自動実行。E2Eテストは PR のときのみ実行
+- **GitHub Actions CI** — push（main）/ PR で 整形チェック・型チェック・lint・ユニットテスト・ビルドを自動実行。E2Eテストは PR のときのみ実行
+- **Prettier** — `pnpm format` で整形し、CI が `prettier --check` で検査。生成物は `.prettierignore` で除外。一括整形コミットは `.git-blame-ignore-revs` に登録してあり、GitHub の blame では自動的に読み飛ばされる
 - **Lighthouse CI** — 毎週月曜 3:00 UTC の定期実行と手動実行（`workflow_dispatch`）でパフォーマンス・アクセシビリティ・SEO のスコアを計測
 - **Sentry** — 本番環境でのランタイムエラーを自動収集（`VITE_SENTRY_DSN` 設定時のみ有効）
 
