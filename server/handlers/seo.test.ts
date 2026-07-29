@@ -182,6 +182,15 @@ describe("render functions emit consistent OGP/Twitter tags", () => {
     expect(html).toMatch(/エクセル|Excel/);
   });
 
+  it("renderLandingPageHtml の description がテンプレートに言及する", () => {
+    // テンプレート狙いの検索でスニペットに語が出るようにする。
+    // 順位は /templates で取りに行くので、ここは title ではなく description だけ。
+    const html = renderLandingPageHtml(origin);
+    const desc = html.match(/<meta name="description" content="([^"]*)">/)![1];
+    expect(desc).toContain("テンプレート");
+    expect(html).not.toContain("<title>当番表テンプレート");
+  });
+
   it("renderLandingPageHtml uses /og-image.png and twitter card", () => {
     const html = renderLandingPageHtml(origin);
     expect(html).toContain(
@@ -538,5 +547,45 @@ describe("renderTemplateListHtml", () => {
     expect(html).toContain(
       "<title>当番表テンプレート一覧｜無料で使えるtoban（トバン）</title>"
     );
+  });
+
+  it("BreadcrumbList と ItemList を出す", () => {
+    const html = renderTemplateListHtml(origin);
+    expect(html).toContain('"@type":"BreadcrumbList"');
+    expect(html).toContain('"@type":"ItemList"');
+    expect(html).toContain(`"numberOfItems":${TEMPLATE_SEO_DATA.length}`);
+  });
+
+  it("ItemList の position が本文のリンク順と一致する", () => {
+    // 構造化データだけカテゴリ順から外れると、Google に本文と違う並びを伝えてしまう。
+    const html = renderTemplateListHtml(origin);
+
+    const bodyOrder = [
+      ...html
+        .slice(html.indexOf("<body>"))
+        .matchAll(/\/templates\/([a-z0-9-]+)"/g),
+    ].map(m => m[1]);
+
+    const schema = html.match(
+      /<script type="application\/ld\+json">(.*?)<\/script>/
+    )![1];
+    const itemList = JSON.parse(schema).find(
+      (s: { "@type": string }) => s["@type"] === "ItemList"
+    );
+    const schemaOrder = itemList.itemListElement.map(
+      (el: { url: string }) => el.url.split("/templates/")[1]
+    );
+
+    expect(schemaOrder).toEqual(bodyOrder);
+    expect(
+      itemList.itemListElement.map((el: { position: number }) => el.position)
+    ).toEqual(bodyOrder.map((_, i) => i + 1));
+  });
+
+  it("フッターからトップへ戻れる", () => {
+    // 一覧に入ってきた訪問者を本体へ渡す導線。以前は /about にしか繋がっていなかった。
+    const html = renderTemplateListHtml(origin);
+    const footer = html.slice(html.indexOf("<footer>"));
+    expect(footer).toContain(`<a href="${origin}/">当番表を作る</a>`);
   });
 });

@@ -8,6 +8,11 @@ import {
   type TemplateSEO,
 } from "@shared/seo-templates";
 import { TEMPLATES } from "@/rotation/constants";
+import {
+  breadcrumbSchema,
+  itemListSchema,
+  serializeJsonLd,
+} from "@shared/jsonLd";
 import { useT, useLocale } from "@/i18n";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
@@ -28,6 +33,15 @@ export default function TemplatesPage() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // ItemList は画面に出ているカードと同じ順序・同じ件数・同じ表示名で作る。
+  // 下のカード描画と同じ条件（template が引けないものは出さない）を使う。
+  const listedTemplates = TEMPLATE_CATEGORIES.flatMap(cat =>
+    (byCategory.get(cat.id) ?? []).flatMap(tpl => {
+      const template = TEMPLATES[tpl.templateIndex];
+      return template ? [{ slug: tpl.slug, name: template.name }] : [];
+    })
+  );
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#FFF8E7" }}>
@@ -134,6 +148,28 @@ export default function TemplatesPage() {
           {t("footer.about")}
         </Link>
       </div>
+
+      {/* JSON-LD: BreadcrumbList + ItemList（serializeJsonLd が < をエスケープ） */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: serializeJsonLd([
+            breadcrumbSchema([
+              {
+                name: "toban について",
+                item: window.location.origin + "/about",
+              },
+              { name: "テンプレート一覧" },
+            ]),
+            itemListSchema(
+              listedTemplates.map(tpl => ({
+                name: tpl.name,
+                url: `${window.location.origin}/templates/${tpl.slug}`,
+              }))
+            ),
+          ]),
+        }}
+      />
 
       {/* 固定CTAボタン */}
       <a

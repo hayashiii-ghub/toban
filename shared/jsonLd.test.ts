@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { faqPageSchema, breadcrumbSchema, serializeJsonLd } from "./jsonLd";
+import {
+  faqPageSchema,
+  breadcrumbSchema,
+  itemListSchema,
+  serializeJsonLd,
+} from "./jsonLd";
 
 describe("faqPageSchema", () => {
   it("FAQPage に Question/acceptedAnswer をマップする", () => {
@@ -34,6 +39,38 @@ describe("breadcrumbSchema", () => {
       },
       { "@type": "ListItem", position: 2, name: "現在ページ" },
     ]);
+  });
+});
+
+describe("itemListSchema", () => {
+  it("渡された順序のまま position を 1 始まりで採番し、numberOfItems を件数に合わせる", () => {
+    const s = itemListSchema([
+      { name: "二番目に出すもの", url: "https://toban.app/templates/b" },
+      { name: "一番目に出すもの", url: "https://toban.app/templates/a" },
+    ]) as Record<string, unknown>;
+    expect(s["@type"]).toBe("ItemList");
+    expect(s.numberOfItems).toBe(2);
+    // 並べ替えず、呼び出し側が渡した順（＝本文の表示順）を保つ
+    expect(s.itemListElement).toEqual([
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "二番目に出すもの",
+        url: "https://toban.app/templates/b",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "一番目に出すもの",
+        url: "https://toban.app/templates/a",
+      },
+    ]);
+  });
+
+  it("空配列でも numberOfItems 0 の ItemList を返す", () => {
+    const s = itemListSchema([]) as Record<string, unknown>;
+    expect(s.numberOfItems).toBe(0);
+    expect(s.itemListElement).toEqual([]);
   });
 });
 

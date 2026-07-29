@@ -12,6 +12,7 @@ import {
 import {
   faqPageSchema,
   breadcrumbSchema,
+  itemListSchema,
   serializeJsonLd,
 } from "../../shared/jsonLd";
 import { TEMPLATES } from "../../shared/templates";
@@ -176,8 +177,7 @@ export async function handleScheduleOgp(
 
 export function renderLandingPageHtml(origin: string): string {
   const title = "当番表作成アプリ toban（トバン）｜無料で作成・印刷・共有";
-  const desc =
-    "学校・保育園・介護施設・自治会・オフィス・家庭の当番表をかんたんに作れる無料の当番表作成アプリ。掃除当番からシフト・家事分担まで対応。アカウント登録・インストール不要、エクセルがなくてもブラウザだけで印刷品質の当番表がすぐ完成します。";
+  const desc = `学校・保育園・介護施設・自治会・オフィス・家庭などの当番表をかんたんに作れる無料の当番表作成アプリ。用途別のテンプレートを${TEMPLATE_SEO_DATA.length}種類用意。アカウント登録・インストール不要、エクセルがなくてもブラウザだけで印刷品質の当番表がすぐ完成します。`;
 
   const faqHtml = COMMON_FAQ.map(
     f => `<dt>${escapeHtml(f.question)}</dt><dd>${escapeHtml(f.answer)}</dd>`
@@ -249,17 +249,41 @@ export function renderTemplateListHtml(origin: string): string {
   const h1 = "当番表テンプレート一覧";
   const desc = `学校・保育園・介護施設・自治会・飲食店・家庭など、すぐ使える無料テンプレートを${TEMPLATE_SEO_DATA.length}種類ご用意。テンプレートを選んで、メンバーや担当を編集するだけで当番表が完成します。`;
 
-  const categoryHtml = TEMPLATE_CATEGORIES.map(cat => {
-    const templates = TEMPLATE_SEO_DATA.filter(t => t.categoryId === cat.id);
-    if (templates.length === 0) return "";
-    const items = templates
-      .map(
-        t =>
-          `<li><a href="${origin}/templates/${t.slug}">${escapeHtml(t.heading)}</a><p>${escapeHtml(t.description)}</p></li>`
-      )
-      .join("\n");
-    return `<section><h2>${cat.emoji} ${escapeHtml(cat.label)}</h2><p>${escapeHtml(cat.description)}</p><ul>${items}</ul></section>`;
-  }).join("\n");
+  // 本文と ItemList は必ずこの1つのグループ分けから作る。別々に filter すると
+  // 片方だけ条件を変えたときに、クローラーへ本文と違う一覧を渡してしまう。
+  const sections = TEMPLATE_CATEGORIES.map(cat => ({
+    cat,
+    templates: TEMPLATE_SEO_DATA.filter(t => t.categoryId === cat.id),
+  })).filter(s => s.templates.length > 0);
+
+  const orderedTemplates = sections.flatMap(s => s.templates);
+
+  const categoryHtml = sections
+    .map(({ cat, templates }) => {
+      const items = templates
+        .map(
+          t =>
+            `<li><a href="${origin}/templates/${t.slug}">${escapeHtml(t.heading)}</a><p>${escapeHtml(t.description)}</p></li>`
+        )
+        .join("\n");
+      return `<section><h2>${cat.emoji} ${escapeHtml(cat.label)}</h2><p>${escapeHtml(cat.description)}</p><ul>${items}</ul></section>`;
+    })
+    .join("\n");
+
+  // 共通FAQ は人間向け画面に無いので出さない（本文との不一致を避ける方針）。
+  // パンくずと一覧は本文にあるので出す。
+  const schema = serializeJsonLd([
+    breadcrumbSchema([
+      { name: "toban について", item: `${origin}/about` },
+      { name: "テンプレート一覧" },
+    ]),
+    itemListSchema(
+      orderedTemplates.map(t => ({
+        name: t.heading,
+        url: `${origin}/templates/${t.slug}`,
+      }))
+    ),
+  ]);
 
   return `<!DOCTYPE html>
 <html lang="ja">
@@ -271,6 +295,7 @@ export function renderTemplateListHtml(origin: string): string {
 <link rel="canonical" href="${origin}/templates">
 ${buildSocialMetaTags({ title, description: desc, url: `${origin}/templates`, origin, type: "website" })}
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<script type="application/ld+json">${schema}</script>
 </head>
 <body>
 <header><nav><a href="${origin}/about">toban について</a> / <span>テンプレート一覧</span></nav></header>
@@ -279,7 +304,7 @@ ${buildSocialMetaTags({ title, description: desc, url: `${origin}/templates`, or
 <p>${escapeHtml(desc)}</p>
 ${categoryHtml}
 </main>
-<footer><a href="${origin}/about">toban について</a></footer>
+<footer><a href="${origin}/">当番表を作る</a> | <a href="${origin}/about">toban について</a> | <a href="${origin}${JUNBAN_PAGE_SEO.path}">順番決め・ルーレット</a></footer>
 </body>
 </html>`;
 }
