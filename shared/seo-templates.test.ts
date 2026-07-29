@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   TEMPLATE_SEO_DATA,
   TEMPLATE_CATEGORIES,
@@ -92,5 +94,22 @@ describe("COMMON_FAQ", () => {
     expect(
       COMMON_FAQ_EN.every(f => f.question.length > 0 && f.answer.length > 0)
     ).toBe(true);
+  });
+});
+
+describe("client/index.html に手書きしたテンプレート件数", () => {
+  // index.html は静的なので件数を埋め込めない。テンプレートを増減したときに
+  // 黙ってずれないよう、ここで実データと突き合わせる。
+  it("TEMPLATE_SEO_DATA の件数と一致する", () => {
+    const html = readFileSync(
+      join(import.meta.dirname, "..", "client", "index.html"),
+      "utf8"
+    );
+    const counts = [
+      ...html.matchAll(/(\d+)種類のテンプレート|テンプレートを(\d+)種類/g),
+    ].map(m => Number(m[1] ?? m[2]));
+
+    expect(counts.length, "件数の記述が見つからない").toBeGreaterThan(0);
+    expect(counts).toEqual(counts.map(() => TEMPLATE_SEO_DATA.length));
   });
 });
