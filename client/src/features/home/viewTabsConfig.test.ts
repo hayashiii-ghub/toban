@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { VIEW_TABS, VIEW_VALUES, isViewTab, viewOrientation, viewMcpLabel } from "./viewTabsConfig";
+import {
+  VIEW_TABS,
+  VIEW_VALUES,
+  isViewTab,
+  viewOrientation,
+  viewMcpLabel,
+} from "./viewTabsConfig";
 
 describe("VIEW_TABS / VIEW_VALUES", () => {
   it("4つの view を順に持つ（cards/table/calendar/disc）", () => {

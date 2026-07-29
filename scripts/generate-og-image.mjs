@@ -22,9 +22,12 @@ async function ensureFont() {
   } catch {
     await mkdir(fontDir, { recursive: true });
     const res = await fetch(FONT_URL);
-    if (!res.ok) throw new Error(`Kiwi Maru font download failed: ${res.status}`);
+    if (!res.ok)
+      throw new Error(`Kiwi Maru font download failed: ${res.status}`);
     await writeFile(fontPath, Buffer.from(await res.arrayBuffer()));
-    console.log("Downloaded Kiwi Maru Medium to scripts/fonts/ (cached, gitignored)");
+    console.log(
+      "Downloaded Kiwi Maru Medium to scripts/fonts/ (cached, gitignored)"
+    );
   }
 }
 
@@ -66,5 +69,5 @@ await writeFile(outputPath, png);
 
 const { width, height } = resvg.innerBBox() ?? { width: 1200, height: 630 };
 console.log(
-  `Generated ${path.relative(projectRoot, outputPath)} (${png.length} bytes, target 1200x630, content bbox ${width}x${height})`,
+  `Generated ${path.relative(projectRoot, outputPath)} (${png.length} bytes, target 1200x630, content bbox ${width}x${height})`
 );

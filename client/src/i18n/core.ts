@@ -7,13 +7,15 @@ export const LOCALES: readonly Locale[] = ["ja", "en"];
 export const DEFAULT_LOCALE: Locale = "ja";
 
 export function isLocale(value: unknown): value is Locale {
-  return typeof value === "string" && (LOCALES as readonly string[]).includes(value);
+  return (
+    typeof value === "string" && (LOCALES as readonly string[]).includes(value)
+  );
 }
 
 // 検出順: 保存済みの正しい locale > ブラウザ言語が en 始まり > ja。
 export function detectLocale(
   stored: string | null,
-  navigatorLanguage?: string,
+  navigatorLanguage?: string
 ): Locale {
   if (isLocale(stored)) return stored;
   if (navigatorLanguage?.toLowerCase().startsWith("en")) return "en";
@@ -23,11 +25,11 @@ export function detectLocale(
 // {key} を params[key] で置換する。params に無いキーはそのまま残す。
 export function interpolate(
   template: string,
-  params?: Record<string, string | number>,
+  params?: Record<string, string | number>
 ): string {
   if (!params) return template;
   return template.replace(/\{(\w+)\}/g, (match, key: string) =>
-    key in params ? String(params[key]) : match,
+    key in params ? String(params[key]) : match
   );
 }
 
@@ -36,7 +38,7 @@ export function translate(
   dicts: Record<Locale, Record<string, string>>,
   locale: Locale,
   key: string,
-  params?: Record<string, string | number>,
+  params?: Record<string, string | number>
 ): string {
   const message = dicts[locale]?.[key] ?? dicts[DEFAULT_LOCALE]?.[key] ?? key;
   return interpolate(message, params);

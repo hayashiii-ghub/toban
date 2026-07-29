@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { getHolidaysForYear, getHolidaysForMonth, isSkippedDate, countSkipDays } from "./holidays";
+import {
+  getHolidaysForYear,
+  getHolidaysForMonth,
+  isSkippedDate,
+  countSkipDays,
+} from "./holidays";
 
 function holidayMap(year: number): Map<string, string> {
-  return new Map(getHolidaysForYear(year).map((h) => [h.date, h.name]));
+  return new Map(getHolidaysForYear(year).map(h => [h.date, h.name]));
 }
 
 describe("getHolidaysForYear", () => {
@@ -101,24 +106,40 @@ describe("getHolidaysForMonth", () => {
 describe("isSkippedDate", () => {
   it("土曜スキップが有効なら土曜をスキップする", () => {
     // 2026-03-28 は土曜日
-    expect(isSkippedDate(new Date(2026, 2, 28), { skipSaturday: true })).toBe(true);
-    expect(isSkippedDate(new Date(2026, 2, 28), { skipSaturday: false })).toBe(false);
+    expect(isSkippedDate(new Date(2026, 2, 28), { skipSaturday: true })).toBe(
+      true
+    );
+    expect(isSkippedDate(new Date(2026, 2, 28), { skipSaturday: false })).toBe(
+      false
+    );
   });
 
   it("日曜スキップが有効なら日曜をスキップする", () => {
     // 2026-03-29 は日曜日
-    expect(isSkippedDate(new Date(2026, 2, 29), { skipSunday: true })).toBe(true);
+    expect(isSkippedDate(new Date(2026, 2, 29), { skipSunday: true })).toBe(
+      true
+    );
   });
 
   it("祝日スキップが有効なら祝日をスキップする", () => {
     // 2026-01-01 は元日
-    expect(isSkippedDate(new Date(2026, 0, 1), { skipHolidays: true })).toBe(true);
-    expect(isSkippedDate(new Date(2026, 0, 2), { skipHolidays: true })).toBe(false);
+    expect(isSkippedDate(new Date(2026, 0, 1), { skipHolidays: true })).toBe(
+      true
+    );
+    expect(isSkippedDate(new Date(2026, 0, 2), { skipHolidays: true })).toBe(
+      false
+    );
   });
 
   it("平日で祝日でない日はスキップしない", () => {
     // 2026-03-27 は金曜日、祝日でない
-    expect(isSkippedDate(new Date(2026, 2, 27), { skipSaturday: true, skipSunday: true, skipHolidays: true })).toBe(false);
+    expect(
+      isSkippedDate(new Date(2026, 2, 27), {
+        skipSaturday: true,
+        skipSunday: true,
+        skipHolidays: true,
+      })
+    ).toBe(false);
   });
 });
 
@@ -132,7 +153,9 @@ describe("countSkipDays", () => {
   it("1週間の土日をカウントする", () => {
     const start = new Date(2026, 2, 23); // 月曜
     const end = new Date(2026, 2, 30); // 翌月曜
-    expect(countSkipDays(start, end, { skipSaturday: true, skipSunday: true })).toBe(2);
+    expect(
+      countSkipDays(start, end, { skipSaturday: true, skipSunday: true })
+    ).toBe(2);
   });
 
   it("土曜のみスキップの場合は1を返す", () => {
@@ -145,7 +168,11 @@ describe("countSkipDays", () => {
     // 2026-01-01 は木曜 (元日)、1/1-1/8 の1週間
     const start = new Date(2026, 0, 1);
     const end = new Date(2026, 0, 8);
-    const skipAll = { skipSaturday: true, skipSunday: true, skipHolidays: true };
+    const skipAll = {
+      skipSaturday: true,
+      skipSunday: true,
+      skipHolidays: true,
+    };
     // 1/1(木・祝), 1/3(土), 1/4(日) → 3日スキップ
     expect(countSkipDays(start, end, skipAll)).toBe(3);
   });

@@ -51,13 +51,18 @@ export function clearPendingSync(scheduleId: string): void {
 
 async function doSync(
   schedule: Schedule,
-  options?: { keepalive?: boolean },
+  options?: { keepalive?: boolean }
 ): Promise<boolean> {
   if (!schedule.slug || !schedule.editToken) return false;
 
   statusCallback?.(schedule.id, "syncing");
   try {
-    await updateSchedule(schedule.slug, schedule.editToken, toScheduleData(schedule), options);
+    await updateSchedule(
+      schedule.slug,
+      schedule.editToken,
+      toScheduleData(schedule),
+      options
+    );
     statusCallback?.(schedule.id, "synced");
     return true;
   } catch (error) {
@@ -66,19 +71,30 @@ async function doSync(
     if (error instanceof ApiError) {
       if (error.status === 401 || error.status === 403) {
         // Auth error — non-retriable, discard pending
-        console.warn(`[syncManager] 認証エラー (${error.status}): スケジュール ${schedule.id} の同期をスキップ`);
+        console.warn(
+          `[syncManager] 認証エラー (${error.status}): スケジュール ${schedule.id} の同期をスキップ`
+        );
         pendingSchedules.delete(schedule.id);
       } else if (error.status === 400) {
         // Validation error — non-retriable, discard pending
-        console.warn(`[syncManager] データ不正 (400): スケジュール ${schedule.id} の同期をスキップ`, error.message);
+        console.warn(
+          `[syncManager] データ不正 (400): スケジュール ${schedule.id} の同期をスキップ`,
+          error.message
+        );
         pendingSchedules.delete(schedule.id);
       } else {
         // 5xx server errors — retriable, keep pending for retry on reconnect
-        console.error(`[syncManager] サーバーエラー (${error.status}): スケジュール ${schedule.id} の同期に失敗`, error);
+        console.error(
+          `[syncManager] サーバーエラー (${error.status}): スケジュール ${schedule.id} の同期に失敗`,
+          error
+        );
       }
     } else {
       // Network errors etc. — retriable, keep pending for retry on reconnect
-      console.error(`[syncManager] ネットワークエラー: スケジュール ${schedule.id} の同期に失敗`, error);
+      console.error(
+        `[syncManager] ネットワークエラー: スケジュール ${schedule.id} の同期に失敗`,
+        error
+      );
     }
 
     return false;
@@ -98,7 +114,7 @@ function schedulePendingSync(scheduleId: string): void {
     timers.delete(scheduleId);
     const latestPending = pendingSchedules.get(scheduleId);
     if (latestPending) {
-      void doSync(latestPending).then((synced) => {
+      void doSync(latestPending).then(synced => {
         if (synced && pendingSchedules.get(scheduleId) === latestPending) {
           pendingSchedules.delete(scheduleId);
         }
@@ -118,7 +134,7 @@ export function scheduleSyncDebounced(schedule: Schedule): void {
 
 export async function flushPendingSync(
   scheduleId: string,
-  options?: { keepalive?: boolean },
+  options?: { keepalive?: boolean }
 ): Promise<void> {
   const timer = timers.get(scheduleId);
   if (timer) {

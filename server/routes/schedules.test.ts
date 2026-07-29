@@ -8,6 +8,14 @@ vi.mock("../db/ensureSchema", () => ({
 
 // --- Helpers ---
 
+/**
+ * Response#json() は unknown を返すため、そのままではプロパティを参照できない。
+ * このテストが見るのは平坦なオブジェクトのキーだけなので、ここで一度だけ絞る。
+ */
+async function readJson(res: Response): Promise<Record<string, unknown>> {
+  return (await res.json()) as Record<string, unknown>;
+}
+
 /** Valid schedule payload for POST/PUT requests */
 function validScheduleData(overrides: Record<string, unknown> = {}) {
   return {
@@ -49,7 +57,13 @@ function fakeScheduleRow(overrides: Partial<Record<string, unknown>> = {}) {
     rotation: 0,
     groups_json: JSON.stringify([{ id: "g1", tasks: ["掃除"], emoji: "🧹" }]),
     members_json: JSON.stringify([
-      { id: "m1", name: "田中", color: "#FF0000", bgColor: "#FFEEEE", textColor: "#000000" },
+      {
+        id: "m1",
+        name: "田中",
+        color: "#FF0000",
+        bgColor: "#FFEEEE",
+        textColor: "#000000",
+      },
     ]),
     rotation_config_json: null,
     assignment_mode: null,
@@ -65,22 +79,25 @@ function fakeScheduleRow(overrides: Partial<Record<string, unknown>> = {}) {
  * `queryHandler` receives (sql, params) and should return { results: [...] } or throw.
  */
 function createMockD1(
-  queryHandler: (sql: string, params: unknown[]) => { results: unknown[] },
+  queryHandler: (sql: string, params: unknown[]) => { results: unknown[] }
 ): D1Database {
   const mockStatement = (sql: string) => {
     let boundParams: unknown[] = [];
-    const stmt: D1PreparedStatement = {
+    // D1PreparedStatement は meta の全フィールドや raw のオーバーロードまで要求するが、
+    // テストが見るのは戻り値の results / success だけ。型を満たすためだけにモックを
+    // 膨らませても検証力は上がらないので、組み立て後に一度だけキャストする。
+    const stmt = {
       bind(...params: unknown[]) {
         boundParams = params;
         return stmt;
       },
       async all() {
         const result = queryHandler(sql, boundParams);
-        return { results: result.results, success: true, meta: {} } as D1Result;
+        return { results: result.results, success: true, meta: {} };
       },
       async run() {
         queryHandler(sql, boundParams);
-        return { results: [], success: true, meta: {} } as D1Result;
+        return { results: [], success: true, meta: {} };
       },
       async first(_col?: string) {
         const result = queryHandler(sql, boundParams);
@@ -94,11 +111,12 @@ function createMockD1(
         }
         const rows = result.results as Record<string, unknown>[];
         const columns = Object.keys(rows[0]);
-        const dataRows = rows.map((row) => columns.map((col) => row[col]));
-        if (opts?.columnNames) return { results: dataRows, columnNames: columns };
+        const dataRows = rows.map(row => columns.map(col => row[col]));
+        if (opts?.columnNames)
+          return { results: dataRows, columnNames: columns };
         return dataRows;
       },
-    };
+    } as unknown as D1PreparedStatement;
     return stmt;
   };
 
@@ -153,7 +171,7 @@ describe("POST /api/schedules (Create)", () => {
     });
 
     expect(res.status).toBe(201);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json).toHaveProperty("slug");
     expect(json).toHaveProperty("editToken");
     expect(typeof json.slug).toBe("string");
@@ -171,7 +189,7 @@ describe("POST /api/schedules (Create)", () => {
     });
 
     expect(res.status).toBe(400);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json).toHaveProperty("error");
   });
 
@@ -212,7 +230,7 @@ describe("POST /api/schedules (Create)", () => {
     });
 
     expect(res.status).toBe(400);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json.error).toBe("Invalid JSON");
   });
 
@@ -226,9 +244,15 @@ describe("POST /api/schedules (Create)", () => {
       body: JSON.stringify(
         validScheduleData({
           members: [
-            { id: "m1", name: "田中", color: "red", bgColor: "#FFEEEE", textColor: "#000000" },
+            {
+              id: "m1",
+              name: "田中",
+              color: "red",
+              bgColor: "#FFEEEE",
+              textColor: "#000000",
+            },
           ],
-        }),
+        })
       ),
     });
 
@@ -244,8 +268,15 @@ describe("POST /api/schedules (Create)", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(
         validScheduleData({
-          groups: [{ id: "g1", tasks: ["掃除"], emoji: "🧹", memberIds: ["nonexistent"] }],
-        }),
+          groups: [
+            {
+              id: "g1",
+              tasks: ["掃除"],
+              emoji: "🧹",
+              memberIds: ["nonexistent"],
+            },
+          ],
+        })
       ),
     });
 
@@ -256,7 +287,7 @@ describe("POST /api/schedules (Create)", () => {
 describe("GET /api/schedules/:slug (Public read)", () => {
   it("returns 200 for a public schedule", async () => {
     const row = fakeScheduleRow({ is_public: 1 });
-    const mockDB = createMockD1((sql) => {
+    const mockDB = createMockD1(sql => {
       if (sql.includes("select")) return { results: [row] };
       return { results: [] };
     });
@@ -265,18 +296,24 @@ describe("GET /api/schedules/:slug (Public read)", () => {
     const res = await app.request("/api/schedules/abcdefghij");
 
     expect(res.status).toBe(200);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json.slug).toBe("abcdefghij");
     expect(json.name).toBe("テスト当番表");
     expect(json.groups).toEqual([{ id: "g1", tasks: ["掃除"], emoji: "🧹" }]);
     expect(json.members).toEqual([
-      { id: "m1", name: "田中", color: "#FF0000", bgColor: "#FFEEEE", textColor: "#000000" },
+      {
+        id: "m1",
+        name: "田中",
+        color: "#FF0000",
+        bgColor: "#FFEEEE",
+        textColor: "#000000",
+      },
     ]);
   });
 
   it("returns 404 for a non-public schedule", async () => {
     const row = fakeScheduleRow({ is_public: 0 });
-    const mockDB = createMockD1((sql) => {
+    const mockDB = createMockD1(sql => {
       if (sql.includes("select")) return { results: [row] };
       return { results: [] };
     });
@@ -285,7 +322,7 @@ describe("GET /api/schedules/:slug (Public read)", () => {
     const res = await app.request("/api/schedules/abcdefghij");
 
     expect(res.status).toBe(404);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json.error).toBe("Not found");
   });
 
@@ -296,7 +333,7 @@ describe("GET /api/schedules/:slug (Public read)", () => {
     const res = await app.request("/api/schedules/abcdefghij");
 
     expect(res.status).toBe(404);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json.error).toBe("Not found");
   });
 
@@ -307,7 +344,7 @@ describe("GET /api/schedules/:slug (Public read)", () => {
     const res = await app.request("/api/schedules/bad!");
 
     expect(res.status).toBe(400);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json.error).toBe("Invalid slug");
   });
 
@@ -318,7 +355,7 @@ describe("GET /api/schedules/:slug (Public read)", () => {
     const res = await app.request("/api/schedules/abc");
 
     expect(res.status).toBe(400);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json.error).toBe("Invalid slug");
   });
 });
@@ -331,7 +368,7 @@ describe("PUT /api/schedules/:slug (Update)", () => {
     const { hashToken } = await import("../middleware/auth");
     const tokenHash = await hashToken(editToken);
 
-    const mockDB = createMockD1((sql) => {
+    const mockDB = createMockD1(sql => {
       if (sql.includes("select")) {
         // Auth middleware query selects only edit_token, edit_token_hash.
         // Drizzle uses positional mapping from raw(), so the returned object
@@ -340,7 +377,11 @@ describe("PUT /api/schedules/:slug (Update)", () => {
           return { results: [{ edit_token: "", edit_token_hash: tokenHash }] };
         }
         // Full select query (if needed)
-        return { results: [fakeScheduleRow({ slug: validSlug, edit_token_hash: tokenHash })] };
+        return {
+          results: [
+            fakeScheduleRow({ slug: validSlug, edit_token_hash: tokenHash }),
+          ],
+        };
       }
       return { results: [] };
     });
@@ -360,7 +401,7 @@ describe("PUT /api/schedules/:slug (Update)", () => {
     });
 
     expect(res.status).toBe(200);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json.ok).toBe(true);
   });
 
@@ -377,7 +418,7 @@ describe("PUT /api/schedules/:slug (Update)", () => {
     });
 
     expect(res.status).toBe(403);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json.error).toBe("Unauthorized");
   });
 
@@ -391,7 +432,7 @@ describe("PUT /api/schedules/:slug (Update)", () => {
     });
 
     expect(res.status).toBe(401);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json.error).toBe("Edit token required");
   });
 
@@ -419,7 +460,7 @@ describe("DELETE /api/schedules/:slug", () => {
     const { hashToken } = await import("../middleware/auth");
     const tokenHash = await hashToken(editToken);
 
-    const mockDB = createMockD1((sql) => {
+    const mockDB = createMockD1(sql => {
       if (sql.includes("select")) {
         return { results: [{ edit_token: "", edit_token_hash: tokenHash }] };
       }
@@ -433,7 +474,7 @@ describe("DELETE /api/schedules/:slug", () => {
     });
 
     expect(res.status).toBe(200);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json.ok).toBe(true);
   });
 
@@ -441,7 +482,7 @@ describe("DELETE /api/schedules/:slug", () => {
     const { hashToken } = await import("../middleware/auth");
     const tokenHash = await hashToken(editToken);
 
-    const mockDB = createMockD1((sql) => {
+    const mockDB = createMockD1(sql => {
       if (sql.includes("select")) {
         return { results: [{ edit_token: "", edit_token_hash: tokenHash }] };
       }
@@ -466,7 +507,7 @@ describe("DELETE /api/schedules/:slug", () => {
     });
 
     expect(res.status).toBe(401);
-    const json = await res.json();
+    const json = await readJson(res);
     expect(json.error).toBe("Edit token required");
   });
 });

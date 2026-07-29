@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // api モジュールをモック
-vi.mock("./api", async (importOriginal) => {
+vi.mock("./api", async importOriginal => {
   const actual = await importOriginal<typeof import("./api")>();
   return {
     ...actual,
@@ -26,7 +26,15 @@ const mockSchedule: Schedule = {
   name: "テスト",
   rotation: 0,
   groups: [{ id: "g1", tasks: ["掃除"], emoji: "🧹" }],
-  members: [{ id: "m1", name: "太郎", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" }],
+  members: [
+    {
+      id: "m1",
+      name: "太郎",
+      color: "#3B82F6",
+      bgColor: "#DBEAFE",
+      textColor: "#1E3A5F",
+    },
+  ],
   slug: "test-slug-1",
   editToken: "token123",
 };
@@ -63,7 +71,7 @@ describe("scheduleSyncDebounced", () => {
       mockSchedule.slug,
       mockSchedule.editToken,
       expect.objectContaining({ name: "テスト" }),
-      undefined,
+      undefined
     );
   });
 
@@ -78,12 +86,16 @@ describe("scheduleSyncDebounced", () => {
       mockSchedule.slug,
       mockSchedule.editToken,
       expect.objectContaining({ name: "更新後" }),
-      undefined,
+      undefined
     );
   });
 
   it("slug がない場合は同期しない", async () => {
-    scheduleSyncDebounced({ ...mockSchedule, slug: undefined, editToken: undefined });
+    scheduleSyncDebounced({
+      ...mockSchedule,
+      slug: undefined,
+      editToken: undefined,
+    });
 
     await vi.advanceTimersByTimeAsync(3000);
 
@@ -115,7 +127,7 @@ describe("flushPendingSync", () => {
       mockSchedule.slug,
       mockSchedule.editToken,
       expect.any(Object),
-      { keepalive: true },
+      { keepalive: true }
     );
   });
 });

@@ -9,12 +9,28 @@ export interface ModalState {
 }
 
 export function useModalManager() {
-  const [modal, setModal] = useState<ModalState>({ type: null, deleteTargetId: null });
+  const [modal, setModal] = useState<ModalState>({
+    type: null,
+    deleteTargetId: null,
+  });
 
-  const openSettings = useCallback(() => setModal({ type: "settings", deleteTargetId: null }), []);
-  const openNewSchedule = useCallback(() => setModal({ type: "newSchedule", deleteTargetId: null }), []);
-  const openConfirmDelete = useCallback((scheduleId: string) => setModal({ type: "confirmDelete", deleteTargetId: scheduleId }), []);
-  const closeModal = useCallback(() => setModal({ type: null, deleteTargetId: null }), []);
+  const openSettings = useCallback(
+    () => setModal({ type: "settings", deleteTargetId: null }),
+    []
+  );
+  const openNewSchedule = useCallback(
+    () => setModal({ type: "newSchedule", deleteTargetId: null }),
+    []
+  );
+  const openConfirmDelete = useCallback(
+    (scheduleId: string) =>
+      setModal({ type: "confirmDelete", deleteTargetId: scheduleId }),
+    []
+  );
+  const closeModal = useCallback(
+    () => setModal({ type: null, deleteTargetId: null }),
+    []
+  );
 
   return {
     modal,

@@ -27,19 +27,26 @@ function nthMonday(year: number, month: number, n: number): number {
 
 /** 春分の日（近似式、1980-2099対応） */
 function vernalEquinoxDay(year: number): number {
-  return Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+  return Math.floor(
+    20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4)
+  );
 }
 
 /** 秋分の日（近似式、1980-2099対応） */
 function autumnalEquinoxDay(year: number): number {
-  return Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+  return Math.floor(
+    23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4)
+  );
 }
 
 function toKey(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-const OLYMPIC_HOLIDAY_OVERRIDES: Record<number, Array<[number, number, string]>> = {
+const OLYMPIC_HOLIDAY_OVERRIDES: Record<
+  number,
+  Array<[number, number, string]>
+> = {
   2020: [
     [7, 23, "海の日"],
     [7, 24, "スポーツの日"],
@@ -102,10 +109,14 @@ export function getHolidaysForYear(year: number): JapaneseHoliday[] {
       const next = new Date(d);
       do {
         next.setDate(next.getDate() + 1);
-      } while (holidays.has(toKey(next.getFullYear(), next.getMonth() + 1, next.getDate())));
+      } while (
+        holidays.has(
+          toKey(next.getFullYear(), next.getMonth() + 1, next.getDate())
+        )
+      );
       holidays.set(
         toKey(next.getFullYear(), next.getMonth() + 1, next.getDate()),
-        "振替休日",
+        "振替休日"
       );
     }
   }
@@ -120,8 +131,16 @@ export function getHolidaysForYear(year: number): JapaneseHoliday[] {
     if (diffDays === 2) {
       const between = new Date(d1);
       between.setDate(between.getDate() + 1);
-      const betweenKey = toKey(between.getFullYear(), between.getMonth() + 1, between.getDate());
-      if (!holidays.has(betweenKey) && between.getDay() !== 0 && between.getDay() !== 6) {
+      const betweenKey = toKey(
+        between.getFullYear(),
+        between.getMonth() + 1,
+        between.getDate()
+      );
+      if (
+        !holidays.has(betweenKey) &&
+        between.getDay() !== 0 &&
+        between.getDay() !== 6
+      ) {
         holidays.set(betweenKey, "国民の休日");
       }
     }
@@ -136,7 +155,10 @@ export function getHolidaysForYear(year: number): JapaneseHoliday[] {
 }
 
 /** 指定月の祝日マップ（日 → 祝日名） */
-export function getHolidaysForMonth(year: number, month: number): Map<number, string> {
+export function getHolidaysForMonth(
+  year: number,
+  month: number
+): Map<number, string> {
   const holidays = getHolidaysForYear(year);
   const prefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
   const map = new Map<number, string>();
@@ -152,7 +174,11 @@ export function getHolidaysForMonth(year: number, month: number): Map<number, st
 export function countSkipDays(
   startDate: Date,
   endDate: Date,
-  options: { skipSaturday?: boolean; skipSunday?: boolean; skipHolidays?: boolean },
+  options: {
+    skipSaturday?: boolean;
+    skipSunday?: boolean;
+    skipHolidays?: boolean;
+  }
 ): number {
   const { skipSaturday, skipSunday, skipHolidays } = options;
   if (!skipSaturday && !skipSunday && !skipHolidays) return 0;
@@ -187,7 +213,11 @@ export function countSkipDays(
 
   // 祝日のカウント（土日と重複する場合は二重カウントしない）
   if (skipHolidays) {
-    const startKey = toKey(start.getFullYear(), start.getMonth() + 1, start.getDate());
+    const startKey = toKey(
+      start.getFullYear(),
+      start.getMonth() + 1,
+      start.getDate()
+    );
     const endKey = toKey(end.getFullYear(), end.getMonth() + 1, end.getDate());
 
     // 期間にまたがる年をすべて取得
@@ -214,7 +244,11 @@ export function countSkipDays(
 
 export function isSkippedDate(
   date: Date,
-  options: { skipSaturday?: boolean; skipSunday?: boolean; skipHolidays?: boolean },
+  options: {
+    skipSaturday?: boolean;
+    skipSunday?: boolean;
+    skipHolidays?: boolean;
+  }
 ): boolean {
   const normalized = startOfLocalDay(date);
   const dow = normalized.getDay();
@@ -225,6 +259,6 @@ export function isSkippedDate(
 
   return getHolidaysForMonth(
     normalized.getFullYear(),
-    normalized.getMonth(),
+    normalized.getMonth()
   ).has(normalized.getDate());
 }

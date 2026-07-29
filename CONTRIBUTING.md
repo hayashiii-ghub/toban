@@ -23,16 +23,7 @@ pnpm dev:full
 
 ## 開発コマンド
 
-| コマンド | 説明 |
-| --- | --- |
-| `pnpm dev` | Vite 開発サーバー（ポート 3000） |
-| `pnpm dev:api` | Wrangler Workers 開発サーバー（ポート 8788） |
-| `pnpm dev:full` | フロントエンド + API を同時起動 |
-| `pnpm build` | プロダクションビルド |
-| `pnpm check` | TypeScript 型検査 |
-| `pnpm test` | テスト実行 |
-| `pnpm lint` | ESLint によるコード検査 |
-| `pnpm format` | Prettier によるコード整形 |
+一覧は [README の「コマンド」](./README.md#コマンド) を参照してください。二重管理を避けるため、ここには載せていません。
 
 ## PR の出し方
 
@@ -42,10 +33,16 @@ pnpm dev:full
 4. ブランチをプッシュする（`git push origin feature/my-feature`）
 5. Pull Request を作成する
 
+PR を出す前に、CI と同じ検査をローカルで通しておくとやり直しが減ります。
+
+```bash
+pnpm format:check && pnpm check && pnpm lint && pnpm test && pnpm build
+```
+
 ## コーディング規約
 
 - **TypeScript strict モード** を使用しています
-- **Prettier** でコードを整形してください（`pnpm format`）
+- **Prettier** でコードを整形してください（`pnpm format`）。CI が `prettier --check` で検査するため、整形漏れがあると落ちます
 - **ESLint** のルールに従ってください（`pnpm lint`）
 - 共有型は `shared/types.ts` に定義してください
 - UI の文字列はすべて日本語で記述してください

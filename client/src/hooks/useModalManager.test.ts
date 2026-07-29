@@ -11,19 +11,28 @@ describe("useModalManager", () => {
   it("openSettings で設定モーダルを開く", () => {
     const { result } = renderHook(() => useModalManager());
     act(() => result.current.openSettings());
-    expect(result.current.modal).toEqual({ type: "settings", deleteTargetId: null });
+    expect(result.current.modal).toEqual({
+      type: "settings",
+      deleteTargetId: null,
+    });
   });
 
   it("openNewSchedule で新規スケジュールモーダルを開く", () => {
     const { result } = renderHook(() => useModalManager());
     act(() => result.current.openNewSchedule());
-    expect(result.current.modal).toEqual({ type: "newSchedule", deleteTargetId: null });
+    expect(result.current.modal).toEqual({
+      type: "newSchedule",
+      deleteTargetId: null,
+    });
   });
 
   it("openConfirmDelete で削除確認モーダルを開き対象IDを保持する", () => {
     const { result } = renderHook(() => useModalManager());
     act(() => result.current.openConfirmDelete("schedule-123"));
-    expect(result.current.modal).toEqual({ type: "confirmDelete", deleteTargetId: "schedule-123" });
+    expect(result.current.modal).toEqual({
+      type: "confirmDelete",
+      deleteTargetId: "schedule-123",
+    });
   });
 
   it("closeModal でモーダルを閉じて状態をリセットする", () => {

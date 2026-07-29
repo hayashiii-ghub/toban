@@ -52,7 +52,9 @@ describe("ScheduleTabs", () => {
   it("タブクリックでonSelectScheduleが呼ばれる", () => {
     const props = defaultProps();
     const { unmount } = render(<ScheduleTabs {...props} />);
-    fireEvent.click(screen.getByLabelText("給食当番タブ（Alt+矢印キーで並び替え）"));
+    fireEvent.click(
+      screen.getByLabelText("給食当番タブ（Alt+矢印キーで並び替え）")
+    );
     expect(props.onSelectSchedule).toHaveBeenCalledWith("s2");
     unmount();
   });
@@ -67,8 +69,12 @@ describe("ScheduleTabs", () => {
 
   it("アクティブなタブが視覚的に区別される", () => {
     const { unmount } = render(<ScheduleTabs {...defaultProps()} />);
-    const activeTab = screen.getByLabelText("掃除当番タブ（Alt+矢印キーで並び替え）");
-    const inactiveTab = screen.getByLabelText("給食当番タブ（Alt+矢印キーで並び替え）");
+    const activeTab = screen.getByLabelText(
+      "掃除当番タブ（Alt+矢印キーで並び替え）"
+    );
+    const inactiveTab = screen.getByLabelText(
+      "給食当番タブ（Alt+矢印キーで並び替え）"
+    );
     expect(activeTab).toHaveAttribute("aria-selected", "true");
     expect(inactiveTab).toHaveAttribute("aria-selected", "false");
     unmount();
@@ -77,7 +83,9 @@ describe("ScheduleTabs", () => {
   it("Alt+右矢印でonReorderTabが呼ばれる", () => {
     const props = defaultProps();
     const { unmount } = render(<ScheduleTabs {...props} />);
-    const activeTab = screen.getByLabelText("掃除当番タブ（Alt+矢印キーで並び替え）");
+    const activeTab = screen.getByLabelText(
+      "掃除当番タブ（Alt+矢印キーで並び替え）"
+    );
     fireEvent.keyDown(activeTab, { key: "ArrowRight", altKey: true });
     expect(props.onReorderTab).toHaveBeenCalledWith("s1", "right");
     unmount();
@@ -85,7 +93,9 @@ describe("ScheduleTabs", () => {
 
   it("Alt+左矢印でonReorderTabが呼ばれる", () => {
     const props = defaultProps();
-    const { unmount } = render(<ScheduleTabs {...props} activeScheduleId="s2" />);
+    const { unmount } = render(
+      <ScheduleTabs {...props} activeScheduleId="s2" />
+    );
     const tab = screen.getByLabelText("給食当番タブ（Alt+矢印キーで並び替え）");
     fireEvent.keyDown(tab, { key: "ArrowLeft", altKey: true });
     expect(props.onReorderTab).toHaveBeenCalledWith("s2", "left");

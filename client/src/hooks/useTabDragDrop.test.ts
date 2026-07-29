@@ -3,7 +3,10 @@ import { renderHook, act } from "@testing-library/react";
 import { useTabDragDrop } from "./useTabDragDrop";
 
 const createMockDragEvent = () =>
-  ({ preventDefault: vi.fn(), dataTransfer: { effectAllowed: "", dropEffect: "" } } as unknown as React.DragEvent);
+  ({
+    preventDefault: vi.fn(),
+    dataTransfer: { effectAllowed: "", dropEffect: "" },
+  }) as unknown as React.DragEvent;
 
 describe("useTabDragDrop", () => {
   it("初期状態: draggedTabId=null, dragOverTabId=null", () => {

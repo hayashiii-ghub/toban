@@ -8,24 +8,47 @@ import {
 } from "./apiSchemas";
 
 export function toScheduleData(schedule: Schedule): ScheduleData {
-  const { name, rotation, groups, members, rotationConfig, assignmentMode, designThemeId } = schedule;
-  return { name, rotation, groups, members, rotationConfig, assignmentMode, designThemeId };
+  const {
+    name,
+    rotation,
+    groups,
+    members,
+    rotationConfig,
+    assignmentMode,
+    designThemeId,
+  } = schedule;
+  return {
+    name,
+    rotation,
+    groups,
+    members,
+    rotationConfig,
+    assignmentMode,
+    designThemeId,
+  };
 }
 
 export class ApiError extends Error {
-  constructor(message: string, public status: number) {
+  constructor(
+    message: string,
+    public status: number
+  ) {
     super(message);
     this.name = "ApiError";
   }
 }
 
-function parseResponse<T>(schema: { parse(data: unknown): T }, data: unknown, endpoint: string): T {
+function parseResponse<T>(
+  schema: { parse(data: unknown): T },
+  data: unknown,
+  endpoint: string
+): T {
   try {
     return schema.parse(data);
   } catch (error) {
     throw new Error(
       `Invalid API response from ${endpoint}: ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error },
+      { cause: error }
     );
   }
 }
@@ -35,13 +58,13 @@ const FETCH_TIMEOUT_MS = 15_000;
 
 function fetchWithTimeout(
   input: RequestInfo | URL,
-  init?: RequestInit & { keepalive?: boolean },
+  init?: RequestInit & { keepalive?: boolean }
 ): Promise<Response> {
   if (init?.keepalive) return fetch(input, init);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   return fetch(input, { ...init, signal: controller.signal }).finally(() =>
-    clearTimeout(timeoutId),
+    clearTimeout(timeoutId)
   );
 }
 
@@ -53,7 +76,7 @@ function isRetriable(status: number): boolean {
 async function fetchWithRetry(
   input: RequestInfo | URL,
   init?: RequestInit & { keepalive?: boolean },
-  maxRetries = 2,
+  maxRetries = 2
 ): Promise<Response> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -61,18 +84,25 @@ async function fetchWithRetry(
       if (res.ok || !isRetriable(res.status)) return res;
       // 5xx: retry
       if (attempt < maxRetries) {
-        const endpoint = typeof input === "string" ? input.split("?")[0] : "request";
-        console.warn(`[api] サーバーエラー ${res.status}, リトライ ${attempt + 1}/${maxRetries}: ${endpoint}`);
-        await new Promise((r) => setTimeout(r, 1000 * 3 ** attempt));
+        const endpoint =
+          typeof input === "string" ? input.split("?")[0] : "request";
+        console.warn(
+          `[api] サーバーエラー ${res.status}, リトライ ${attempt + 1}/${maxRetries}: ${endpoint}`
+        );
+        await new Promise(r => setTimeout(r, 1000 * 3 ** attempt));
         continue;
       }
       return res;
     } catch (error) {
       // Network error: retry
       if (attempt < maxRetries) {
-        const endpoint = typeof input === "string" ? input.split("?")[0] : "request";
-        console.warn(`[api] ネットワークエラー, リトライ ${attempt + 1}/${maxRetries}: ${endpoint}`, error);
-        await new Promise((r) => setTimeout(r, 1000 * 3 ** attempt));
+        const endpoint =
+          typeof input === "string" ? input.split("?")[0] : "request";
+        console.warn(
+          `[api] ネットワークエラー, リトライ ${attempt + 1}/${maxRetries}: ${endpoint}`,
+          error
+        );
+        await new Promise(r => setTimeout(r, 1000 * 3 ** attempt));
         continue;
       }
       throw error;
@@ -86,7 +116,7 @@ const BASE = "/api/schedules";
 
 export async function createSchedule(
   data: ScheduleData,
-  options?: { keepalive?: boolean },
+  options?: { keepalive?: boolean }
 ): Promise<CreateScheduleResponseData> {
   const res = await fetchWithRetry(BASE, {
     method: "POST",
@@ -94,35 +124,53 @@ export async function createSchedule(
     keepalive: options?.keepalive,
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new ApiError(`Failed to create schedule: ${res.status}`, res.status);
+  if (!res.ok)
+    throw new ApiError(`Failed to create schedule: ${res.status}`, res.status);
   const json = await res.json();
-  return parseResponse(createScheduleResponseSchema, json, "POST /api/schedules");
+  return parseResponse(
+    createScheduleResponseSchema,
+    json,
+    "POST /api/schedules"
+  );
 }
 
 export async function getSchedule(slug: string): Promise<ScheduleResponseData> {
   const res = await fetchWithTimeout(`${BASE}/${slug}`);
-  if (!res.ok) throw new ApiError(`Failed to fetch schedule: ${res.status}`, res.status);
+  if (!res.ok)
+    throw new ApiError(`Failed to fetch schedule: ${res.status}`, res.status);
   const json = await res.json();
-  return parseResponse(scheduleResponseSchema, json, `GET /api/schedules/${slug}`);
+  return parseResponse(
+    scheduleResponseSchema,
+    json,
+    `GET /api/schedules/${slug}`
+  );
 }
 
 export async function getScheduleForEdit(
   slug: string,
-  editToken: string,
+  editToken: string
 ): Promise<ScheduleResponseData> {
   const res = await fetchWithTimeout(`${BASE}/${slug}/edit`, {
     headers: { "x-edit-token": editToken },
   });
-  if (!res.ok) throw new ApiError(`Failed to fetch editable schedule: ${res.status}`, res.status);
+  if (!res.ok)
+    throw new ApiError(
+      `Failed to fetch editable schedule: ${res.status}`,
+      res.status
+    );
   const json = await res.json();
-  return parseResponse(scheduleResponseSchema, json, `GET /api/schedules/${slug}/edit`);
+  return parseResponse(
+    scheduleResponseSchema,
+    json,
+    `GET /api/schedules/${slug}/edit`
+  );
 }
 
 export async function updateSchedule(
   slug: string,
   editToken: string,
   data: ScheduleData,
-  options?: { keepalive?: boolean },
+  options?: { keepalive?: boolean }
 ): Promise<void> {
   const res = await fetchWithRetry(`${BASE}/${slug}`, {
     method: "PUT",
@@ -133,21 +181,30 @@ export async function updateSchedule(
     keepalive: options?.keepalive,
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new ApiError(`Failed to update schedule: ${res.status}`, res.status);
+  if (!res.ok)
+    throw new ApiError(`Failed to update schedule: ${res.status}`, res.status);
 }
 
-export async function publishSchedule(slug: string, editToken: string): Promise<void> {
+export async function publishSchedule(
+  slug: string,
+  editToken: string
+): Promise<void> {
   const res = await fetchWithRetry(`${BASE}/${slug}/publish`, {
     method: "POST",
     headers: { "x-edit-token": editToken },
   });
-  if (!res.ok) throw new ApiError(`Failed to publish schedule: ${res.status}`, res.status);
+  if (!res.ok)
+    throw new ApiError(`Failed to publish schedule: ${res.status}`, res.status);
 }
 
-export async function deleteSchedule(slug: string, editToken: string): Promise<void> {
+export async function deleteSchedule(
+  slug: string,
+  editToken: string
+): Promise<void> {
   const res = await fetchWithTimeout(`${BASE}/${slug}`, {
     method: "DELETE",
     headers: { "x-edit-token": editToken },
   });
-  if (!res.ok) throw new ApiError(`Failed to delete schedule: ${res.status}`, res.status);
+  if (!res.ok)
+    throw new ApiError(`Failed to delete schedule: ${res.status}`, res.status);
 }

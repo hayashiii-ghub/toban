@@ -38,8 +38,8 @@ function toLocalDayNumber(date: Date): number {
     Date.UTC(
       normalized.getFullYear(),
       normalized.getMonth(),
-      normalized.getDate(),
-    ) / MS_PER_DAY,
+      normalized.getDate()
+    ) / MS_PER_DAY
   );
 }
 

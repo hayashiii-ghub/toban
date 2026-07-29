@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_APP_STATE, DEFAULT_APP_STATE_EN } from "@/rotation/defaultState";
+import {
+  DEFAULT_APP_STATE,
+  DEFAULT_APP_STATE_EN,
+} from "@/rotation/defaultState";
 import { STORAGE_KEY } from "@/rotation/constants";
 import { loadState } from "./appState";
 
@@ -9,18 +12,20 @@ afterEach(() => {
 
 describe("loadState", () => {
   it("drops malformed schedules from localStorage", () => {
-    const getItem = vi.fn(() => JSON.stringify({
-      schedules: [
-        {
-          id: "broken",
-          name: "壊れたデータ",
-          rotation: 999,
-          groups: [{ id: "g1", emoji: "🧹", tasks: [123, ""] }],
-          members: [{ id: "m1", name: "A", color: "#000" }],
-        },
-      ],
-      activeScheduleId: "broken",
-    }));
+    const getItem = vi.fn(() =>
+      JSON.stringify({
+        schedules: [
+          {
+            id: "broken",
+            name: "壊れたデータ",
+            rotation: 999,
+            groups: [{ id: "g1", emoji: "🧹", tasks: [123, ""] }],
+            members: [{ id: "m1", name: "A", color: "#000" }],
+          },
+        ],
+        activeScheduleId: "broken",
+      })
+    );
 
     vi.stubGlobal("localStorage", {
       getItem,
@@ -35,7 +40,10 @@ describe("loadState", () => {
   });
 
   it("seeds the English default when the locale resolves to en", () => {
-    vi.stubGlobal("localStorage", { getItem: vi.fn(() => null), setItem: vi.fn() });
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+    });
     vi.stubGlobal("navigator", { language: "en-US" });
 
     const state = loadState();
@@ -46,15 +54,17 @@ describe("loadState", () => {
   it("normalizes valid stored rotation and active schedule", () => {
     const memberCount = DEFAULT_APP_STATE.schedules[0].members.length;
     vi.stubGlobal("localStorage", {
-      getItem: vi.fn(() => JSON.stringify({
-        schedules: [
-          {
-            ...DEFAULT_APP_STATE.schedules[0],
-            rotation: 7,
-          },
-        ],
-        activeScheduleId: "missing",
-      })),
+      getItem: vi.fn(() =>
+        JSON.stringify({
+          schedules: [
+            {
+              ...DEFAULT_APP_STATE.schedules[0],
+              rotation: 7,
+            },
+          ],
+          activeScheduleId: "missing",
+        })
+      ),
       setItem: vi.fn(),
     });
 
@@ -66,15 +76,17 @@ describe("loadState", () => {
 
   it("preserves pinned schedules from localStorage", () => {
     vi.stubGlobal("localStorage", {
-      getItem: vi.fn(() => JSON.stringify({
-        schedules: [
-          {
-            ...DEFAULT_APP_STATE.schedules[0],
-            pinned: true,
-          },
-        ],
-        activeScheduleId: DEFAULT_APP_STATE.schedules[0].id,
-      })),
+      getItem: vi.fn(() =>
+        JSON.stringify({
+          schedules: [
+            {
+              ...DEFAULT_APP_STATE.schedules[0],
+              pinned: true,
+            },
+          ],
+          activeScheduleId: DEFAULT_APP_STATE.schedules[0].id,
+        })
+      ),
       setItem: vi.fn(),
     });
 

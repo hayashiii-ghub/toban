@@ -3,7 +3,7 @@ import { renderHook, act } from "@testing-library/react";
 import { useAutoSync } from "./useAutoSync";
 import type { Schedule } from "@/rotation/types";
 
-vi.mock("@/lib/api", async (importOriginal) => ({
+vi.mock("@/lib/api", async importOriginal => ({
   ...(await importOriginal()),
   createSchedule: vi.fn(),
 }));
@@ -21,7 +21,15 @@ function makeSchedule(overrides: Partial<Schedule> = {}): Schedule {
     name: "テスト当番表",
     rotation: 0,
     groups: [{ id: "g1", emoji: "🧹", tasks: ["掃除"] }],
-    members: [{ id: "m1", name: "田中", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" }],
+    members: [
+      {
+        id: "m1",
+        name: "田中",
+        color: "#3B82F6",
+        bgColor: "#DBEAFE",
+        textColor: "#1E3A5F",
+      },
+    ],
     ...overrides,
   };
 }
@@ -44,7 +52,7 @@ describe("useAutoSync", () => {
   it("resets syncStatus to idle when schedule ID changes", () => {
     const { result, rerender } = renderHook(
       ({ schedule }) => useAutoSync(schedule),
-      { initialProps: { schedule: makeSchedule({ id: "s1" }) } },
+      { initialProps: { schedule: makeSchedule({ id: "s1" }) } }
     );
     expect(result.current.syncStatus).toBe("idle");
 
@@ -69,10 +77,9 @@ describe("useAutoSync", () => {
     const mockedSync = vi.mocked(scheduleSyncDebounced);
 
     const schedule = makeSchedule({ slug: "abc", editToken: "tok123" });
-    const { rerender } = renderHook(
-      ({ s }) => useAutoSync(s),
-      { initialProps: { s: schedule } },
-    );
+    const { rerender } = renderHook(({ s }) => useAutoSync(s), {
+      initialProps: { s: schedule },
+    });
 
     // Change schedule data to trigger sync
     const updated = { ...schedule, name: "更新された当番表" };
@@ -97,15 +104,17 @@ describe("useAutoSync", () => {
     vi.useFakeTimers();
     const { createSchedule } = await import("@/lib/api");
     const mockedCreate = vi.mocked(createSchedule);
-    mockedCreate.mockResolvedValue({ slug: "new-slug", editToken: "new-token" });
+    mockedCreate.mockResolvedValue({
+      slug: "new-slug",
+      editToken: "new-token",
+    });
 
     const onUpdate = vi.fn();
     const schedule = makeSchedule(); // no slug
 
-    const { rerender } = renderHook(
-      ({ s }) => useAutoSync(s, onUpdate),
-      { initialProps: { s: schedule } },
-    );
+    const { rerender } = renderHook(({ s }) => useAutoSync(s, onUpdate), {
+      initialProps: { s: schedule },
+    });
 
     // Trigger change detection
     const updated = { ...schedule, name: "新しい名前" };

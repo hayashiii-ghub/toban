@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { createScheduleSchema, taskGroupSchema, memberSchema, rotationConfigObjectSchema } from "./schedule";
+import {
+  createScheduleSchema,
+  taskGroupSchema,
+  memberSchema,
+  rotationConfigObjectSchema,
+} from "./schedule";
 
 const validMember = {
   id: "m1",
@@ -21,18 +26,30 @@ describe("memberSchema", () => {
   });
 
   it("rejects invalid color format", () => {
-    expect(memberSchema.safeParse({ ...validMember, color: "red" }).success).toBe(false);
-    expect(memberSchema.safeParse({ ...validMember, color: "#GGGGGG" }).success).toBe(false);
+    expect(
+      memberSchema.safeParse({ ...validMember, color: "red" }).success
+    ).toBe(false);
+    expect(
+      memberSchema.safeParse({ ...validMember, color: "#GGGGGG" }).success
+    ).toBe(false);
   });
 
   it("accepts #RGB, #RRGGBB, #RRGGBBAA", () => {
-    expect(memberSchema.safeParse({ ...validMember, color: "#F00" }).success).toBe(true);
-    expect(memberSchema.safeParse({ ...validMember, color: "#FF5733" }).success).toBe(true);
-    expect(memberSchema.safeParse({ ...validMember, color: "#FF573380" }).success).toBe(true);
+    expect(
+      memberSchema.safeParse({ ...validMember, color: "#F00" }).success
+    ).toBe(true);
+    expect(
+      memberSchema.safeParse({ ...validMember, color: "#FF5733" }).success
+    ).toBe(true);
+    expect(
+      memberSchema.safeParse({ ...validMember, color: "#FF573380" }).success
+    ).toBe(true);
   });
 
   it("rejects empty name", () => {
-    expect(memberSchema.safeParse({ ...validMember, name: "" }).success).toBe(false);
+    expect(memberSchema.safeParse({ ...validMember, name: "" }).success).toBe(
+      false
+    );
   });
 });
 
@@ -42,17 +59,24 @@ describe("taskGroupSchema", () => {
   });
 
   it("accepts group with memberIds", () => {
-    expect(taskGroupSchema.safeParse({ ...validGroup, memberIds: ["m1", "m2"] }).success).toBe(true);
+    expect(
+      taskGroupSchema.safeParse({ ...validGroup, memberIds: ["m1", "m2"] })
+        .success
+    ).toBe(true);
   });
 
   it("rejects empty tasks", () => {
-    expect(taskGroupSchema.safeParse({ ...validGroup, tasks: [] }).success).toBe(false);
+    expect(
+      taskGroupSchema.safeParse({ ...validGroup, tasks: [] }).success
+    ).toBe(false);
   });
 });
 
 describe("rotationConfigObjectSchema", () => {
   it("accepts manual mode", () => {
-    expect(rotationConfigObjectSchema.safeParse({ mode: "manual" }).success).toBe(true);
+    expect(
+      rotationConfigObjectSchema.safeParse({ mode: "manual" }).success
+    ).toBe(true);
   });
 
   it("accepts date mode with required fields", () => {
@@ -65,17 +89,21 @@ describe("rotationConfigObjectSchema", () => {
   });
 
   it("rejects invalid date format", () => {
-    expect(rotationConfigObjectSchema.safeParse({
-      mode: "date",
-      startDate: "2026/01/01",
-    }).success).toBe(false);
+    expect(
+      rotationConfigObjectSchema.safeParse({
+        mode: "date",
+        startDate: "2026/01/01",
+      }).success
+    ).toBe(false);
   });
 
   it("rejects invalid date value", () => {
-    expect(rotationConfigObjectSchema.safeParse({
-      mode: "date",
-      startDate: "2026-02-30",
-    }).success).toBe(false);
+    expect(
+      rotationConfigObjectSchema.safeParse({
+        mode: "date",
+        startDate: "2026-02-30",
+      }).success
+    ).toBe(false);
   });
 });
 
@@ -92,7 +120,9 @@ describe("createScheduleSchema", () => {
   });
 
   it("rejects empty name", () => {
-    expect(createScheduleSchema.safeParse({ ...validPayload, name: "" }).success).toBe(false);
+    expect(
+      createScheduleSchema.safeParse({ ...validPayload, name: "" }).success
+    ).toBe(false);
   });
 
   it("rejects unknown memberIds in groups", () => {
@@ -128,11 +158,26 @@ describe("createScheduleSchema", () => {
   });
 
   it("accepts optional assignmentMode", () => {
-    expect(createScheduleSchema.safeParse({ ...validPayload, assignmentMode: "task" }).success).toBe(true);
-    expect(createScheduleSchema.safeParse({ ...validPayload, assignmentMode: "member" }).success).toBe(true);
+    expect(
+      createScheduleSchema.safeParse({
+        ...validPayload,
+        assignmentMode: "task",
+      }).success
+    ).toBe(true);
+    expect(
+      createScheduleSchema.safeParse({
+        ...validPayload,
+        assignmentMode: "member",
+      }).success
+    ).toBe(true);
   });
 
   it("rejects invalid assignmentMode", () => {
-    expect(createScheduleSchema.safeParse({ ...validPayload, assignmentMode: "invalid" }).success).toBe(false);
+    expect(
+      createScheduleSchema.safeParse({
+        ...validPayload,
+        assignmentMode: "invalid",
+      }).success
+    ).toBe(false);
   });
 });

@@ -3,6 +3,7 @@
 学校・保育園・介護施設・自治会・オフィス・家庭の当番表を作成・印刷・共有できる無料の当番表作成アプリ。掃除当番からシフト・家事分担まで対応。
 
 ## Philosophy
+
 - **シンプルさ最優先** — 編集要素をむやみに増やさない。機能よりわかりやすさを優先
 - **軽量** — 重いDB不要。localStorageが主データストア、D1はクラウド永続化層
 - **印刷品質** — 印刷/PDF出力がきれいであることが最重要価値
@@ -10,6 +11,7 @@
 - **やらないこと**: 通知・リマインダー / 変更履歴・監査ログ / リアルタイム共同編集 / 交代リクエスト / メンバー検索 / 公平性ダッシュボード / Undo / 印刷プレビューモーダル
 
 ## Key Conventions
+
 - Client/server共有の型は `shared/types.ts`、Zodスキーマは `shared/schemas.ts`
 - 入力の文字数・件数上限は `shared/limits.ts` が単一の真実源（server スキーマ / UI maxLength / WebMCP 検証が共有）
 - クライアントのimportは `@/*`（client/src）と `@shared/*`（shared）エイリアスを使用
@@ -17,7 +19,6 @@
 - localStorage が主データストア。D1 はクラウド永続化層
 - UIは全て日本語
 - コードや構成を変更した場合は README.md も合わせて更新すること
-
 
 ## hikizan Conventions
 

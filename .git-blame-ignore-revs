@@ -1,0 +1,7 @@
+# git blame から除外するコミット。中身の変更を伴わない機械的な一括変更だけを載せる。
+#
+# ローカルで有効にする（GitHub の blame は自動でこのファイルを読む）:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# chore: リポジトリ全体を Prettier で整形
+e90ab855cc1b949814bca386ac8eb77b94444b53

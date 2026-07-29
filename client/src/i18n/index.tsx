@@ -7,7 +7,13 @@ import React, {
   useState,
 } from "react";
 import { safeGetItem, safeSetItem } from "@/lib/storage";
-import { DEFAULT_LOCALE, detectLocale, isLocale, translate, type Locale } from "./core";
+import {
+  DEFAULT_LOCALE,
+  detectLocale,
+  isLocale,
+  translate,
+  type Locale,
+} from "./core";
 import { ja } from "./locales/ja";
 import { en } from "./locales/en";
 
@@ -29,8 +35,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocale] = useState<Locale>(() =>
     detectLocale(
       safeGetItem(LANG_STORAGE_KEY),
-      typeof navigator !== "undefined" ? navigator.language : undefined,
-    ),
+      typeof navigator !== "undefined" ? navigator.language : undefined
+    )
   );
 
   useEffect(() => {
@@ -41,12 +47,12 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const t = useCallback(
     (key: string, params?: Record<string, string | number>) =>
       translate(dicts, locale, key, params),
-    [locale],
+    [locale]
   );
 
   const value = useMemo<I18nContextType>(
     () => ({ locale, setLocale, t }),
-    [locale, t],
+    [locale, t]
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
@@ -65,7 +71,10 @@ function useI18n(): I18nContextType {
   return useContext(I18nContext) ?? FALLBACK_CONTEXT;
 }
 
-export function useLocale(): { locale: Locale; setLocale: (locale: Locale) => void } {
+export function useLocale(): {
+  locale: Locale;
+  setLocale: (locale: Locale) => void;
+} {
   const { locale, setLocale } = useI18n();
   return { locale, setLocale };
 }
@@ -83,9 +92,10 @@ export function useDateLocale(): string {
 // Provider が document.documentElement.lang を同期しているのでそこから locale を読む。
 export function tStandalone(
   key: string,
-  params?: Record<string, string | number>,
+  params?: Record<string, string | number>
 ): string {
-  const lang = typeof document !== "undefined" ? document.documentElement.lang : "";
+  const lang =
+    typeof document !== "undefined" ? document.documentElement.lang : "";
   const locale = isLocale(lang) ? lang : DEFAULT_LOCALE;
   return translate(dicts, locale, key, params);
 }

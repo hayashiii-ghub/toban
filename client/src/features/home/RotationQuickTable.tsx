@@ -24,7 +24,10 @@ export function RotationQuickTable({
   assignmentMode,
 }: RotationQuickTableProps) {
   const t = useT();
-  const activeMembers = useMemo(() => members.filter(m => !m.skipped), [members]);
+  const activeMembers = useMemo(
+    () => members.filter(m => !m.skipped),
+    [members]
+  );
 
   const allColumnAssignments = useMemo(() => {
     return activeMembers.map((_, rotationIndex) =>
@@ -46,7 +49,10 @@ export function RotationQuickTable({
       if (el.scrollLeft > 10) setShowScrollHint(false);
     };
     el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => { ro.disconnect(); el.removeEventListener("scroll", handleScroll); };
+    return () => {
+      ro.disconnect();
+      el.removeEventListener("scroll", handleScroll);
+    };
   }, [activeMembers.length]);
 
   // 回転が進んだら現在列が見えるよう中央へ横スクロール（はみ出していない時は何もしない）
@@ -57,8 +63,13 @@ export function RotationQuickTable({
     const cell = el.querySelector<HTMLElement>("th[aria-current]");
     if (!cell) return;
     const left = cell.offsetLeft - (el.clientWidth - cell.offsetWidth) / 2;
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    el.scrollTo({ left: Math.max(0, left), behavior: reduceMotion ? "auto" : "smooth" });
+    const reduceMotion = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    el.scrollTo({
+      left: Math.max(0, left),
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
   }, [rotation]);
 
   return (
@@ -66,19 +77,28 @@ export function RotationQuickTable({
       <div className="max-w-4xl mx-auto">
         <m.div
           className="theme-border theme-shadow-sm p-3 sm:p-5 rotation-print-card"
-          style={{ backgroundColor: "var(--dt-card-bg)", borderRadius: "var(--dt-border-radius)" }}
+          style={{
+            backgroundColor: "var(--dt-card-bg)",
+            borderRadius: "var(--dt-border-radius)",
+          }}
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.15, duration: 0.25 }}
         >
           <h2
             className="text-sm mb-3 sm:mb-4 tracking-wider uppercase"
-            style={{ color: "var(--dt-text-secondary)", fontWeight: "var(--dt-font-weight-extra)" }}
+            style={{
+              color: "var(--dt-text-secondary)",
+              fontWeight: "var(--dt-font-weight-extra)",
+            }}
           >
             {t("quickTable.heading")}
           </h2>
           {showScrollHint && (
-            <div className="flex items-center gap-1.5 mb-2 text-xs font-bold sm:hidden rotation-no-print" style={{ color: "var(--dt-text-muted)" }}>
+            <div
+              className="flex items-center gap-1.5 mb-2 text-xs font-bold sm:hidden rotation-no-print"
+              style={{ color: "var(--dt-text-muted)" }}
+            >
               <span>←</span>
               <span>{t("quickTable.scrollHint")}</span>
               <span>→</span>
@@ -86,12 +106,21 @@ export function RotationQuickTable({
           )}
           <div ref={scrollRef} className="overflow-x-auto -mx-1">
             {/* border-separate: collapse だと隣接セルの透明/着色 border の衝突解決が仕様依存になり囲み線が欠ける */}
-            <table className="w-full text-sm border-separate" style={{ borderSpacing: 0 }} aria-label={t("quickTable.tableAria")}>
+            <table
+              className="w-full text-sm border-separate"
+              style={{ borderSpacing: 0 }}
+              aria-label={t("quickTable.tableAria")}
+            >
               <thead>
                 <tr>
                   <th
                     className="text-left py-2 sm:py-2.5 px-2 sm:px-3 text-sm"
-                    style={{ color: "var(--dt-text)", borderBottom: "var(--dt-border-width) solid var(--dt-table-border-strong)", fontWeight: "var(--dt-font-weight-extra)" }}
+                    style={{
+                      color: "var(--dt-text)",
+                      borderBottom:
+                        "var(--dt-border-width) solid var(--dt-table-border-strong)",
+                      fontWeight: "var(--dt-font-weight-extra)",
+                    }}
                     scope="col"
                   >
                     {t("quickTable.assignee")}
@@ -103,16 +132,28 @@ export function RotationQuickTable({
                         key={rotationIndex}
                         className="text-center py-2 sm:py-2.5 px-1.5 sm:px-2 text-sm whitespace-nowrap"
                         style={{
-                          color: isCurrent ? "var(--dt-text)" : "var(--dt-text-secondary)",
-                          borderBottom: "var(--dt-border-width) solid var(--dt-table-border-strong)",
-                          fontWeight: isCurrent ? "var(--dt-font-weight-extra)" : 600,
+                          color: isCurrent
+                            ? "var(--dt-text)"
+                            : "var(--dt-text-secondary)",
+                          borderBottom:
+                            "var(--dt-border-width) solid var(--dt-table-border-strong)",
+                          fontWeight: isCurrent
+                            ? "var(--dt-font-weight-extra)"
+                            : 600,
                         }}
                         scope="col"
                         aria-current={isCurrent ? "true" : undefined}
                       >
-                        {rotationIndex === 0 ? t("rotation.initial") : t("rotation.nth", { n: rotationIndex })}
+                        {rotationIndex === 0
+                          ? t("rotation.initial")
+                          : t("rotation.nth", { n: rotationIndex })}
                         {/* 非現在列も visibility: hidden で ◀ の幅を確保（ヘッダ幅の変動 = 列ガタつき防止） */}
-                        <span aria-hidden="true" style={{ visibility: isCurrent ? "visible" : "hidden" }}>
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            visibility: isCurrent ? "visible" : "hidden",
+                          }}
+                        >
                           {" ◀"}
                         </span>
                       </th>
@@ -127,7 +168,10 @@ export function RotationQuickTable({
                       scope="row"
                       className="py-2 sm:py-2.5 px-2 sm:px-3 font-bold text-sm whitespace-nowrap text-left"
                       style={{
-                        borderTop: groupIndex > 0 ? `1px solid var(--dt-table-border-light)` : "none",
+                        borderTop:
+                          groupIndex > 0
+                            ? `1px solid var(--dt-table-border-light)`
+                            : "none",
                         color: "var(--dt-text-secondary)",
                       }}
                     >
@@ -139,7 +183,9 @@ export function RotationQuickTable({
                       </span>
                     </th>
                     {activeMembers.map((_, rotationIndex) => {
-                      const member = allColumnAssignments[rotationIndex]?.[groupIndex]?.member;
+                      const member =
+                        allColumnAssignments[rotationIndex]?.[groupIndex]
+                          ?.member;
                       const isCurrent = rotationIndex === rotation;
                       return (
                         <td
@@ -148,15 +194,25 @@ export function RotationQuickTable({
                           style={{
                             borderTop:
                               groupIndex === 0
-                                ? (isCurrent ? HIGHLIGHT_BORDER : RESERVED_BORDER)
+                                ? isCurrent
+                                  ? HIGHLIGHT_BORDER
+                                  : RESERVED_BORDER
                                 : `1px solid var(--dt-table-border-light)`,
-                            borderLeft: isCurrent ? HIGHLIGHT_BORDER : RESERVED_BORDER,
-                            borderRight: isCurrent ? HIGHLIGHT_BORDER : RESERVED_BORDER,
+                            borderLeft: isCurrent
+                              ? HIGHLIGHT_BORDER
+                              : RESERVED_BORDER,
+                            borderRight: isCurrent
+                              ? HIGHLIGHT_BORDER
+                              : RESERVED_BORDER,
                             borderBottom:
                               groupIndex === groups.length - 1
-                                ? (isCurrent ? HIGHLIGHT_BORDER : RESERVED_BORDER)
+                                ? isCurrent
+                                  ? HIGHLIGHT_BORDER
+                                  : RESERVED_BORDER
                                 : "none",
-                            fontWeight: isCurrent ? "var(--dt-font-weight-extra)" : 500,
+                            fontWeight: isCurrent
+                              ? "var(--dt-font-weight-extra)"
+                              : 500,
                             color: member?.color,
                           }}
                         >

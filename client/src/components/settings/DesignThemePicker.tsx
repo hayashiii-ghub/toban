@@ -7,11 +7,14 @@ interface DesignThemePickerProps {
   onSelect: (themeId: string) => void;
 }
 
-export function DesignThemePicker({ selectedThemeId, onSelect }: DesignThemePickerProps) {
+export function DesignThemePicker({
+  selectedThemeId,
+  onSelect,
+}: DesignThemePickerProps) {
   const t = useT();
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-0.5">
-      {DESIGN_THEMES.map((theme) => {
+      {DESIGN_THEMES.map(theme => {
         const isSelected = (selectedThemeId ?? "whiteboard") === theme.id;
         return (
           <button
@@ -24,7 +27,11 @@ export function DesignThemePicker({ selectedThemeId, onSelect }: DesignThemePick
             style={{
               borderRadius: "var(--dt-border-radius-sm)",
               backgroundColor: "var(--dt-card-bg)",
-              ...(isSelected ? { "--tw-ring-color": "var(--dt-current-highlight)" } as React.CSSProperties : {}),
+              ...(isSelected
+                ? ({
+                    "--tw-ring-color": "var(--dt-current-highlight)",
+                  } as React.CSSProperties)
+                : {}),
             }}
             aria-pressed={isSelected}
             aria-label={t("theme.selectAria", { name: theme.name })}
@@ -32,7 +39,10 @@ export function DesignThemePicker({ selectedThemeId, onSelect }: DesignThemePick
             {/* ミニプレビュー */}
             <div
               className="w-full h-12 rounded-md mb-2 overflow-hidden flex flex-col"
-              style={{ backgroundColor: theme.preview.bgColor, border: `1px solid ${theme.preview.primaryColor}30` }}
+              style={{
+                backgroundColor: theme.preview.bgColor,
+                border: `1px solid ${theme.preview.primaryColor}30`,
+              }}
             >
               {/* コントロールバーのプレビュー */}
               <div
@@ -43,29 +53,48 @@ export function DesignThemePicker({ selectedThemeId, onSelect }: DesignThemePick
               <div className="flex-1 flex items-center justify-center gap-1 px-1.5">
                 <div
                   className="w-6 h-5 rounded-sm"
-                  style={{ backgroundColor: theme.preview.secondaryColor, border: `1px solid ${theme.preview.primaryColor}40` }}
+                  style={{
+                    backgroundColor: theme.preview.secondaryColor,
+                    border: `1px solid ${theme.preview.primaryColor}40`,
+                  }}
                 />
                 <div
                   className="w-6 h-5 rounded-sm"
-                  style={{ backgroundColor: theme.preview.secondaryColor, border: `1px solid ${theme.preview.primaryColor}40` }}
+                  style={{
+                    backgroundColor: theme.preview.secondaryColor,
+                    border: `1px solid ${theme.preview.primaryColor}40`,
+                  }}
                 />
                 <div
                   className="w-6 h-5 rounded-sm"
-                  style={{ backgroundColor: theme.preview.secondaryColor, border: `1px solid ${theme.preview.primaryColor}40` }}
+                  style={{
+                    backgroundColor: theme.preview.secondaryColor,
+                    border: `1px solid ${theme.preview.primaryColor}40`,
+                  }}
                 />
               </div>
             </div>
 
             {/* テーマ名 */}
             <div className="flex items-center gap-1">
-              <span className="text-xs font-bold" style={{ color: "var(--dt-text)" }}>
+              <span
+                className="text-xs font-bold"
+                style={{ color: "var(--dt-text)" }}
+              >
                 {theme.name}
               </span>
               {theme.id === "whiteboard" && (
-                <Printer className="size-3" style={{ color: "var(--dt-text-muted)" }} aria-label={t("theme.forPrint")} />
+                <Printer
+                  className="size-3"
+                  style={{ color: "var(--dt-text-muted)" }}
+                  aria-label={t("theme.forPrint")}
+                />
               )}
             </div>
-            <div className="text-[10px]" style={{ color: "var(--dt-text-muted)" }}>
+            <div
+              className="text-[10px]"
+              style={{ color: "var(--dt-text-muted)" }}
+            >
               {theme.description}
             </div>
 

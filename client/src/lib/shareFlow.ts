@@ -3,7 +3,10 @@ import { tStandalone } from "@/i18n";
 
 export type ShareStage = "save" | "publish";
 
-export function getShareErrorMessage(error: unknown, stage: ShareStage): string {
+export function getShareErrorMessage(
+  error: unknown,
+  stage: ShareStage
+): string {
   if (error instanceof ApiError) {
     if (error.status === 400) {
       return stage === "publish"

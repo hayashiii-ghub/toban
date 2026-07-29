@@ -9,7 +9,9 @@ describe("JunbanPage", () => {
   it("見出し・導入・ベネフィットを描画する", () => {
     const { container } = render(<JunbanPage />);
     const view = within(container);
-    expect(view.getByRole("heading", { level: 1 }).textContent).toBe(JUNBAN_PAGE_SEO.heading);
+    expect(view.getByRole("heading", { level: 1 }).textContent).toBe(
+      JUNBAN_PAGE_SEO.heading
+    );
     expect(view.getByText(JUNBAN_PAGE_SEO.benefits[0])).toBeInTheDocument();
   });
 
@@ -28,6 +30,8 @@ describe("JunbanPage", () => {
 
   it("ランダム抽選を約束しない FAQ を含む（intent ミスマッチ回避）", () => {
     const { container } = render(<JunbanPage />);
-    expect(within(container).getByText(/抽選とは異なります/)).toBeInTheDocument();
+    expect(
+      within(container).getByText(/抽選とは異なります/)
+    ).toBeInTheDocument();
   });
 });

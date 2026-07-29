@@ -4,7 +4,7 @@ import { ANIMATION_DURATION_MS } from "@/rotation/constants";
 import { normalizeRotation } from "@/rotation/utils";
 
 export function useRotationAnimation(
-  setState: React.Dispatch<React.SetStateAction<AppState>>,
+  setState: React.Dispatch<React.SetStateAction<AppState>>
 ): {
   isAnimating: boolean;
   direction: "forward" | "backward";
@@ -18,37 +18,53 @@ export function useRotationAnimation(
   useEffect(() => {
     return () => {
       // unmount 時に最新の timeout id をクリアするため ref.current を直接参照
-      if (animationTimeoutRef.current !== null) window.clearTimeout(animationTimeoutRef.current);
+      if (animationTimeoutRef.current !== null)
+        window.clearTimeout(animationTimeoutRef.current);
     };
   }, []);
 
-  const handleRotate = useCallback((nextDirection: "forward" | "backward") => {
-    if (isAnimatingRef.current) return;
-    isAnimatingRef.current = true;
-    setIsAnimating(true);
-    setDirection(nextDirection);
-    setState((prev) => {
-      const schedule = prev.schedules.find((item) => item.id === prev.activeScheduleId);
-      if (!schedule) return prev;
-      const activeMembers = schedule.members.filter(m => !m.skipped);
-      if (activeMembers.length === 0) return prev;
-      const nextRotation = nextDirection === "forward" ? schedule.rotation + 1 : schedule.rotation - 1;
-      return {
-        ...prev,
-        schedules: prev.schedules.map((item) =>
-          item.id === prev.activeScheduleId
-            ? { ...item, rotation: normalizeRotation(nextRotation, activeMembers.length) }
-            : item,
-        ),
-      };
-    });
-    if (animationTimeoutRef.current !== null) window.clearTimeout(animationTimeoutRef.current);
-    animationTimeoutRef.current = window.setTimeout(() => {
-      isAnimatingRef.current = false;
-      setIsAnimating(false);
-      animationTimeoutRef.current = null;
-    }, ANIMATION_DURATION_MS);
-  }, [setState]);
+  const handleRotate = useCallback(
+    (nextDirection: "forward" | "backward") => {
+      if (isAnimatingRef.current) return;
+      isAnimatingRef.current = true;
+      setIsAnimating(true);
+      setDirection(nextDirection);
+      setState(prev => {
+        const schedule = prev.schedules.find(
+          item => item.id === prev.activeScheduleId
+        );
+        if (!schedule) return prev;
+        const activeMembers = schedule.members.filter(m => !m.skipped);
+        if (activeMembers.length === 0) return prev;
+        const nextRotation =
+          nextDirection === "forward"
+            ? schedule.rotation + 1
+            : schedule.rotation - 1;
+        return {
+          ...prev,
+          schedules: prev.schedules.map(item =>
+            item.id === prev.activeScheduleId
+              ? {
+                  ...item,
+                  rotation: normalizeRotation(
+                    nextRotation,
+                    activeMembers.length
+                  ),
+                }
+              : item
+          ),
+        };
+      });
+      if (animationTimeoutRef.current !== null)
+        window.clearTimeout(animationTimeoutRef.current);
+      animationTimeoutRef.current = window.setTimeout(() => {
+        isAnimatingRef.current = false;
+        setIsAnimating(false);
+        animationTimeoutRef.current = null;
+      }, ANIMATION_DURATION_MS);
+    },
+    [setState]
+  );
 
   return { isAnimating, direction, handleRotate };
 }

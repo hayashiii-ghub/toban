@@ -52,7 +52,9 @@ test.describe("メインフロー", () => {
   });
 
   test("新しいスケジュールを追加", async ({ page }) => {
-    const addButton = page.getByRole("button", { name: /追加|新規|\+/ }).first();
+    const addButton = page
+      .getByRole("button", { name: /追加|新規|\+/ })
+      .first();
     if (await addButton.isVisible()) {
       await addButton.click();
       await page.waitForTimeout(500);
@@ -72,23 +74,30 @@ test.describe("メインフロー", () => {
 
   test("ランディングページが表示される", async ({ page }) => {
     await page.goto("/about");
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("テンプレートページが表示される", async ({ page }) => {
     await page.goto("/templates");
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("存在しないページは404", async ({ page }) => {
     await page.goto("/nonexistent-page-xyz");
-    await expect(page.getByRole("heading", { name: "404" })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "404" })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("localStorage にデータが保存される", async ({ page }) => {
     const hasData = await page.evaluate(() => {
       for (const [, value] of Object.entries(localStorage)) {
-        if (value.includes("schedules") || value.includes("activeScheduleId")) return true;
+        if (value.includes("schedules") || value.includes("activeScheduleId"))
+          return true;
       }
       return false;
     });

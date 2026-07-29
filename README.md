@@ -21,18 +21,18 @@
 
 ## 技術スタック
 
-| カテゴリ | ツール | 選定理由 |
-|---------|--------|---------|
-| フレームワーク | React (Vite) | SPA で即座に操作可能・Vite の高速ビルドで開発体験向上 |
-| ルーティング | wouter | 軽量（React Router の 1/10 以下）・SPA に必要十分 |
-| スタイリング | Tailwind CSS v4 | ユーティリティファーストでUI構築が高速・印刷用スタイルも容易 |
-| アニメーション | Framer Motion | 宣言的なAPI・レイアウトアニメーションが簡潔に書ける |
-| UIコンポーネント | shadcn/ui | コピー&ペースト方式で依存を最小限に保てる |
-| バックエンド | Hono (Cloudflare Workers) | 軽量・Web標準API準拠・Cloudflare Workersにネイティブ対応 |
-| データベース | Cloudflare D1 + Drizzle ORM | SQLite互換でサーバーレス・型安全なクエリ |
-| データ永続化 | localStorage + D1 | ローカルが主データストア、D1はクラウド共有・バックアップ層 |
-| テスト | Vitest + Testing Library | 高速な実行・React コンポーネントのDOM テストに対応 |
-| パッケージマネージャ | pnpm | 高速・ディスク効率の良い依存管理 |
+| カテゴリ             | ツール                      | 選定理由                                                     |
+| -------------------- | --------------------------- | ------------------------------------------------------------ |
+| フレームワーク       | React (Vite)                | SPA で即座に操作可能・Vite の高速ビルドで開発体験向上        |
+| ルーティング         | wouter                      | 軽量（React Router の 1/10 以下）・SPA に必要十分            |
+| スタイリング         | Tailwind CSS v4             | ユーティリティファーストでUI構築が高速・印刷用スタイルも容易 |
+| アニメーション       | Framer Motion               | 宣言的なAPI・レイアウトアニメーションが簡潔に書ける          |
+| UIコンポーネント     | shadcn/ui                   | コピー&ペースト方式で依存を最小限に保てる                    |
+| バックエンド         | Hono (Cloudflare Workers)   | 軽量・Web標準API準拠・Cloudflare Workersにネイティブ対応     |
+| データベース         | Cloudflare D1 + Drizzle ORM | SQLite互換でサーバーレス・型安全なクエリ                     |
+| データ永続化         | localStorage + D1           | ローカルが主データストア、D1はクラウド共有・バックアップ層   |
+| テスト               | Vitest + Testing Library    | 高速な実行・React コンポーネントのDOM テストに対応           |
+| パッケージマネージャ | pnpm                        | 高速・ディスク効率の良い依存管理                             |
 
 ## 構成
 
@@ -87,6 +87,8 @@ pnpm test:coverage # ユニットテスト + カバレッジレポート (v8)
 pnpm test:e2e     # E2Eテスト実行 (Playwright)
 pnpm test:e2e:ui  # E2Eテスト (UIモード)
 pnpm lint         # ESLint
+pnpm format       # Prettier で整形
+pnpm format:check # Prettier の整形漏れを検査（CI と同じ）
 pnpm db:migrate:local  # ローカル D1 に migration を適用
 pnpm run deploy:cf     # migration 適用込みで Cloudflare へデプロイ
 ```
@@ -100,7 +102,8 @@ pnpm run deploy:cf     # migration 適用込みで Cloudflare へデプロイ
 
 ## CI / 品質管理
 
-- **GitHub Actions CI** — push（main）/ PR で lint・型チェック・ユニットテスト・ビルドを自動実行。E2Eテストは PR のときのみ実行
+- **GitHub Actions CI** — push（main）/ PR で 整形チェック・型チェック・lint・ユニットテスト・ビルドを自動実行。E2Eテストは PR のときのみ実行
+- **Prettier** — `pnpm format` で整形し、CI が `prettier --check` で検査。生成物は `.prettierignore` で除外。一括整形コミットは `.git-blame-ignore-revs` に登録してあり、GitHub の blame では自動的に読み飛ばされる
 - **Lighthouse CI** — 毎週月曜 3:00 UTC の定期実行と手動実行（`workflow_dispatch`）でパフォーマンス・アクセシビリティ・SEO のスコアを計測
 - **Sentry** — 本番環境でのランタイムエラーを自動収集（`VITE_SENTRY_DSN` 設定時のみ有効）
 
@@ -117,24 +120,24 @@ AIエージェントがブラウザ上で当番表を直接操作できるよう
 
 公開ツール（Home画面 `/` で登録）:
 
-| ツール | 種別 | 内容 |
-|--------|------|------|
-| `list_schedules` | 読み取り | 全当番表の一覧（名前・人数・グループ数、表示中を明示） |
-| `get_current_assignments` | 読み取り | 表示中の当番表の担当割り当てと回転状況 |
-| `get_schedule_details` | 読み取り | 表示中の当番表の設定（メンバー・グループ・回転モード） |
-| `get_share_link` | 読み取り | 共有済みなら公開 URL を返す（**公開はしない**。共有はユーザが共有ボタンで実施） |
-| `switch_schedule` | 操作 | 名前を指定して表示する当番表を切り替え |
-| `advance_rotation` | 操作 | 回転を1つ進める/戻す（手動モードのみ。日付モードは自動のため不可） |
-| `set_rotation` | 操作 | 回転を指定の回数に設定（手動モードのみ） |
-| `change_view` | 操作 | 表示形式を切り替え（カード / 早見表 / カレンダー / 円盤） |
-| `create_schedule` | 操作 | テンプレート名から新しい当番表を作成 |
-| `duplicate_schedule` | 操作 | 表示中の当番表を複製 |
-| `update_schedule` | 操作 | 表の設定を更新（名前 / ピン留め / 担当者⇄タスク。部分更新） |
-| `add_member` | 操作 | 名前を指定してメンバーを追加（色は自動割当） |
-| `remove_member` | 操作 | 名前を指定してメンバーを削除（最後の1人は不可） |
-| `update_member` | 操作 | メンバーの改名 / 休み(skip)・復帰（名前指定、部分更新） |
-| `configure_rotation` | 操作 | 回転方式の設定（手動⇄日付・開始日・周期・土日祝スキップ） |
-| `print_schedule` | 操作 | 現在の表示形式で印刷ダイアログを開く |
+| ツール                    | 種別     | 内容                                                                            |
+| ------------------------- | -------- | ------------------------------------------------------------------------------- |
+| `list_schedules`          | 読み取り | 全当番表の一覧（名前・人数・グループ数、表示中を明示）                          |
+| `get_current_assignments` | 読み取り | 表示中の当番表の担当割り当てと回転状況                                          |
+| `get_schedule_details`    | 読み取り | 表示中の当番表の設定（メンバー・グループ・回転モード）                          |
+| `get_share_link`          | 読み取り | 共有済みなら公開 URL を返す（**公開はしない**。共有はユーザが共有ボタンで実施） |
+| `switch_schedule`         | 操作     | 名前を指定して表示する当番表を切り替え                                          |
+| `advance_rotation`        | 操作     | 回転を1つ進める/戻す（手動モードのみ。日付モードは自動のため不可）              |
+| `set_rotation`            | 操作     | 回転を指定の回数に設定（手動モードのみ）                                        |
+| `change_view`             | 操作     | 表示形式を切り替え（カード / 早見表 / カレンダー / 円盤）                       |
+| `create_schedule`         | 操作     | テンプレート名から新しい当番表を作成                                            |
+| `duplicate_schedule`      | 操作     | 表示中の当番表を複製                                                            |
+| `update_schedule`         | 操作     | 表の設定を更新（名前 / ピン留め / 担当者⇄タスク。部分更新）                     |
+| `add_member`              | 操作     | 名前を指定してメンバーを追加（色は自動割当）                                    |
+| `remove_member`           | 操作     | 名前を指定してメンバーを削除（最後の1人は不可）                                 |
+| `update_member`           | 操作     | メンバーの改名 / 休み(skip)・復帰（名前指定、部分更新）                         |
+| `configure_rotation`      | 操作     | 回転方式の設定（手動⇄日付・開始日・周期・土日祝スキップ）                       |
+| `print_schedule`          | 操作     | 現在の表示形式で印刷ダイアログを開く                                            |
 
 > 共有（外部公開）の実行はエージェントの tool に含めていません。実名を含む当番表を公開 URL 化する操作は、誤発火による意図しない公開を避けるため、ユーザの明示操作（共有ボタン）に限定しています。`get_share_link` は既存リンクの参照のみ。
 

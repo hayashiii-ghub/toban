@@ -65,7 +65,11 @@ const sunflower: DesignTheme = {
   id: "sunflower",
   name: "ひまわり",
   description: "明るく温かいひまわり色",
-  preview: { primaryColor: "#F0A830", secondaryColor: "#FFF4D8", bgColor: "#FFFCF0" },
+  preview: {
+    primaryColor: "#F0A830",
+    secondaryColor: "#FFF4D8",
+    bgColor: "#FFFCF0",
+  },
   colors: {
     pageBg: "#FFFCF0",
     cardBg: "#ffffff",
@@ -112,7 +116,11 @@ const crayon: DesignTheme = {
   id: "crayon",
   name: "クレヨン",
   description: "クレヨンで描いたようなデザイン",
-  preview: { primaryColor: "#E86830", secondaryColor: "#FFE4CC", bgColor: "#FFF6EC" },
+  preview: {
+    primaryColor: "#E86830",
+    secondaryColor: "#FFE4CC",
+    bgColor: "#FFF6EC",
+  },
   colors: {
     pageBg: "#FFF6EC",
     cardBg: "#FFFEFA",
@@ -159,7 +167,11 @@ const lavender: DesignTheme = {
   id: "lavender",
   name: "ラベンダー",
   description: "上品なラベンダーカラー",
-  preview: { primaryColor: "#9B85CC", secondaryColor: "#EDE6F8", bgColor: "#F8F5FC" },
+  preview: {
+    primaryColor: "#9B85CC",
+    secondaryColor: "#EDE6F8",
+    bgColor: "#F8F5FC",
+  },
   colors: {
     pageBg: "#F8F5FC",
     cardBg: "#ffffff",
@@ -206,7 +218,11 @@ const whiteboard: DesignTheme = {
   id: "whiteboard",
   name: "ホワイトボード",
   description: "ホワイトボード風のすっきりデザイン",
-  preview: { primaryColor: "#666666", secondaryColor: "#f5f5f5", bgColor: "#ffffff" },
+  preview: {
+    primaryColor: "#666666",
+    secondaryColor: "#f5f5f5",
+    bgColor: "#ffffff",
+  },
   colors: {
     pageBg: "#ffffff",
     cardBg: "#ffffff",
@@ -253,7 +269,11 @@ const nature: DesignTheme = {
   id: "nature",
   name: "わかば",
   description: "フレッシュな若葉のデザイン",
-  preview: { primaryColor: "#6B9E6B", secondaryColor: "#E8F0E4", bgColor: "#F5F7F2" },
+  preview: {
+    primaryColor: "#6B9E6B",
+    secondaryColor: "#E8F0E4",
+    bgColor: "#F5F7F2",
+  },
   colors: {
     pageBg: "#F5F7F2",
     cardBg: "#ffffff",
@@ -300,7 +320,11 @@ const sakura: DesignTheme = {
   id: "sakura",
   name: "さくら",
   description: "やさしい桜色のデザイン",
-  preview: { primaryColor: "#F9A8B8", secondaryColor: "#FFF0F3", bgColor: "#FFF5F7" },
+  preview: {
+    primaryColor: "#F9A8B8",
+    secondaryColor: "#FFF0F3",
+    bgColor: "#FFF5F7",
+  },
   colors: {
     pageBg: "#FFF5F7",
     cardBg: "#ffffff",
@@ -347,7 +371,11 @@ const nightsky: DesignTheme = {
   id: "nightsky",
   name: "よぞら",
   description: "落ち着いた夜空のデザイン",
-  preview: { primaryColor: "#1D2E4E", secondaryColor: "#DDE4F0", bgColor: "#EAEEF6" },
+  preview: {
+    primaryColor: "#1D2E4E",
+    secondaryColor: "#DDE4F0",
+    bgColor: "#EAEEF6",
+  },
   colors: {
     pageBg: "#EAEEF6",
     cardBg: "#F7F9FD",
@@ -394,7 +422,11 @@ const chalkboard: DesignTheme = {
   id: "chalkboard",
   name: "こくばん",
   description: "教室の黒板をイメージ",
-  preview: { primaryColor: "#294A3A", secondaryColor: "#EFE7D6", bgColor: "#EEE7DA" },
+  preview: {
+    primaryColor: "#294A3A",
+    secondaryColor: "#EFE7D6",
+    bgColor: "#EEE7DA",
+  },
   colors: {
     pageBg: "#EEE7DA",
     cardBg: "#FBFAF4",
@@ -441,7 +473,11 @@ const ocean: DesignTheme = {
   id: "ocean",
   name: "うみ",
   description: "さわやかな海のデザイン",
-  preview: { primaryColor: "#50B0E0", secondaryColor: "#E0F2FC", bgColor: "#F0F8FE" },
+  preview: {
+    primaryColor: "#50B0E0",
+    secondaryColor: "#E0F2FC",
+    bgColor: "#F0F8FE",
+  },
   colors: {
     pageBg: "#F0F8FE",
     cardBg: "#ffffff",
@@ -498,5 +534,5 @@ export const DESIGN_THEMES: DesignTheme[] = [
 
 export function getThemeById(id: string | undefined): DesignTheme {
   if (!id) return whiteboard;
-  return DESIGN_THEMES.find((theme) => theme.id === id) ?? whiteboard;
+  return DESIGN_THEMES.find(theme => theme.id === id) ?? whiteboard;
 }

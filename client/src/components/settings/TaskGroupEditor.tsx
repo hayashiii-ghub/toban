@@ -4,7 +4,10 @@ import type { AssignmentMode, TaskGroup, Member } from "@/rotation/types";
 import { MEMBER_PRESETS, colorPresetFromHex } from "@/rotation/constants";
 import { generateId, deepClone } from "@/rotation/utils";
 import { GroupCard } from "./GroupCard";
-import { GroupCardProvider, type GroupCardContextValue } from "./GroupCardContext";
+import {
+  GroupCardProvider,
+  type GroupCardContextValue,
+} from "./GroupCardContext";
 import { BulkMemberAdd } from "./BulkMemberAdd";
 import { useT } from "@/i18n";
 import { toast } from "sonner";
@@ -18,27 +21,33 @@ interface Props {
   assignmentMode?: AssignmentMode;
 }
 
-export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChange, assignmentMode }: Props) {
+export function TaskGroupEditor({
+  groups,
+  members,
+  onGroupsChange,
+  onMembersChange,
+  assignmentMode,
+}: Props) {
   const t = useT();
   const isTaskMode = assignmentMode === "task";
   const activeMembers = useMemo(
-    () => members.filter((member) => member.name.trim() && !member.skipped),
-    [members],
+    () => members.filter(member => member.name.trim() && !member.skipped),
+    [members]
   );
   const activeMemberIds = useMemo(
-    () => activeMembers.map((member) => member.id),
-    [activeMembers],
+    () => activeMembers.map(member => member.id),
+    [activeMembers]
   );
   const membersById = useMemo(
-    () => new Map(members.map((member) => [member.id, member])),
-    [members],
+    () => new Map(members.map(member => [member.id, member])),
+    [members]
   );
 
   // --- 詳細展開 ---
   const [openDetailsKey, setOpenDetailsKey] = useState<string | null>(null);
   const handleToggleDetails = useCallback(
-    (key: string) => setOpenDetailsKey((prev) => (prev === key ? null : key)),
-    [],
+    (key: string) => setOpenDetailsKey(prev => (prev === key ? null : key)),
+    []
   );
 
   // --- 一括追加 ---
@@ -47,38 +56,60 @@ export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChan
   // --- カラーパレット ---
   const [openColorKey, setOpenColorKey] = useState<string | null>(null);
   const handleToggleColor = useCallback(
-    (key: string) => setOpenColorKey((prev) => (prev === key ? null : key)),
-    [],
+    (key: string) => setOpenColorKey(prev => (prev === key ? null : key)),
+    []
   );
 
   const updateMemberColor = (memberId: string, presetIdx: number) => {
     const preset = MEMBER_PRESETS[presetIdx];
-    onMembersChange(members.map((m) => (m.id === memberId ? { ...m, ...preset } : m)));
+    onMembersChange(
+      members.map(m => (m.id === memberId ? { ...m, ...preset } : m))
+    );
     setOpenColorKey(null);
   };
 
   const updateMemberColorCustom = (memberId: string, hex: string) => {
     const preset = colorPresetFromHex(hex);
-    onMembersChange(members.map((m) => (m.id === memberId ? { ...m, ...preset } : m)));
+    onMembersChange(
+      members.map(m => (m.id === memberId ? { ...m, ...preset } : m))
+    );
   };
 
   const updateMemberName = (memberId: string, name: string) => {
-    onMembersChange(members.map((m) => (m.id === memberId ? { ...m, name } : m)));
+    onMembersChange(members.map(m => (m.id === memberId ? { ...m, name } : m)));
   };
 
   // --- タスクドラッグ&ドロップ ---
-  const [dragTask, setDragTask] = useState<{ gIdx: number; tIdx: number } | null>(null);
-  const [dropTarget, setDropTarget] = useState<{ gIdx: number; tIdx: number } | null>(null);
+  const [dragTask, setDragTask] = useState<{
+    gIdx: number;
+    tIdx: number;
+  } | null>(null);
+  const [dropTarget, setDropTarget] = useState<{
+    gIdx: number;
+    tIdx: number;
+  } | null>(null);
 
-  const handleTaskDragStart = (e: React.DragEvent, gIdx: number, tIdx: number) => {
+  const handleTaskDragStart = (
+    e: React.DragEvent,
+    gIdx: number,
+    tIdx: number
+  ) => {
     setDragTask({ gIdx, tIdx });
     e.dataTransfer.effectAllowed = "move";
     if (e.currentTarget instanceof HTMLElement) {
-      e.dataTransfer.setDragImage(e.currentTarget, e.currentTarget.offsetWidth / 2, 20);
+      e.dataTransfer.setDragImage(
+        e.currentTarget,
+        e.currentTarget.offsetWidth / 2,
+        20
+      );
     }
   };
 
-  const handleTaskDragOver = (e: React.DragEvent, gIdx: number, tIdx: number) => {
+  const handleTaskDragOver = (
+    e: React.DragEvent,
+    gIdx: number,
+    tIdx: number
+  ) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     if (!dragTask) return;
@@ -89,7 +120,11 @@ export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChan
     }
   };
 
-  const handleTaskDrop = (e: React.DragEvent, targetGIdx: number, targetTIdx: number) => {
+  const handleTaskDrop = (
+    e: React.DragEvent,
+    targetGIdx: number,
+    targetTIdx: number
+  ) => {
     e.preventDefault();
     if (!dragTask) return;
     const { gIdx: srcGIdx, tIdx: srcTIdx } = dragTask;
@@ -138,7 +173,11 @@ export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChan
     setDragGroupIdx(gIdx);
     e.dataTransfer.effectAllowed = "move";
     if (e.currentTarget instanceof HTMLElement) {
-      e.dataTransfer.setDragImage(e.currentTarget, e.currentTarget.offsetWidth / 2, 20);
+      e.dataTransfer.setDragImage(
+        e.currentTarget,
+        e.currentTarget.offsetWidth / 2,
+        20
+      );
     }
   };
 
@@ -176,19 +215,37 @@ export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChan
   }, []);
 
   // --- メンバー行ドラッグ&ドロップ（タスクモード用） ---
-  const [dragMember, setDragMember] = useState<{ gIdx: number; mIdx: number } | null>(null);
-  const [dropMemberTarget, setDropMemberTarget] = useState<{ gIdx: number; mIdx: number } | null>(null);
+  const [dragMember, setDragMember] = useState<{
+    gIdx: number;
+    mIdx: number;
+  } | null>(null);
+  const [dropMemberTarget, setDropMemberTarget] = useState<{
+    gIdx: number;
+    mIdx: number;
+  } | null>(null);
 
-  const handleMemberDragStart = (e: React.DragEvent, gIdx: number, mIdx: number) => {
+  const handleMemberDragStart = (
+    e: React.DragEvent,
+    gIdx: number,
+    mIdx: number
+  ) => {
     e.stopPropagation();
     setDragMember({ gIdx, mIdx });
     e.dataTransfer.effectAllowed = "move";
     if (e.currentTarget instanceof HTMLElement) {
-      e.dataTransfer.setDragImage(e.currentTarget, e.currentTarget.offsetWidth / 2, 20);
+      e.dataTransfer.setDragImage(
+        e.currentTarget,
+        e.currentTarget.offsetWidth / 2,
+        20
+      );
     }
   };
 
-  const handleMemberDragOver = (e: React.DragEvent, gIdx: number, mIdx: number) => {
+  const handleMemberDragOver = (
+    e: React.DragEvent,
+    gIdx: number,
+    mIdx: number
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = "move";
@@ -200,7 +257,11 @@ export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChan
     }
   };
 
-  const handleMemberDrop = (e: React.DragEvent, targetGIdx: number, targetMIdx: number) => {
+  const handleMemberDrop = (
+    e: React.DragEvent,
+    targetGIdx: number,
+    targetMIdx: number
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     if (!dragMember || dragMember.gIdx !== targetGIdx) {
@@ -290,10 +351,16 @@ export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChan
     const newIdx = gIdx + direction;
     if (newIdx < 0 || newIdx >= groups.length) return;
     const nextGroups = [...groups];
-    [nextGroups[gIdx], nextGroups[newIdx]] = [nextGroups[newIdx], nextGroups[gIdx]];
+    [nextGroups[gIdx], nextGroups[newIdx]] = [
+      nextGroups[newIdx],
+      nextGroups[gIdx],
+    ];
     if (!isTaskMode) {
       const nextMembers = [...members];
-      [nextMembers[gIdx], nextMembers[newIdx]] = [nextMembers[newIdx], nextMembers[gIdx]];
+      [nextMembers[gIdx], nextMembers[newIdx]] = [
+        nextMembers[newIdx],
+        nextMembers[gIdx],
+      ];
       onMembersChange(nextMembers);
     }
     onGroupsChange(nextGroups);
@@ -318,13 +385,21 @@ export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChan
       return;
     }
     if (isTaskMode) {
-      const newGroup: TaskGroup = { id: generateId("g"), tasks: [t("settings.newTask")], emoji: "✨" };
+      const newGroup: TaskGroup = {
+        id: generateId("g"),
+        tasks: [t("settings.newTask")],
+        emoji: "✨",
+      };
       if (activeMemberIds.length > 0) newGroup.memberIds = activeMemberIds;
       onGroupsChange([...groups, newGroup]);
     } else {
       const preset = MEMBER_PRESETS[members.length % MEMBER_PRESETS.length];
       const newMember: Member = { id: generateId("m"), name: "", ...preset };
-      const newGroup: TaskGroup = { id: generateId("g"), tasks: [t("settings.newTask")], emoji: "✨" };
+      const newGroup: TaskGroup = {
+        id: generateId("g"),
+        tasks: [t("settings.newTask")],
+        emoji: "✨",
+      };
       onMembersChange([...members, newMember]);
       onGroupsChange([...groups, newGroup]);
     }
@@ -339,7 +414,7 @@ export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChan
   };
 
   const updateGroupEmoji = (gIdx: number, emoji: string) => {
-    onGroupsChange(groups.map((g, i) => i === gIdx ? { ...g, emoji } : g));
+    onGroupsChange(groups.map((g, i) => (i === gIdx ? { ...g, emoji } : g)));
   };
 
   const addTask = (gIdx: number) => {
@@ -347,13 +422,17 @@ export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChan
       toast.error(t("settings.maxTasksReached", { n: LIMITS.tasksPerGroup }));
       return;
     }
-    onGroupsChange(groups.map((g, i) => i === gIdx ? { ...g, tasks: [...g.tasks, ""] } : g));
+    onGroupsChange(
+      groups.map((g, i) => (i === gIdx ? { ...g, tasks: [...g.tasks, ""] } : g))
+    );
   };
 
   const updateTask = (gIdx: number, tIdx: number, value: string) => {
     onGroupsChange(
       groups.map((g, i) =>
-        i === gIdx ? { ...g, tasks: g.tasks.map((t, j) => (j === tIdx ? value : t)) } : g
+        i === gIdx
+          ? { ...g, tasks: g.tasks.map((t, j) => (j === tIdx ? value : t)) }
+          : g
       )
     );
   };
@@ -366,64 +445,83 @@ export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChan
     );
   };
 
-  const contextValue: GroupCardContextValue = useMemo(() => ({
-    isTaskMode,
-    activeMembers,
-    activeMemberIds,
-    membersById,
-    openDetailsKey,
-    onToggleDetails: handleToggleDetails,
-    openColorKey,
-    onToggleColor: handleToggleColor,
-    onColorPreset: updateMemberColor,
-    onColorCustom: updateMemberColorCustom,
-    onMemberNameChange: updateMemberName,
-    onMoveGroup: moveGroup,
-    onRemoveGroup: removeGroup,
-    onUpdateEmoji: updateGroupEmoji,
-    onAddTask: addTask,
-    onUpdateTask: updateTask,
-    onRemoveTask: removeTask,
-    onMoveTask: moveTask,
-    onRemoveMemberFromGroup: removeMemberFromGroup,
-    onAddMemberToGroup: addMemberToGroup,
-    onAddNewMemberToGroup: addNewMemberToGroup,
-    onSetExplicitMembers: setExplicitMembers,
-    onResetToAllMembers: resetToAllMembers,
-    onReorderMember: reorderMember,
-    dragGroupIdx,
-    onGroupDragStart: handleGroupDragStart,
-    onGroupDragEnd: handleGroupReorderDragEnd,
-    onGroupReorderDragOver: handleGroupReorderDragOver,
-    onGroupReorderDrop: handleGroupReorderDrop,
-    dragTask,
-    dropTarget,
-    onTaskDragStart: handleTaskDragStart,
-    onTaskDragOver: handleTaskDragOver,
-    onTaskDrop: handleTaskDrop,
-    onTaskDragEnd: handleTaskDragEnd,
-    onGroupDragOver: handleGroupDragOver,
-    onGroupDropZone: handleGroupDropZone,
-    dragMember,
-    dropMemberTarget,
-    onMemberDragStart: handleMemberDragStart,
-    onMemberDragOver: handleMemberDragOver,
-    onMemberDrop: handleMemberDrop,
-    onMemberDragEnd: handleMemberDragEnd,
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- handlers are recreated when groups/members change; useMemo prevents re-renders on unrelated state (bulkMode)
-  }), [
-    isTaskMode, activeMembers, activeMemberIds, membersById,
-    openDetailsKey, openColorKey,
-    dragGroupIdx, dragTask, dropTarget, dragMember, dropMemberTarget,
-    groups, members, onGroupsChange, onMembersChange,
-    handleToggleDetails, handleToggleColor,
-    handleTaskDragEnd, handleGroupReorderDragEnd, handleMemberDragEnd,
-  ]);
+  const contextValue: GroupCardContextValue = useMemo(
+    () => ({
+      isTaskMode,
+      activeMembers,
+      activeMemberIds,
+      membersById,
+      openDetailsKey,
+      onToggleDetails: handleToggleDetails,
+      openColorKey,
+      onToggleColor: handleToggleColor,
+      onColorPreset: updateMemberColor,
+      onColorCustom: updateMemberColorCustom,
+      onMemberNameChange: updateMemberName,
+      onMoveGroup: moveGroup,
+      onRemoveGroup: removeGroup,
+      onUpdateEmoji: updateGroupEmoji,
+      onAddTask: addTask,
+      onUpdateTask: updateTask,
+      onRemoveTask: removeTask,
+      onMoveTask: moveTask,
+      onRemoveMemberFromGroup: removeMemberFromGroup,
+      onAddMemberToGroup: addMemberToGroup,
+      onAddNewMemberToGroup: addNewMemberToGroup,
+      onSetExplicitMembers: setExplicitMembers,
+      onResetToAllMembers: resetToAllMembers,
+      onReorderMember: reorderMember,
+      dragGroupIdx,
+      onGroupDragStart: handleGroupDragStart,
+      onGroupDragEnd: handleGroupReorderDragEnd,
+      onGroupReorderDragOver: handleGroupReorderDragOver,
+      onGroupReorderDrop: handleGroupReorderDrop,
+      dragTask,
+      dropTarget,
+      onTaskDragStart: handleTaskDragStart,
+      onTaskDragOver: handleTaskDragOver,
+      onTaskDrop: handleTaskDrop,
+      onTaskDragEnd: handleTaskDragEnd,
+      onGroupDragOver: handleGroupDragOver,
+      onGroupDropZone: handleGroupDropZone,
+      dragMember,
+      dropMemberTarget,
+      onMemberDragStart: handleMemberDragStart,
+      onMemberDragOver: handleMemberDragOver,
+      onMemberDrop: handleMemberDrop,
+      onMemberDragEnd: handleMemberDragEnd,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handlers are recreated when groups/members change; useMemo prevents re-renders on unrelated state (bulkMode)
+    [
+      isTaskMode,
+      activeMembers,
+      activeMemberIds,
+      membersById,
+      openDetailsKey,
+      openColorKey,
+      dragGroupIdx,
+      dragTask,
+      dropTarget,
+      dragMember,
+      dropMemberTarget,
+      groups,
+      members,
+      onGroupsChange,
+      onMembersChange,
+      handleToggleDetails,
+      handleToggleColor,
+      handleTaskDragEnd,
+      handleGroupReorderDragEnd,
+      handleMemberDragEnd,
+    ]
+  );
 
   return (
     <div className="flex flex-col gap-3">
       <GroupCardProvider value={contextValue}>
-        <div className={`flex flex-col gap-3 ${groups.length > 8 ? "max-h-[400px] overflow-y-auto pr-1" : ""}`}>
+        <div
+          className={`flex flex-col gap-3 ${groups.length > 8 ? "max-h-[400px] overflow-y-auto pr-1" : ""}`}
+        >
           {groups.map((group, gIdx) => (
             <GroupCard
               key={group.id}
@@ -439,17 +537,25 @@ export function TaskGroupEditor({ groups, members, onGroupsChange, onMembersChan
       </GroupCardProvider>
 
       <div className="flex items-center gap-2">
-        <button type="button"
+        <button
+          type="button"
           onClick={addGroup}
           className="theme-border theme-shadow-sm flex-1 flex items-center justify-center gap-2 px-4 py-3 font-bold text-sm transition-all duration-150 theme-hover-lift"
           style={{ backgroundColor: "#E8E8E8", borderRadius: "10px" }}
         >
-          <Plus className="size-4" aria-hidden="true" /> {isTaskMode ? t("group.addTask") : t("group.addAssignee")}
+          <Plus className="size-4" aria-hidden="true" />{" "}
+          {isTaskMode ? t("group.addTask") : t("group.addAssignee")}
         </button>
-        <button type="button"
-          onClick={() => setBulkMode((v) => !v)}
+        <button
+          type="button"
+          onClick={() => setBulkMode(v => !v)}
           className="theme-border theme-shadow-sm flex items-center justify-center gap-2 px-4 py-3 font-bold text-sm transition-all duration-150 theme-hover-lift"
-          style={{ backgroundColor: bulkMode ? "var(--dt-current-highlight)" : "#E8E8E8", borderRadius: "10px" }}
+          style={{
+            backgroundColor: bulkMode
+              ? "var(--dt-current-highlight)"
+              : "#E8E8E8",
+            borderRadius: "10px",
+          }}
         >
           {t("bulk.bulkAdd")}
         </button>

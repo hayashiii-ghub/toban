@@ -7,7 +7,7 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
   },
   "d1_databases": [
     {
@@ -17,16 +17,16 @@
       // ローカルで直接 deploy する場合はこの値を自分の D1 Database ID に更新してください。
       "database_id": "__CLOUDFLARE_D1_DATABASE_ID__",
       "preview_database_id": "__CLOUDFLARE_D1_PREVIEW_DATABASE_ID__",
-      "migrations_dir": "server/db/migrations"
-    }
+      "migrations_dir": "server/db/migrations",
+    },
   ],
   "triggers": {
-    "crons": ["0 3 * * *"]
+    "crons": ["0 3 * * *"],
   },
   "observability": {
     "logs": {
       "enabled": true,
-      "invocation_logs": true
-    }
-  }
+      "invocation_logs": true,
+    },
+  },
 }

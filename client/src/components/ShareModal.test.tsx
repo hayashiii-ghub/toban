@@ -9,7 +9,16 @@ vi.mock("framer-motion", () => {
     ({ children, ...props }: Record<string, unknown>, ref: unknown) => {
       const filteredProps = Object.fromEntries(
         Object.entries(props).filter(
-          ([key]) => !["initial", "animate", "exit", "transition", "variants", "whileHover", "whileTap"].includes(key)
+          ([key]) =>
+            ![
+              "initial",
+              "animate",
+              "exit",
+              "transition",
+              "variants",
+              "whileHover",
+              "whileTap",
+            ].includes(key)
         )
       );
       return ReactMod.createElement("div", { ...filteredProps, ref }, children);
@@ -23,7 +32,9 @@ vi.mock("framer-motion", () => {
 });
 
 vi.mock("react-qr-code", () => ({
-  default: (props: { value: string }) => <div data-testid="qr-code" data-value={props.value} />,
+  default: (props: { value: string }) => (
+    <div data-testid="qr-code" data-value={props.value} />
+  ),
 }));
 
 Object.assign(navigator, {

@@ -5,7 +5,9 @@ import scheduleRoutes from "./routes/schedules";
 import contactRoutes from "./routes/contact";
 import { getSchedulesSchemaStatus } from "./db/ensureSchema";
 
-type Env = { Bindings: { DB: D1Database; ENVIRONMENT?: string; RESEND_API_KEY: string } };
+type Env = {
+  Bindings: { DB: D1Database; ENVIRONMENT?: string; RESEND_API_KEY: string };
+};
 
 const app = new Hono<Env>();
 
@@ -23,11 +25,12 @@ app.use(
   "/api/*",
   cors({
     origin: (origin, c) => {
-      const isDev = c.env.ENVIRONMENT !== undefined && c.env.ENVIRONMENT === "development";
+      const isDev =
+        c.env.ENVIRONMENT !== undefined && c.env.ENVIRONMENT === "development";
       const origins = isDev ? DEV_ORIGINS : PROD_ORIGINS;
       return origins.includes(origin) ? origin : null;
     },
-  }),
+  })
 );
 
 // リクエストボディサイズ制限: 100KB
@@ -63,13 +66,19 @@ function cleanupRateLimitMap(now: number): void {
 // 分散環境では実効レートは設定値より高くなる可能性がある。
 // 現在の規模では十分だが、将来的にはDurable ObjectsやKVへの移行を検討。
 app.use("/api/*", async (c, next) => {
-  const ip = c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for") ?? "unknown";
+  const ip =
+    c.req.header("cf-connecting-ip") ??
+    c.req.header("x-forwarded-for") ??
+    "unknown";
   const method = c.req.method;
   const key = `${ip}:${method}`;
   const now = Date.now();
 
   // 100リクエストごと、またはエントリ数上限超過時に掃除
-  if (++rateLimitRequestCount % 100 === 0 || rateLimitMap.size > MAX_RATE_LIMIT_ENTRIES) {
+  if (
+    ++rateLimitRequestCount % 100 === 0 ||
+    rateLimitMap.size > MAX_RATE_LIMIT_ENTRIES
+  ) {
     cleanupRateLimitMap(now);
   }
 
@@ -90,7 +99,7 @@ app.use("/api/*", async (c, next) => {
   await next();
 });
 
-app.get("/api/health/schema", async (c) => {
+app.get("/api/health/schema", async c => {
   const status = await getSchedulesSchemaStatus(c.env.DB);
 
   c.header("Cache-Control", "no-store");

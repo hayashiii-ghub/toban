@@ -49,7 +49,9 @@ export function ShareModal({ slug, editToken, scheduleName, onClose }: Props) {
     try {
       await navigator.clipboard.writeText(currentUrl);
       setCopied(true);
-      toast.success(activeTab === "view" ? t("share.copiedView") : t("share.copiedEdit"));
+      toast.success(
+        activeTab === "view" ? t("share.copiedView") : t("share.copiedEdit")
+      );
       if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current);
       copyTimerRef.current = window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -91,19 +93,45 @@ export function ShareModal({ slug, editToken, scheduleName, onClose }: Props) {
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
       >
-        <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4" style={{ borderBottom: "var(--dt-border-width) solid var(--dt-border-color)" }}>
-          <h2 id="share-modal-title" className="text-lg font-extrabold" style={{ color: "var(--dt-text)" }}>{t("share.title")}</h2>
-          <button type="button" ref={closeButtonRef} onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors" aria-label={t("common.close")}>
+        <div
+          className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4"
+          style={{
+            borderBottom: "var(--dt-border-width) solid var(--dt-border-color)",
+          }}
+        >
+          <h2
+            id="share-modal-title"
+            className="text-lg font-extrabold"
+            style={{ color: "var(--dt-text)" }}
+          >
+            {t("share.title")}
+          </h2>
+          <button
+            type="button"
+            ref={closeButtonRef}
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label={t("common.close")}
+          >
             <X className="size-5" />
           </button>
         </div>
 
         {/* タブ切り替え */}
-        <div className="grid grid-cols-2" style={{ borderBottom: "var(--dt-border-width) solid var(--dt-border-color)" }}>
-          <button type="button"
+        <div
+          className="grid grid-cols-2"
+          style={{
+            borderBottom: "var(--dt-border-width) solid var(--dt-border-color)",
+          }}
+        >
+          <button
+            type="button"
             className="py-3 text-sm font-bold transition-colors"
             style={{
-              backgroundColor: activeTab === "view" ? "var(--dt-current-highlight)" : "transparent",
+              backgroundColor:
+                activeTab === "view"
+                  ? "var(--dt-current-highlight)"
+                  : "transparent",
               color: "var(--dt-text)",
               borderRight: "1.5px solid var(--dt-border-color)",
             }}
@@ -111,10 +139,14 @@ export function ShareModal({ slug, editToken, scheduleName, onClose }: Props) {
           >
             {t("share.tabView")}
           </button>
-          <button type="button"
+          <button
+            type="button"
             className="py-3 text-sm font-bold transition-colors"
             style={{
-              backgroundColor: activeTab === "edit" ? "var(--dt-current-highlight)" : "transparent",
+              backgroundColor:
+                activeTab === "edit"
+                  ? "var(--dt-current-highlight)"
+                  : "transparent",
               color: "var(--dt-text)",
               borderLeft: "1.5px solid var(--dt-border-color)",
             }}
@@ -133,14 +165,29 @@ export function ShareModal({ slug, editToken, scheduleName, onClose }: Props) {
 
           <div
             className="theme-border p-3 text-xs font-mono break-all"
-            style={{ borderRadius: "var(--dt-border-radius-sm)", backgroundColor: "#FAFAFA", color: "#333" }}
+            style={{
+              borderRadius: "var(--dt-border-radius-sm)",
+              backgroundColor: "#FAFAFA",
+              color: "#333",
+            }}
           >
             {currentUrl}
           </div>
 
           <div className="flex justify-center py-2">
-            <div className="theme-border p-2 sm:p-3" style={{ borderRadius: "var(--dt-border-radius)", backgroundColor: "var(--dt-card-bg)" }}>
-              <QRCode value={currentUrl} size={140} level="M" className="w-[120px] h-[120px] sm:w-[160px] sm:h-[160px]" />
+            <div
+              className="theme-border p-2 sm:p-3"
+              style={{
+                borderRadius: "var(--dt-border-radius)",
+                backgroundColor: "var(--dt-card-bg)",
+              }}
+            >
+              <QRCode
+                value={currentUrl}
+                size={140}
+                level="M"
+                className="w-[120px] h-[120px] sm:w-[160px] sm:h-[160px]"
+              />
             </div>
           </div>
 
@@ -157,18 +204,29 @@ export function ShareModal({ slug, editToken, scheduleName, onClose }: Props) {
             {t("share.lineShare")}
           </a>
 
-          <button type="button"
+          <button
+            type="button"
             onClick={handleCopy}
             className="theme-border theme-shadow-sm w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-sm text-white transition-all duration-150 theme-hover-lift"
             style={{ backgroundColor: "#1a1a1a", borderRadius: "10px" }}
           >
-            {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+            {copied ? (
+              <Check className="size-4" />
+            ) : (
+              <Copy className="size-4" />
+            )}
             {copied ? t("share.copied") : t("share.copyUrl")}
           </button>
 
           {activeTab === "edit" && (
-            <div className="flex items-start gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: "#FEF3C7" }}>
-              <AlertTriangle className="size-4 shrink-0 mt-0.5" style={{ color: "#D97706" }} />
+            <div
+              className="flex items-start gap-2 px-3 py-2 rounded-lg"
+              style={{ backgroundColor: "#FEF3C7" }}
+            >
+              <AlertTriangle
+                className="size-4 shrink-0 mt-0.5"
+                style={{ color: "#D97706" }}
+              />
               <p className="text-xs" style={{ color: "#92400E" }}>
                 {t("share.editWarning")}
               </p>

@@ -3,10 +3,30 @@
 // 注意: cross-module で同期が要る属性だけを置く（描画固有の値は各 view コンポーネント側に残す）。
 
 export const VIEW_TABS = [
-  { value: "cards", labelKey: "view.cards", mcpLabel: "カード", orientation: "landscape" },
-  { value: "table", labelKey: "view.table", mcpLabel: "表", orientation: "landscape" },
-  { value: "calendar", labelKey: "view.calendar", mcpLabel: "カレンダー", orientation: "portrait" },
-  { value: "disc", labelKey: "view.disc", mcpLabel: "円盤", orientation: "portrait" },
+  {
+    value: "cards",
+    labelKey: "view.cards",
+    mcpLabel: "カード",
+    orientation: "landscape",
+  },
+  {
+    value: "table",
+    labelKey: "view.table",
+    mcpLabel: "表",
+    orientation: "landscape",
+  },
+  {
+    value: "calendar",
+    labelKey: "view.calendar",
+    mcpLabel: "カレンダー",
+    orientation: "portrait",
+  },
+  {
+    value: "disc",
+    labelKey: "view.disc",
+    mcpLabel: "円盤",
+    orientation: "portrait",
+  },
 ] as const;
 
 export type ViewTabValue = (typeof VIEW_TABS)[number]["value"];

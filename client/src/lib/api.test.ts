@@ -13,7 +13,15 @@ const mockScheduleData = {
   name: "テスト",
   rotation: 0,
   groups: [{ id: "g1", tasks: ["掃除"], emoji: "🧹" }],
-  members: [{ id: "m1", name: "太郎", color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" }],
+  members: [
+    {
+      id: "m1",
+      name: "太郎",
+      color: "#3B82F6",
+      bgColor: "#DBEAFE",
+      textColor: "#1E3A5F",
+    },
+  ],
 };
 
 const mockScheduleResponse = {
@@ -101,7 +109,10 @@ describe("getSchedule", () => {
 
     expect(result).toEqual(mockScheduleResponse);
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockFetch).toHaveBeenCalledWith("/api/schedules/abc123", expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/schedules/abc123",
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    );
   });
 
   it("404エラー時にApiErrorをスローする", async () => {
@@ -135,7 +146,9 @@ describe("updateSchedule", () => {
   it("成功時にエラーなく完了する", async () => {
     mockFetch.mockResolvedValueOnce(createMockResponse({}, 200));
 
-    await expect(updateSchedule("abc123", "token-123", mockScheduleData)).resolves.toBeUndefined();
+    await expect(
+      updateSchedule("abc123", "token-123", mockScheduleData)
+    ).resolves.toBeUndefined();
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const [url, init] = mockFetch.mock.calls[0];
@@ -167,7 +180,9 @@ describe("publishSchedule", () => {
   it("成功時にエラーなく完了する", async () => {
     mockFetch.mockResolvedValueOnce(createMockResponse({}, 200));
 
-    await expect(publishSchedule("abc123", "token-123")).resolves.toBeUndefined();
+    await expect(
+      publishSchedule("abc123", "token-123")
+    ).resolves.toBeUndefined();
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const [url, init] = mockFetch.mock.calls[0];
@@ -181,7 +196,9 @@ describe("deleteSchedule", () => {
   it("成功時にエラーなく完了する", async () => {
     mockFetch.mockResolvedValueOnce(createMockResponse({}, 200));
 
-    await expect(deleteSchedule("abc123", "token-123")).resolves.toBeUndefined();
+    await expect(
+      deleteSchedule("abc123", "token-123")
+    ).resolves.toBeUndefined();
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const [url, init] = mockFetch.mock.calls[0];

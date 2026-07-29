@@ -43,18 +43,18 @@ export function ThemeProvider({
     }
   }, [theme, switchable]);
 
-  const value = useMemo<ThemeContextType>(() => ({
-    theme,
-    toggleTheme: switchable
-      ? () => setTheme(prev => (prev === "light" ? "dark" : "light"))
-      : undefined,
-    switchable,
-  }), [theme, switchable]);
+  const value = useMemo<ThemeContextType>(
+    () => ({
+      theme,
+      toggleTheme: switchable
+        ? () => setTheme(prev => (prev === "light" ? "dark" : "light"))
+        : undefined,
+      switchable,
+    }),
+    [theme, switchable]
+  );
 
   return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 }
-

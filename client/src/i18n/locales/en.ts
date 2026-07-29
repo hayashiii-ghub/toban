@@ -43,7 +43,8 @@ export const en: Record<string, string> = {
   "share.copyUrl": "Copy URL",
   "share.copiedView": "View link copied",
   "share.copiedEdit": "Edit link copied",
-  "share.copyFailed": "Couldn't copy. Please select the URL and copy it manually.",
+  "share.copyFailed":
+    "Couldn't copy. Please select the URL and copy it manually.",
   "share.editWarning":
     "Anyone with this URL can edit the schedule. Share only with people you trust.",
 
@@ -65,15 +66,18 @@ export const en: Record<string, string> = {
   "lp.heroSubB": "free, easy to make, print, and share.",
   "lp.featuresHeading": "Why toban",
   "lp.feat.noSignup.label": "No sign-up",
-  "lp.feat.noSignup.desc": "No account, no Excel needed. Works right in your browser.",
+  "lp.feat.noSignup.desc":
+    "No account, no Excel needed. Works right in your browser.",
   "lp.feat.print.label": "Clean printing",
-  "lp.feat.print.desc": "Print in four formats: cards, table, calendar, or wheel.",
+  "lp.feat.print.desc":
+    "Print in four formats: cards, table, calendar, or wheel.",
   "lp.feat.share.label": "Share by URL",
   "lp.feat.share.desc": "Generate a share URL and send it via LINE or email.",
   "lp.feat.free.label": "Completely free",
   "lp.feat.free.desc": "All features are free to use.",
   "lp.templatesHeading": "Ready-to-use templates",
-  "lp.templatesSubtitle": "Pick from {count} templates and just add your members.",
+  "lp.templatesSubtitle":
+    "Pick from {count} templates and just add your members.",
   "lp.viewAllTemplates": "See all templates",
   "lp.viewJunban": "Decide order with the wheel",
   "lp.faqHeading": "FAQ",
@@ -104,7 +108,8 @@ export const en: Record<string, string> = {
 
   // New schedule modal (frame only; template list stays Japanese)
   "newSchedule.title": "Create a new schedule",
-  "newSchedule.instruction": "Choose a template. You can edit everything later.",
+  "newSchedule.instruction":
+    "Choose a template. You can edit everything later.",
   "newSchedule.createBlank": "Start from scratch",
   "newSchedule.createBlankDesc": "Build a schedule from a blank slate",
 
@@ -126,7 +131,8 @@ export const en: Record<string, string> = {
   "settings.summaryMemberMode": "{members} people · {groups} groups",
   "settings.sectionBasic": "Basic settings",
   "settings.scheduleName": "Schedule name",
-  "settings.scheduleNamePlaceholder": "e.g. Cleaning duty, Lunch duty, Daily duty...",
+  "settings.scheduleNamePlaceholder":
+    "e.g. Cleaning duty, Lunch duty, Daily duty...",
   "settings.pin": "Pin to front",
   "settings.unpin": "Unpin",
   "settings.pinTab": "Pin tab to front",
@@ -180,11 +186,13 @@ export const en: Record<string, string> = {
   "onboarding.view.title": "Change the view",
   "onboarding.view.desc": "Choose from cards, table, or calendar",
   "onboarding.print.title": "Print or save as PDF",
-  "onboarding.print.desc": "Print the current view as-is. PDF export works too.",
+  "onboarding.print.desc":
+    "Print the current view as-is. PDF export works too.",
   "onboarding.share.title": "Share with everyone",
   "onboarding.share.desc": "Share easily via QR code or LINE",
   "onboarding.add.title": "Add a schedule",
-  "onboarding.add.desc": "Create as many as you like—cleaning, lunch, daily duty, and more",
+  "onboarding.add.desc":
+    "Create as many as you like—cleaning, lunch, daily duty, and more",
 
   // Rotation bar
   "rotation.prevAria": "Go to previous turn",
@@ -214,10 +222,14 @@ export const en: Record<string, string> = {
   "view.disc": "Disc",
   "disc.offDuty": "Off",
   "disc.sheetOuter": "Outer ring (fixed — roles) — cut along the outer line",
-  "disc.sheetInner": "Inner disc (rotating — members) — cut along the outer line, center it on the outer ring and pin",
-  "disc.unsupported": "This chart can't be shown as a disc. Please use the Table view.",
-  "disc.unsupportedGroupPool": "Charts with group-specific members can't be shown as a disc. Please use the Table view.",
-  "disc.unsupportedTooManyTasks": "To use the disc, keep members ≥ tasks (currently {members} members, {tasks} tasks). Merge tasks or add members to enable the disc. Until then, please use the Table view.",
+  "disc.sheetInner":
+    "Inner disc (rotating — members) — cut along the outer line, center it on the outer ring and pin",
+  "disc.unsupported":
+    "This chart can't be shown as a disc. Please use the Table view.",
+  "disc.unsupportedGroupPool":
+    "Charts with group-specific members can't be shown as a disc. Please use the Table view.",
+  "disc.unsupportedTooManyTasks":
+    "To use the disc, keep members ≥ tasks (currently {members} members, {tasks} tasks). Merge tasks or add members to enable the disc. Until then, please use the Table view.",
   "print.print": "Print",
   "print.printAria": "Print",
 
@@ -265,8 +277,10 @@ export const en: Record<string, string> = {
 
   // Bulk add
   "bulk.bulkAdd": "📋 Bulk add",
-  "bulk.placeholderTask": "Enter member names (one per line or comma-separated)\ne.g. Alex, Sam, Riley\n(added to all tasks)",
-  "bulk.placeholderMember": "Enter names (one per line or comma-separated)\ne.g. Alex, Sam, Riley\n(groups are created at the same time)",
+  "bulk.placeholderTask":
+    "Enter member names (one per line or comma-separated)\ne.g. Alex, Sam, Riley\n(added to all tasks)",
+  "bulk.placeholderMember":
+    "Enter names (one per line or comma-separated)\ne.g. Alex, Sam, Riley\n(groups are created at the same time)",
   "bulk.ariaTask": "Bulk add members",
   "bulk.ariaMember": "Bulk add members and groups",
   "bulk.willAdd": "Adding {n} people",
@@ -294,7 +308,8 @@ export const en: Record<string, string> = {
 
   // 404
   "notFound.title": "Page not found",
-  "notFound.message": "The page you're looking for doesn't exist or may have moved.",
+  "notFound.message":
+    "The page you're looking for doesn't exist or may have moved.",
   "notFound.home": "Home",
   "notFound.templates": "Browse templates",
 
@@ -308,9 +323,11 @@ export const en: Record<string, string> = {
 
   // Edit-access transfer
   "transfer.error.notFound": "Transfer data not found",
-  "transfer.error.broken": "The transfer URL is broken. Please get the link again.",
+  "transfer.error.broken":
+    "The transfer URL is broken. Please get the link again.",
   "transfer.error.badFormat": "The transfer data format is invalid.",
-  "transfer.error.invalidLink": "The edit link is invalid or the schedule was not found.",
+  "transfer.error.invalidLink":
+    "The edit link is invalid or the schedule was not found.",
   "transfer.error.saveFailed": "Failed to save the transfer data.",
   "transfer.updated": 'Updated edit access for "{name}"',
   "transfer.added": 'Added edit access for "{name}"',
@@ -318,13 +335,16 @@ export const en: Record<string, string> = {
   // Share errors
   "shareErr.publish400": "The share request was invalid",
   "shareErr.save400": "The saved content contains invalid values",
-  "shareErr.auth": "Couldn't verify edit access. Please recreate the share link.",
+  "shareErr.auth":
+    "Couldn't verify edit access. Please recreate the share link.",
   "shareErr.publish404": "Save destination not found. Please share again.",
   "shareErr.save404": "Save destination not found",
-  "shareErr.publish500": "Saved, but publishing failed. Please try again later.",
+  "shareErr.publish500":
+    "Saved, but publishing failed. Please try again later.",
   "shareErr.save500": "The server failed to save. Please try again later.",
   "shareErr.publishDefault": "Saved, but publishing failed",
-  "shareErr.saveDefault": "Failed to save. Please check your network connection.",
+  "shareErr.saveDefault":
+    "Failed to save. Please check your network connection.",
 
   // Today banner
   "today.label": "Today's duty ({date})",
@@ -349,15 +369,18 @@ export const en: Record<string, string> = {
   "templates.heading": "Duty Roster Templates",
   "templates.subA": "Ready-to-use ",
   "templates.subFree": "free templates",
-  "templates.subB": " — {count} of them. Pick one and just edit the members and assignments to finish your roster.",
+  "templates.subB":
+    " — {count} of them. Pick one and just edit the members and assignments to finish your roster.",
 
   // Template detail page
   "templatesDetail.contents": "Template contents",
-  "templatesDetail.jaNote": "The contents below are shown in Japanese. You can edit everything freely after creating.",
+  "templatesDetail.jaNote":
+    "The contents below are shown in Japanese. You can edit everything freely after creating.",
   "templatesDetail.taskN": "Task {n}",
   "templatesDetail.groupN": "Group {n}",
   "templatesDetail.memberExample": "Example members ({count})",
-  "templatesDetail.editNote": "* Member names, counts, and colors are fully editable.",
+  "templatesDetail.editNote":
+    "* Member names, counts, and colors are fully editable.",
   "templatesDetail.backToList": "Back to templates",
   "templatesDetail.related": "Related templates",
   "templatesDetail.createFromThis": "Create with this template",

@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { polarToCartesian, sectorMidpoint, sectorPath, sectorAngles } from "./discGeometry";
+import {
+  polarToCartesian,
+  sectorMidpoint,
+  sectorPath,
+  sectorAngles,
+} from "./discGeometry";
 
 describe("polarToCartesian", () => {
   it("0°は真上（12時方向）", () => {

@@ -11,7 +11,11 @@ interface Props {
   onCancel: () => void;
 }
 
-export function ConfirmDeleteDialog({ scheduleName, onConfirm, onCancel }: Props) {
+export function ConfirmDeleteDialog({
+  scheduleName,
+  onConfirm,
+  onCancel,
+}: Props) {
   const t = useT();
   const modalRef = useRef<HTMLDivElement>(null);
   const handleEscape = useCallback(() => onCancel(), [onCancel]);
@@ -37,30 +41,49 @@ export function ConfirmDeleteDialog({ scheduleName, onConfirm, onCancel }: Props
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div
           className="flex items-center gap-2.5 px-4 sm:px-5 py-3 sm:py-4"
-          style={{ borderBottom: "var(--dt-border-width) solid var(--dt-border-color)" }}
+          style={{
+            borderBottom: "var(--dt-border-width) solid var(--dt-border-color)",
+          }}
         >
-          <Trash2 className="size-5" style={{ color: "#DC2626" }} aria-hidden="true" />
-          <h2 id="delete-dialog-title" className="text-lg font-extrabold" style={{ color: "var(--dt-text)" }}>
+          <Trash2
+            className="size-5"
+            style={{ color: "#DC2626" }}
+            aria-hidden="true"
+          />
+          <h2
+            id="delete-dialog-title"
+            className="text-lg font-extrabold"
+            style={{ color: "var(--dt-text)" }}
+          >
             {t("confirmDelete.title")}
           </h2>
         </div>
         <div className="p-4 sm:p-5">
-          <p className="text-sm mb-5" style={{ color: "var(--dt-text-secondary)" }}>
+          <p
+            className="text-sm mb-5"
+            style={{ color: "var(--dt-text-secondary)" }}
+          >
             {t("confirmDelete.message", { name: scheduleName })}
           </p>
           <div className="flex gap-3">
-            <button type="button"
+            <button
+              type="button"
               onClick={onCancel}
               className="theme-border theme-shadow-sm flex-1 px-4 py-2.5 font-bold text-sm transition-all duration-150 theme-hover-lift"
-              style={{ backgroundColor: "var(--dt-card-bg)", color: "var(--dt-text)", borderRadius: "10px" }}
+              style={{
+                backgroundColor: "var(--dt-card-bg)",
+                color: "var(--dt-text)",
+                borderRadius: "10px",
+              }}
             >
               {t("common.cancel")}
             </button>
-            <button type="button"
+            <button
+              type="button"
               onClick={onConfirm}
               className="theme-border theme-shadow-sm flex-1 px-4 py-2.5 font-bold text-sm text-white transition-all duration-150 theme-hover-lift"
               style={{ backgroundColor: "#DC2626", borderRadius: "10px" }}

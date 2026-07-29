@@ -15,17 +15,46 @@ import { computeAssignments, getEffectiveRotation } from "@/rotation/utils";
 
 export function useHomeState() {
   const {
-    state, setState, activeSchedule, updateActiveSchedule,
-    handleAddSchedule, handleDeleteSchedule, handleDuplicateSchedule,
-    handleSaveSettings, selectSchedule, handleTabDrop, addScheduleFromTemplateIndex,
+    state,
+    setState,
+    activeSchedule,
+    updateActiveSchedule,
+    handleAddSchedule,
+    handleDeleteSchedule,
+    handleDuplicateSchedule,
+    handleSaveSettings,
+    selectSchedule,
+    handleTabDrop,
+    addScheduleFromTemplateIndex,
     saveState,
   } = useScheduleManager();
 
-  const { syncStatus, prepareForManualSave } = useAutoSync(activeSchedule, updateActiveSchedule);
-  const { isSharing, showShare, setShowShare, handleShare } = useShareFlow({ activeSchedule, prepareForManualSave, updateActiveSchedule });
-  const { modal, openSettings, openNewSchedule, openConfirmDelete, closeModal } = useModalManager();
-  const { isAnimating, direction, handleRotate } = useRotationAnimation(setState);
-  const { draggedTabId, dragOverTabId, onDragStart, onDragOver, onDrop, onDragEnd } = useTabDragDrop(handleTabDrop);
+  const { syncStatus, prepareForManualSave } = useAutoSync(
+    activeSchedule,
+    updateActiveSchedule
+  );
+  const { isSharing, showShare, setShowShare, handleShare } = useShareFlow({
+    activeSchedule,
+    prepareForManualSave,
+    updateActiveSchedule,
+  });
+  const {
+    modal,
+    openSettings,
+    openNewSchedule,
+    openConfirmDelete,
+    closeModal,
+  } = useModalManager();
+  const { isAnimating, direction, handleRotate } =
+    useRotationAnimation(setState);
+  const {
+    draggedTabId,
+    dragOverTabId,
+    onDragStart,
+    onDragOver,
+    onDrop,
+    onDragEnd,
+  } = useTabDragDrop(handleTabDrop);
   const { handlePrint } = usePrintMode();
   const { viewTab, changeTab } = useViewTab();
   const { showOnboarding, handleOnboardingComplete } = useOnboarding({
@@ -37,20 +66,33 @@ export function useHomeState() {
   const mountedRef = useRef(false);
 
   const groups = useMemo(() => activeSchedule?.groups ?? [], [activeSchedule]);
-  const members = useMemo(() => activeSchedule?.members ?? [], [activeSchedule]);
+  const members = useMemo(
+    () => activeSchedule?.members ?? [],
+    [activeSchedule]
+  );
   const effectiveRotation = useMemo(
     () => (activeSchedule ? getEffectiveRotation(activeSchedule) : 0),
-    [activeSchedule],
+    [activeSchedule]
   );
   const isDateMode = activeSchedule?.rotationConfig?.mode === "date";
   const assignments = useMemo(
-    () => activeSchedule ? computeAssignments(groups, members, effectiveRotation, activeSchedule.assignmentMode) : [],
-    [groups, members, effectiveRotation, activeSchedule],
+    () =>
+      activeSchedule
+        ? computeAssignments(
+            groups,
+            members,
+            effectiveRotation,
+            activeSchedule.assignmentMode
+          )
+        : [],
+    [groups, members, effectiveRotation, activeSchedule]
   );
 
   useBodyScrollLock(modal.type !== null || showShare);
 
-  useEffect(() => { saveState(state); }, [state, saveState]);
+  useEffect(() => {
+    saveState(state);
+  }, [state, saveState]);
 
   useEffect(() => {
     if (mountedRef.current) return;
@@ -68,33 +110,42 @@ export function useHomeState() {
     window.history.replaceState({}, "", window.location.pathname);
   }, [addScheduleFromTemplateIndex, closeModal, openNewSchedule]);
 
-  const onAddSchedule = useCallback((template: Parameters<typeof handleAddSchedule>[0]) => {
-    handleAddSchedule(template);
-    closeModal();
-  }, [handleAddSchedule, closeModal]);
+  const onAddSchedule = useCallback(
+    (template: Parameters<typeof handleAddSchedule>[0]) => {
+      handleAddSchedule(template);
+      closeModal();
+    },
+    [handleAddSchedule, closeModal]
+  );
 
-  const onDeleteSchedule = useCallback((scheduleId: string) => {
-    handleDeleteSchedule(scheduleId);
-    closeModal();
-  }, [handleDeleteSchedule, closeModal]);
+  const onDeleteSchedule = useCallback(
+    (scheduleId: string) => {
+      handleDeleteSchedule(scheduleId);
+      closeModal();
+    },
+    [handleDeleteSchedule, closeModal]
+  );
 
   const onDuplicateSchedule = useCallback(() => {
     handleDuplicateSchedule();
     closeModal();
   }, [handleDuplicateSchedule, closeModal]);
 
-  const onSaveSettings = useCallback((...args: Parameters<typeof handleSaveSettings>) => {
-    handleSaveSettings(...args);
-    closeModal();
-  }, [handleSaveSettings, closeModal]);
+  const onSaveSettings = useCallback(
+    (...args: Parameters<typeof handleSaveSettings>) => {
+      handleSaveSettings(...args);
+      closeModal();
+    },
+    [handleSaveSettings, closeModal]
+  );
 
   const onReorderTab = useCallback(
     (scheduleId: string, dir: "left" | "right") => {
       const { schedules } = state;
-      const pinned = schedules.filter((s) => s.pinned);
-      const unpinned = schedules.filter((s) => !s.pinned);
+      const pinned = schedules.filter(s => s.pinned);
+      const unpinned = schedules.filter(s => !s.pinned);
       const sorted = [...pinned, ...unpinned];
-      const idx = sorted.findIndex((s) => s.id === scheduleId);
+      const idx = sorted.findIndex(s => s.id === scheduleId);
       if (idx < 0) return;
       if (sorted[idx].pinned) return;
       if (dir === "right") {
@@ -108,7 +159,7 @@ export function useHomeState() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- state.schedules is the only used property
-    [state.schedules, handleTabDrop],
+    [state.schedules, handleTabDrop]
   );
 
   return {
@@ -119,22 +170,46 @@ export function useHomeState() {
     // Sync
     syncStatus,
     // Share
-    isSharing, showShare, setShowShare, handleShare,
+    isSharing,
+    showShare,
+    setShowShare,
+    handleShare,
     // Modal
-    modal, openSettings, openNewSchedule, openConfirmDelete, closeModal,
+    modal,
+    openSettings,
+    openNewSchedule,
+    openConfirmDelete,
+    closeModal,
     // Animation
-    isAnimating, direction, handleRotate,
+    isAnimating,
+    direction,
+    handleRotate,
     // Tab drag
-    draggedTabId, dragOverTabId, onDragStart, onDragOver, onDrop, onDragEnd,
+    draggedTabId,
+    dragOverTabId,
+    onDragStart,
+    onDragOver,
+    onDrop,
+    onDragEnd,
     // Print
     handlePrint,
     // View
-    viewTab, changeTab,
+    viewTab,
+    changeTab,
     // Onboarding
-    showOnboarding, handleOnboardingComplete,
+    showOnboarding,
+    handleOnboardingComplete,
     // Derived
-    groups, members, effectiveRotation, isDateMode, assignments,
+    groups,
+    members,
+    effectiveRotation,
+    isDateMode,
+    assignments,
     // Callbacks
-    onAddSchedule, onDeleteSchedule, onDuplicateSchedule, onSaveSettings, onReorderTab,
+    onAddSchedule,
+    onDeleteSchedule,
+    onDuplicateSchedule,
+    onSaveSettings,
+    onReorderTab,
   };
 }

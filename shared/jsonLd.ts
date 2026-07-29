@@ -8,11 +8,13 @@
 
 export type JsonLdObject = Record<string, unknown>;
 
-export function faqPageSchema(faq: { question: string; answer: string }[]): JsonLdObject {
+export function faqPageSchema(
+  faq: { question: string; answer: string }[]
+): JsonLdObject {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: faq.map((f) => ({
+    mainEntity: faq.map(f => ({
       "@type": "Question",
       name: f.question,
       acceptedAnswer: { "@type": "Answer", text: f.answer },
@@ -21,7 +23,9 @@ export function faqPageSchema(faq: { question: string; answer: string }[]): Json
 }
 
 /** items は表示順。position は 1 始まりで自動採番。item（URL）は省略可（末尾要素など）。 */
-export function breadcrumbSchema(items: { name: string; item?: string }[]): JsonLdObject {
+export function breadcrumbSchema(
+  items: { name: string; item?: string }[]
+): JsonLdObject {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",

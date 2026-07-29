@@ -7,7 +7,9 @@ import { RotationControls } from "./RotationControls";
 function renderControls(props: Parameters<typeof RotationControls>[0]) {
   const result = render(<RotationControls {...props} />);
   // motion.div が二重レンダリングするため、data-onboarding を目印に実体を取得
-  const root = result.container.querySelector("[data-onboarding='rotation-controls']")!.closest(".px-3")!;
+  const root = result.container
+    .querySelector("[data-onboarding='rotation-controls']")!
+    .closest(".px-3")!;
   return { ...result, scope: within(root as HTMLElement) };
 }
 

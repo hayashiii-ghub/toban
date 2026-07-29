@@ -23,13 +23,19 @@ export function ScheduleHeader({
         >
           <h1
             className="text-2xl sm:text-3xl md:text-4xl tracking-tight rotation-no-print"
-            style={{ color: "var(--dt-text)", fontWeight: "var(--dt-font-weight-extra)" }}
+            style={{
+              color: "var(--dt-text)",
+              fontWeight: "var(--dt-font-weight-extra)",
+            }}
           >
             {scheduleName}
           </h1>
           <div
             className="rotation-print-only text-2xl sm:text-3xl md:text-4xl tracking-tight"
-            style={{ color: "var(--dt-text)", fontWeight: "var(--dt-font-weight-extra)" }}
+            style={{
+              color: "var(--dt-text)",
+              fontWeight: "var(--dt-font-weight-extra)",
+            }}
             aria-hidden="true"
           >
             {scheduleName}
@@ -37,10 +43,16 @@ export function ScheduleHeader({
 
           <div
             className="rotation-print-only mt-3 pt-2 text-sm font-bold"
-            style={{ color: "var(--dt-text-secondary)", borderBottom: "3px solid var(--dt-border-color)" }}
+            style={{
+              color: "var(--dt-text-secondary)",
+              borderBottom: "3px solid var(--dt-border-color)",
+            }}
           >
             <span className="inline-block pb-2">
-              {t("shared.printHeader", { label: rotationLabel, date: printDate })}
+              {t("shared.printHeader", {
+                label: rotationLabel,
+                date: printDate,
+              })}
             </span>
           </div>
         </m.div>

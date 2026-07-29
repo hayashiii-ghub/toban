@@ -63,22 +63,26 @@ export const ja: Record<string, string> = {
   "lp.heroSubB": "無料でかんたんに作成・印刷・共有できます。",
   "lp.featuresHeading": "tobanの特徴",
   "lp.feat.noSignup.label": "登録不要",
-  "lp.feat.noSignup.desc": "アカウント不要・エクセル不要。ブラウザだけで完結します。",
+  "lp.feat.noSignup.desc":
+    "アカウント不要・エクセル不要。ブラウザだけで完結します。",
   "lp.feat.print.label": "印刷がきれい",
-  "lp.feat.print.desc": "カード・一覧表・カレンダー・円盤の4形式で印刷できます。",
+  "lp.feat.print.desc":
+    "カード・一覧表・カレンダー・円盤の4形式で印刷できます。",
   "lp.feat.share.label": "URLで共有",
   "lp.feat.share.desc": "共有URLを発行してLINEやメールで送れます。",
   "lp.feat.free.label": "完全無料",
   "lp.feat.free.desc": "すべての機能を無料でお使いいただけます。",
   "lp.templatesHeading": "すぐ使えるテンプレート",
-  "lp.templatesSubtitle": "{count}種類のテンプレートから選んで、メンバーを入れるだけ。",
+  "lp.templatesSubtitle":
+    "{count}種類のテンプレートから選んで、メンバーを入れるだけ。",
   "lp.viewAllTemplates": "テンプレート一覧を見る",
   "lp.viewJunban": "順番決め・当番ルーレットで作る",
   "lp.faqHeading": "よくある質問",
 
   // お問い合わせフォーム
   "contact.heading": "お問い合わせ",
-  "contact.subtitle": "不具合の報告や機能のご要望など、お気軽にご連絡ください。",
+  "contact.subtitle":
+    "不具合の報告や機能のご要望など、お気軽にご連絡ください。",
   "contact.categoryLabel": "お問い合わせ種別",
   "contact.selectPlaceholder": "選択してください",
   "contact.emailLabel": "メールアドレス",
@@ -101,7 +105,8 @@ export const ja: Record<string, string> = {
 
   // 新規作成モーダル（枠のみ。テンプレ一覧は日本語固定）
   "newSchedule.title": "新しい当番表を作成",
-  "newSchedule.instruction": "テンプレートを選択してください。後から自由に編集できます。",
+  "newSchedule.instruction":
+    "テンプレートを選択してください。後から自由に編集できます。",
   "newSchedule.createBlank": "新しくつくる",
   "newSchedule.createBlankDesc": "空白から自由に当番表を作成",
 
@@ -211,10 +216,13 @@ export const ja: Record<string, string> = {
   "view.disc": "円盤",
   "disc.offDuty": "おやすみ",
   "disc.sheetOuter": "外円（固定・役割）— 外周の線で切り取ってください",
-  "disc.sheetInner": "内円（回す・担当者）— 外周の線で切り取り、中心を外円に重ねてピンで留めてください",
+  "disc.sheetInner":
+    "内円（回す・担当者）— 外周の線で切り取り、中心を外円に重ねてピンで留めてください",
   "disc.unsupported": "この当番表は円盤にできません。早見表をご利用ください。",
-  "disc.unsupportedGroupPool": "グループ専用メンバーがいる当番表は円盤にできません。早見表をご利用ください。",
-  "disc.unsupportedTooManyTasks": "円盤にするには「担当者の数 ≧ タスクの数」にしてください（いまは担当者{members}人・タスク{tasks}個）。タスクをまとめるか担当者を増やすと円盤にできます。それまでは早見表をどうぞ。",
+  "disc.unsupportedGroupPool":
+    "グループ専用メンバーがいる当番表は円盤にできません。早見表をご利用ください。",
+  "disc.unsupportedTooManyTasks":
+    "円盤にするには「担当者の数 ≧ タスクの数」にしてください（いまは担当者{members}人・タスク{tasks}個）。タスクをまとめるか担当者を増やすと円盤にできます。それまでは早見表をどうぞ。",
   "print.print": "印刷",
   "print.printAria": "印刷する",
 
@@ -262,8 +270,10 @@ export const ja: Record<string, string> = {
 
   // 一括追加
   "bulk.bulkAdd": "📋 一括追加",
-  "bulk.placeholderTask": "メンバー名を入力（1行に1人、またはカンマ区切り）\n例：田中, 佐藤, 鈴木\n（全タスクに追加されます）",
-  "bulk.placeholderMember": "名前を入力（1行に1人、またはカンマ区切り）\n例：田中, 佐藤, 鈴木\n（グループも同時に作成されます）",
+  "bulk.placeholderTask":
+    "メンバー名を入力（1行に1人、またはカンマ区切り）\n例：田中, 佐藤, 鈴木\n（全タスクに追加されます）",
+  "bulk.placeholderMember":
+    "名前を入力（1行に1人、またはカンマ区切り）\n例：田中, 佐藤, 鈴木\n（グループも同時に作成されます）",
   "bulk.ariaTask": "メンバーを一括追加",
   "bulk.ariaMember": "メンバーとグループを一括追加",
   "bulk.willAdd": "{n}人を追加します",
@@ -274,7 +284,8 @@ export const ja: Record<string, string> = {
 
   // 削除確認
   "confirmDelete.title": "当番表を削除",
-  "confirmDelete.message": "「{name}」を削除しますか？この操作は元に戻せません。",
+  "confirmDelete.message":
+    "「{name}」を削除しますか？この操作は元に戻せません。",
   "confirmDelete.confirm": "削除する",
 
   // インストール案内
@@ -291,7 +302,8 @@ export const ja: Record<string, string> = {
 
   // 404
   "notFound.title": "ページが見つかりません",
-  "notFound.message": "お探しのページは存在しないか、移動した可能性があります。",
+  "notFound.message":
+    "お探しのページは存在しないか、移動した可能性があります。",
   "notFound.home": "ホームへ",
   "notFound.templates": "テンプレートをみる",
 
@@ -305,7 +317,8 @@ export const ja: Record<string, string> = {
 
   // 編集権限の引き継ぎ
   "transfer.error.notFound": "転送データが見つかりません",
-  "transfer.error.broken": "転送URLが壊れています。もう一度リンクを取得してください",
+  "transfer.error.broken":
+    "転送URLが壊れています。もう一度リンクを取得してください",
   "transfer.error.badFormat": "転送データの形式が正しくありません",
   "transfer.error.invalidLink": "編集リンクが無効か、当番表が見つかりません",
   "transfer.error.saveFailed": "転送データの保存に失敗しました",
@@ -315,13 +328,18 @@ export const ja: Record<string, string> = {
   // 共有エラー
   "shareErr.publish400": "共有公開のリクエスト内容が不正です",
   "shareErr.save400": "保存内容に不正な値があります",
-  "shareErr.auth": "編集権限の確認に失敗しました。共有リンクを作り直してください",
-  "shareErr.publish404": "保存先が見つかりません。もう一度共有をやり直してください",
+  "shareErr.auth":
+    "編集権限の確認に失敗しました。共有リンクを作り直してください",
+  "shareErr.publish404":
+    "保存先が見つかりません。もう一度共有をやり直してください",
   "shareErr.save404": "保存先が見つかりません",
-  "shareErr.publish500": "保存はできましたが公開に失敗しました。時間をおいて再度お試しください",
-  "shareErr.save500": "サーバーで保存に失敗しました。時間をおいて再度お試しください",
+  "shareErr.publish500":
+    "保存はできましたが公開に失敗しました。時間をおいて再度お試しください",
+  "shareErr.save500":
+    "サーバーで保存に失敗しました。時間をおいて再度お試しください",
   "shareErr.publishDefault": "保存はできましたが公開に失敗しました",
-  "shareErr.saveDefault": "保存に失敗しました。ネットワーク接続を確認してください",
+  "shareErr.saveDefault":
+    "保存に失敗しました。ネットワーク接続を確認してください",
 
   // 今日のバナー
   "today.label": "きょうの当番（{date}）",
@@ -344,13 +362,16 @@ export const ja: Record<string, string> = {
   "templates.breadcrumb": "テンプレート一覧",
   "templates.breadcrumbAria": "パンくず",
   "templates.heading": "当番表テンプレート一覧",
-  "templates.subA": "学校・保育園・介護施設・自治会・飲食店・家庭など、すぐ使える",
+  "templates.subA":
+    "学校・保育園・介護施設・自治会・飲食店・家庭など、すぐ使える",
   "templates.subFree": "無料テンプレート",
-  "templates.subB": "を{count}種類ご用意しました。テンプレートを選んで、メンバーや担当を自由に編集するだけで当番表が完成します。",
+  "templates.subB":
+    "を{count}種類ご用意しました。テンプレートを選んで、メンバーや担当を自由に編集するだけで当番表が完成します。",
 
   // テンプレート詳細ページ
   "templatesDetail.contents": "テンプレートの内容",
-  "templatesDetail.jaNote": "※ 以下の内容は日本語で表示されます（作成後に自由に編集できます）。",
+  "templatesDetail.jaNote":
+    "※ 以下の内容は日本語で表示されます（作成後に自由に編集できます）。",
   "templatesDetail.taskN": "タスク {n}",
   "templatesDetail.groupN": "グループ {n}",
   "templatesDetail.memberExample": "メンバー例（{count}名）",
