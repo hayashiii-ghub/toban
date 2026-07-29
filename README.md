@@ -69,7 +69,7 @@
     ├── schemas.ts            # 共有の Zod スキーマ
     ├── limits.ts             # 入力の文字数・件数上限（server / UI / WebMCP の単一の真実源）
     ├── templates.ts          # テンプレート本体のデータ（32件。うちカスタムはLPを持たない）
-    ├── jsonLd.ts             # 構造化データ（FAQPage / BreadcrumbList）の組み立て
+    ├── jsonLd.ts             # 構造化データ（FAQPage / BreadcrumbList / ItemList）の組み立て
     ├── seo-templates.ts      # テンプレLPのメタ情報（title/description/intro）と共通FAQ、/junban のメタ
     └── template-content.ts   # テンプレLPごとの本文・FAQ（ページ固有の読み物）
 ```

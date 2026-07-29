@@ -38,6 +38,26 @@ export function breadcrumbSchema(
   };
 }
 
+/**
+ * items は表示順。position は 1 始まりで自動採番。
+ * 呼び出し側は本文に出している順序・件数のまま渡すこと（本文と構造化データの不一致を避ける）。
+ */
+export function itemListSchema(
+  items: { name: string; url: string }[]
+): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    numberOfItems: items.length,
+    itemListElement: items.map((it, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: it.name,
+      url: it.url,
+    })),
+  };
+}
+
 /** JSON-LD を <script> 用文字列に直列化。`<` を < 化して script ブレイク/XSS を防ぐ。 */
 export function serializeJsonLd(schema: unknown): string {
   return JSON.stringify(schema).replace(/</g, "\\u003c");
