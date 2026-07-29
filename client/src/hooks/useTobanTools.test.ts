@@ -5,6 +5,7 @@ import type { useHomeState } from "@/hooks/useHomeState";
 import type { ScheduleSettings } from "@/hooks/useScheduleManager";
 import { LIMITS } from "@shared/limits";
 import type { Assignment, Member, Schedule, TaskGroup } from "@/rotation/types";
+import type { ViewTabValue } from "@/features/home/viewTabsConfig";
 
 type HomeState = ReturnType<typeof useHomeState>;
 
@@ -287,7 +288,7 @@ describe("change_view", () => {
   it("有効なビューに切り替える", async () => {
     let view: string | null = null;
     const get = makeGet({
-      changeTab: (t: "cards" | "table" | "calendar") => {
+      changeTab: (t: ViewTabValue) => {
         view = t;
       },
     });
@@ -318,7 +319,7 @@ describe("change_view", () => {
   it("無効なビューは切り替えずエラーを返す", async () => {
     let view: string | null = null;
     const get = makeGet({
-      changeTab: (t: "cards" | "table" | "calendar") => {
+      changeTab: (t: ViewTabValue) => {
         view = t;
       },
     });
@@ -345,7 +346,9 @@ describe("create_schedule", () => {
       await toolNamed("create_schedule", get).execute({ template: "給食当番" })
     ).content[0].text;
 
-    expect(created?.name).toBe("給食当番");
+    // created はコールバック内で代入されるが、TS の制御フロー解析はそれを追えず
+    // null に絞り込む。宣言時の型へ戻して読む
+    expect((created as { name: string } | null)?.name).toBe("給食当番");
     expect(text).toContain("給食当番");
   });
 

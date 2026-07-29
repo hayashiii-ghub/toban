@@ -12,10 +12,12 @@ describe("useRotationAnimation", () => {
     vi.useRealTimers();
   });
 
+  // Dispatch として渡しつつ .mock で呼び出し引数も見たいので、両方の型を持たせる
   const createSetState = () =>
-    vi.fn() as React.Dispatch<
+    vi.fn() as unknown as React.Dispatch<
       React.SetStateAction<import("@shared/types").AppState>
-    >;
+    > &
+      ReturnType<typeof vi.fn>;
 
   it("初期状態: isAnimating=false, direction='forward'", () => {
     const setState = createSetState();
