@@ -2,6 +2,11 @@
 #
 # ローカルで有効にする（GitHub の blame は自動でこのファイルを読む）:
 #   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# 注意: このリポジトリは squash マージなので、ブランチ上のコミットの SHA は
+# main に残らない。ここへ書く SHA は必ずマージ後に確認すること。
 
-# chore: リポジトリ全体を Prettier で整形
-e90ab855cc1b949814bca386ac8eb77b94444b53
+# chore: Prettier を CI で強制し、ドキュメントとtsconfigの食い違いを解消 (#104)
+# 121 ファイルの一括整形。同じコミットに設定と文書の変更も約60行入っているが、
+# 整形6,300行を無視できる利点が上回るため、コミットごと除外している。
+3f429f4ff97657baa8412ca50f4ee523f8f78d81
