@@ -6,6 +6,7 @@ import {
   sectorPath,
 } from "@/rotation/discGeometry";
 import { useT } from "@/i18n";
+import { TaskLegend } from "@/features/home/TaskLegend";
 
 interface RotationDiscProps {
   groups: TaskGroup[];
@@ -205,37 +206,6 @@ export function RotationDisc({
     </svg>
   );
 
-  const legend = (
-    // 凡例：盤面の絵文字に対応する役割名フルテキスト。役割に色は無いためチップは形だけ揃える。
-    <ul className="mt-3 flex flex-wrap justify-center gap-1.5 list-none p-0">
-      {groups.map(group => (
-        <li
-          key={group.id}
-          className="theme-border inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold"
-          style={{
-            backgroundColor: "var(--dt-card-bg)",
-            color: "var(--dt-text-secondary)",
-          }}
-        >
-          <span aria-hidden="true">{group.emoji}</span>
-          <span>{group.tasks.join("・")}</span>
-        </li>
-      ))}
-      {hasOffDuty && (
-        <li
-          className="theme-border inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold"
-          style={{
-            backgroundColor: "var(--dt-card-bg)",
-            color: "var(--dt-text-muted)",
-          }}
-        >
-          <span aria-hidden="true">💤</span>
-          <span>{t("disc.offDuty")}</span>
-        </li>
-      )}
-    </ul>
-  );
-
   const caption = (text: string) => (
     <p
       className="text-center text-sm font-bold mb-2"
@@ -251,7 +221,8 @@ export function RotationDisc({
       <div className="px-3 sm:px-4 py-3 sm:py-4 rotation-print-disc-section">
         <div className="max-w-2xl mx-auto">
           {renderWheel("full", t("view.disc"))}
-          {legend}
+          {/* 凡例：盤面の絵文字に対応する役割名フルテキスト（横書きだと盤からはみ出すため）。 */}
+          <TaskLegend groups={groups} align="center" showOffDuty={hasOffDuty} />
         </div>
       </div>
 
