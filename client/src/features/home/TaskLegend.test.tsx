@@ -72,8 +72,15 @@ describe("TaskLegend", () => {
 });
 
 describe("カレンダーと円盤の凡例", () => {
-  it("同じチップの見た目を共有する", () => {
-    // 以前は各ビューが個別に凡例を持ち、枠線・角丸・背景がずれていた。
+  /** 角丸の指定を除いたクラス。共有する見た目はこちらで比べる。 */
+  const withoutCorner = (className: string) =>
+    className
+      .split(" ")
+      .filter(c => !c.startsWith("rounded"))
+      .join(" ");
+
+  it("角丸以外の見た目を共有する", () => {
+    // 以前は各ビューが個別に凡例を持ち、枠線・背景・文字がずれていた。
     // 片方だけ手で書き換えると同じ情報が別物に見えるため、ここで固定する。
     const { container: cal } = render(
       <RotationCalendar groups={groups} members={members} rotation={0} />
@@ -85,6 +92,20 @@ describe("カレンダーと円盤の凡例", () => {
     );
     const discChip = chips(disc)[0].className;
 
-    expect(calChip).toBe(discChip);
+    expect(withoutCorner(calChip)).toBe(withoutCorner(discChip));
+  });
+
+  it("角は盤面の形に合わせる", () => {
+    // 円盤は盤面が円なので丸、カレンダーは四角いセルとその中の
+    // 担当者チップに合わせる。ここが揃うと片方が浮く。
+    const { container: cal } = render(
+      <RotationCalendar groups={groups} members={members} rotation={0} />
+    );
+    expect(chips(cal)[0].className.split(" ")).toContain("rounded");
+    cleanup();
+    const { container: disc } = render(
+      <RotationDisc groups={groups} members={members} rotation={0} />
+    );
+    expect(chips(disc)[0].className.split(" ")).toContain("rounded-full");
   });
 });

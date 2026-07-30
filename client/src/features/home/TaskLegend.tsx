@@ -7,6 +7,8 @@ interface TaskLegendProps {
   align?: "start" | "center";
   /** 盤面に休みの人が載る円盤だけ true。カレンダーは休みをセルに出さないので付けない。 */
   showOffDuty?: boolean;
+  /** 盤面の形に合わせる（円盤は丸、カレンダーはセル内チップと同じ角丸）。 */
+  shape?: "rounded" | "pill";
 }
 
 /**
@@ -15,16 +17,22 @@ interface TaskLegendProps {
  *
  * 塗りではなく theme-border で境界を出す：テーマの pageBg と cardBg は
  * ほぼ同色（しろばんは両方 #ffffff）で、その混色をチップ背景にすると
- * 枠が消えるため。角も rounded-full にしてテーマの radius に依存させない。
+ * 枠が消えるため。
+ *
+ * 角だけは盤面に合わせて変える。円盤は盤面が円なので rounded-full、
+ * カレンダーは四角いセルとその中の担当者チップ（rounded）に合わせる。
+ * どちらもテーマの radius には依存させない。
  */
 export function TaskLegend({
   groups,
   align = "start",
   showOffDuty = false,
+  shape = "rounded",
 }: TaskLegendProps) {
   const t = useT();
-  const chipClass =
-    "theme-border inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold";
+  const chipClass = `theme-border inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
+    shape === "pill" ? "rounded-full" : "rounded"
+  }`;
 
   return (
     <ul

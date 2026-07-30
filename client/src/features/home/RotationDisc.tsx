@@ -222,7 +222,12 @@ export function RotationDisc({
         <div className="max-w-2xl mx-auto">
           {renderWheel("full", t("view.disc"))}
           {/* 凡例：盤面の絵文字に対応する役割名フルテキスト（横書きだと盤からはみ出すため）。 */}
-          <TaskLegend groups={groups} align="center" showOffDuty={hasOffDuty} />
+          <TaskLegend
+            groups={groups}
+            align="center"
+            showOffDuty={hasOffDuty}
+            shape="pill"
+          />
         </div>
       </div>
 
