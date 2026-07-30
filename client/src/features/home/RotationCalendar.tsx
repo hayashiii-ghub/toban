@@ -12,6 +12,7 @@ import {
 } from "@/rotation/utils";
 import { getHolidaysForMonth } from "@/rotation/holidays";
 import { useT, useDateLocale } from "@/i18n";
+import { TaskLegend } from "@/features/home/TaskLegend";
 
 interface RotationCalendarProps {
   groups: TaskGroup[];
@@ -478,23 +479,8 @@ export function RotationCalendar({
             })}
           </div>
 
-          {/* Legend: タスク一覧 */}
-          <div className="mt-3 flex flex-wrap gap-2">
-            {groups.map(group => (
-              <div
-                key={group.id}
-                className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded"
-                style={{
-                  backgroundColor:
-                    "color-mix(in srgb, var(--dt-page-bg) 60%, var(--dt-card-bg))",
-                  color: "var(--dt-text-secondary)",
-                }}
-              >
-                <span>{group.emoji}</span>
-                {group.tasks.join("・")}
-              </div>
-            ))}
-          </div>
+          {/* 凡例：セルは絵文字＋担当者名だけなので、当番名のフルテキストをここで補う。 */}
+          <TaskLegend groups={groups} />
         </m.div>
       </div>
     </div>
