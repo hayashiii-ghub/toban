@@ -42,7 +42,7 @@ const C = {
 const SHARE_URL =
   typeof window !== "undefined"
     ? `${window.location.origin}/about`
-    : "https://toban.shigoto.dev/about";
+    : "https://toban.app/about";
 
 function ShareDropdown({ onClose }: { onClose: () => void }) {
   const t = useT();
