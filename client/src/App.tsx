@@ -77,12 +77,12 @@ function AppFooter() {
           href="https://shigoto.dev/works/toban"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-0 px-2 text-sm text-muted-foreground/60 hover:text-muted-foreground/80 transition-colors"
+          className="group flex items-center gap-1.5 px-2 text-sm text-muted-foreground/60 hover:text-muted-foreground/80 transition-colors"
         >
           <img
-            src="/hayashigoto-logo.png"
+            src="/hayashigoto-seal.svg"
             alt="はやしごと"
-            className="h-9 w-auto"
+            className="size-5 opacity-70 group-hover:opacity-100 transition-opacity"
           />
           <span>hay@shigoto.dev</span>
         </a>
