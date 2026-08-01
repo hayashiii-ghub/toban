@@ -48,7 +48,7 @@ export function AssignmentsGrid({
                     ? `${group.tasks[0] ?? ""}: ${member.name}`
                     : `${member.name}: ${group.tasks.join("・")}`
                 }
-                className="theme-border theme-shadow rotation-print-card overflow-hidden"
+                className="theme-border theme-shadow rotation-print-card overflow-hidden flex flex-col"
                 style={{
                   borderRadius: "var(--dt-border-radius)",
                   backgroundColor: "var(--dt-card-bg)",
@@ -77,9 +77,11 @@ export function AssignmentsGrid({
               >
                 {isTaskMode ? (
                   <>
-                    {/* タスクモード: タスク絵文字+名前が上、メンバーが下 */}
+                    {/* タスクモード: タスク絵文字+名前が上、メンバーが下。
+                        タスク名の行数はカードごとに違うので、見出し側を flex-1 で
+                        伸ばしてメンバーチップをカード下端に揃える（絵文字は上端揃えのまま）。 */}
                     <div
-                      className="px-3 sm:px-4 py-3 sm:py-4 text-center"
+                      className="flex-1 px-3 sm:px-4 py-3 sm:py-4 text-center"
                       style={{
                         backgroundColor:
                           "color-mix(in srgb, var(--dt-page-bg) 60%, var(--dt-card-bg))",
