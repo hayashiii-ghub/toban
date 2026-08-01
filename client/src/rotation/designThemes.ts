@@ -55,11 +55,11 @@ export interface DesignThemeSurface {
   printShadow: string;
   /** 印刷時の枠の太さ。画面で枠を持たない質感でも、紙では輪郭が要る */
   printBorderWidth: string;
-  /** カード面の background-image。和紙のテクスチャや、ねんどの陰影用 */
+  /** カード面の background-image。粒や陰影のグラデーションを載せる */
   texture: string;
   /** 紙面（ページ背景）の background-image。カード面とは粒の粗さを変える */
   pageTexture: string;
-  /** カード見出しの背景。ねんどのように面を透かせたい質感が上書きする */
+  /** カード見出しの背景。面を透かせたい質感が上書きする */
   headerBg: string;
 }
 
@@ -570,7 +570,7 @@ export const DESIGN_THEMES: DesignTheme[] = [
 // designThemeId は `<質感>/<色>` の複合IDで保存する。shared/schemas.ts が z.string() で
 // 受けているため、スキーマもD1マイグレーションも不要。区切りを含まないIDは旧テーマとして扱う。
 
-export const THEME_ID_SEPARATOR = "/";
+const THEME_ID_SEPARATOR = "/";
 
 /** 影の色は色軸の borderColor から作る。質感側が色を持たないようにするため */
 const tint = (pct: number) =>
@@ -702,8 +702,7 @@ const mochimochi: DesignTexture = {
 
 // 旧「クレヨン」テーマが持っていた個性は色ではなく線だった（width 2.5px / radius 16px /
 // hoverTranslate -1px）。9テーマで唯一パレット以外の特徴を持っていたので、質感軸へ移す。
-// 太い枠 + 等方の中目は画用紙そのものなので、道具名ではなく材料名にして
-// 和紙・ねんどとカテゴリを揃える。旧クレヨン利用者は選び直しても太枠を失わない。
+// 太い枠と粗い粒でざらつきを出す。旧クレヨン利用者は選び直しても太枠を失わない。
 const zarazara: DesignTexture = {
   id: "zarazara",
   name: "ざらざら",
@@ -728,11 +727,7 @@ const zarazara: DesignTexture = {
   },
 };
 
-export const THEME_TEXTURES: DesignTexture[] = [
-  sarasara,
-  zarazara,
-  mochimochi,
-];
+export const THEME_TEXTURES: DesignTexture[] = [sarasara, zarazara, mochimochi];
 
 /**
  * 色軸は旧テーマのパレットをそのまま流用する。18フィールドがコントラストを見て
@@ -766,7 +761,10 @@ const COLOR_LABELS: Record<string, { name: string; labelKey: string }> = {
  */
 const COLOR_OVERRIDES: Record<
   string,
-  { preview?: Partial<DesignTheme["preview"]>; colors?: Partial<DesignThemeColors> }
+  {
+    preview?: Partial<DesignTheme["preview"]>;
+    colors?: Partial<DesignThemeColors>;
+  }
 > = {
   crayon: {
     preview: {
@@ -868,6 +866,21 @@ export const THEME_COLORS: DesignColor[] = DESIGN_THEMES.map(theme => {
 const DEFAULT_TEXTURE_ID = sarasara.id;
 const DEFAULT_COLOR_ID = whiteboard.id;
 
+/**
+ * 表示名の組み立てルール。既定の質感は色名だけにして、それ以外だけ質感を併記する。
+ * composeTheme（日本語固定）と getThemeLabel（翻訳済み）の両方から呼ぶので、
+ * 片方だけ書式を変えて画面とテストがずれることがない。
+ */
+function formatThemeName(
+  colorLabel: string,
+  textureLabel: string,
+  textureId: string
+): string {
+  return textureId === DEFAULT_TEXTURE_ID
+    ? colorLabel
+    : `${colorLabel}（${textureLabel}）`;
+}
+
 export function composeThemeId(textureId: string, colorId: string): string {
   return `${textureId}${THEME_ID_SEPARATOR}${colorId}`;
 }
@@ -908,10 +921,8 @@ export function composeTheme(textureId: string, colorId: string): DesignTheme {
 
   return {
     id: composeThemeId(texture.id, color.id),
-    name:
-      texture.id === DEFAULT_TEXTURE_ID
-        ? color.name
-        : `${color.name}（${texture.name}）`,
+    // 画面表示は getThemeLabel を使う。これは翻訳を通せない場所のための日本語固定値
+    name: formatThemeName(color.name, texture.name, texture.id),
     description: texture.description,
     preview: color.preview,
     colors: color.colors,
@@ -940,10 +951,7 @@ export function getThemeLabel(
   const color = THEME_COLORS.find(c => c.id === colorId);
   if (!texture || !color) return DESIGN_THEMES[0].name;
 
-  const colorLabel = t(color.labelKey);
-  return textureId === DEFAULT_TEXTURE_ID
-    ? colorLabel
-    : `${colorLabel}（${t(texture.labelKey)}）`;
+  return formatThemeName(t(color.labelKey), t(texture.labelKey), textureId);
 }
 
 export function getThemeById(id: string | undefined): DesignTheme {

@@ -56,10 +56,10 @@ describe("getThemeById のフォールバック", () => {
 describe("2軸の合成", () => {
   it("複合IDは質感の枠と色のパレットを組み合わせる", () => {
     const theme = getThemeById("mochimochi/sakura");
-    const clay = THEME_TEXTURES.find(t => t.id === "mochimochi")!;
+    const mochi = THEME_TEXTURES.find(t => t.id === "mochimochi")!;
     const sakura = THEME_COLORS.find(c => c.id === "sakura")!;
 
-    expect(theme.borders).toEqual(clay.borders);
+    expect(theme.borders).toEqual(mochi.borders);
     expect(theme.colors).toEqual(sakura.colors);
   });
 
@@ -129,15 +129,15 @@ describe("2軸の合成", () => {
 
     // 粒を使う2種はカード面と紙面で粗さが違う。同じだと画面全体が一枚の板に見えてカードが浮かない
     expect(pageOf("sarasara").pageTexture).not.toBe(pageOf("sarasara").texture);
-    expect(pageOf("zarazara").pageTexture).not.toBe(
-      pageOf("zarazara").texture
-    );
+    expect(pageOf("zarazara").pageTexture).not.toBe(pageOf("zarazara").texture);
   });
 
   it("既定の質感は色名だけ、それ以外は質感を併記する", () => {
     // DesignTheme.name は日本語固定のフォールバック。画面表示は getThemeLabel を使う
     expect(composeTheme("sarasara", "sakura").name).toBe("さくら");
-    expect(composeTheme("mochimochi", "sakura").name).toBe("さくら（もちもち）");
+    expect(composeTheme("mochimochi", "sakura").name).toBe(
+      "さくら（もちもち）"
+    );
   });
 
   it("旧IDは既定の質感 × その色として分解される", () => {
@@ -169,9 +169,9 @@ describe("印刷時の影", () => {
 
   it("画面で枠を持たない質感でも、印刷では輪郭が出る", () => {
     // 白黒印刷では inset の陰影がほぼ飛ぶ。枠が0のままだとカードの切れ目が消える
-    const clay = THEME_TEXTURES.find(t => t.id === "mochimochi")!;
-    expect(clay.borders.width).toBe("0px");
-    expect(parseFloat(clay.surface.printBorderWidth)).toBeGreaterThan(0);
+    const mochi = THEME_TEXTURES.find(t => t.id === "mochimochi")!;
+    expect(mochi.borders.width).toBe("0px");
+    expect(parseFloat(mochi.surface.printBorderWidth)).toBeGreaterThan(0);
 
     for (const texture of THEME_TEXTURES) {
       expect(parseFloat(texture.surface.printBorderWidth)).toBeGreaterThan(0);
@@ -179,15 +179,15 @@ describe("印刷時の影", () => {
   });
 
   it("もちもちは inset を残し、外側の落ち影だけ印刷で落とす", () => {
-    const clay = THEME_TEXTURES.find(t => t.id === "mochimochi")!;
+    const mochi = THEME_TEXTURES.find(t => t.id === "mochimochi")!;
     const OUTER_DROP_SHADOW = "2px 3px 8px";
 
     // 画面では立体を出すために落ち影を持つ
-    expect(clay.shadows.card).toContain(OUTER_DROP_SHADOW);
-    expect(clay.shadows.card).toContain("inset");
+    expect(mochi.shadows.card).toContain(OUTER_DROP_SHADOW);
+    expect(mochi.shadows.card).toContain("inset");
     // 印刷では紙に影が出てしまうので落ち影だけ外し、inset は残す
-    expect(clay.surface.printShadow).not.toContain(OUTER_DROP_SHADOW);
-    expect(clay.surface.printShadow).toContain("inset");
+    expect(mochi.surface.printShadow).not.toContain(OUTER_DROP_SHADOW);
+    expect(mochi.surface.printShadow).toContain("inset");
   });
 });
 

@@ -210,8 +210,8 @@
     border: var(--dt-border-width) solid var(--dt-border-color);
   }
 
-  /* カード面。質感（和紙など）のテクスチャを乗せるのはこの面だけで、
-     モーダルやダイアログには広げない（印刷に出る面と揃えるため）。 */
+  /* カード面。質感の粒を乗せるのはこの面だけで、モーダルやダイアログには
+     広げない（印刷に出る面と揃えるため）。 */
   .theme-surface {
     background-color: var(--dt-card-bg);
     background-image: var(--dt-surface-texture, none);
