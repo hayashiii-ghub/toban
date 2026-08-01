@@ -29,15 +29,6 @@ export function useHomeState() {
     saveState,
   } = useScheduleManager();
 
-  const { syncStatus, prepareForManualSave } = useAutoSync(
-    activeSchedule,
-    updateActiveSchedule
-  );
-  const { isSharing, showShare, setShowShare, handleShare } = useShareFlow({
-    activeSchedule,
-    prepareForManualSave,
-    updateActiveSchedule,
-  });
   const {
     modal,
     openSettings,
@@ -45,6 +36,18 @@ export function useHomeState() {
     openConfirmDelete,
     closeModal,
   } = useModalManager();
+
+  const { syncStatus, prepareForManualSave } = useAutoSync(
+    activeSchedule,
+    updateActiveSchedule,
+    // モーダルが開いている間は下書きを持っているので、引き直しで土台を入れ替えない
+    { isEditing: modal.type !== null }
+  );
+  const { isSharing, showShare, setShowShare, handleShare } = useShareFlow({
+    activeSchedule,
+    prepareForManualSave,
+    updateActiveSchedule,
+  });
   const { isAnimating, direction, handleRotate } =
     useRotationAnimation(setState);
   const {

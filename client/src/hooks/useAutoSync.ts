@@ -1,15 +1,19 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { Schedule } from "@/rotation/types";
-import { createSchedule, toScheduleData } from "@/lib/api";
+import { createSchedule, getScheduleForEdit, toScheduleData } from "@/lib/api";
 import {
   scheduleSyncDebounced,
   setSyncStatusCallback,
   flushPendingSync,
   isScheduleSyncPaused,
+  hasPendingSync,
   type SyncStatus,
 } from "@/lib/syncManager";
 
 const BACKUP_DEBOUNCE_MS = 5000;
+
+/** クラウドに載っていて、引き直しの対象になるスケジュール */
+type CloudSchedule = Schedule & { slug: string; editToken: string };
 
 function useSyncStatusSubscription(scheduleId: string | undefined): {
   syncStatus: SyncStatus;
@@ -135,12 +139,103 @@ function useAutoBackup(
   };
 }
 
+/**
+ * サーバの内容をローカルへ引き直す。
+ *
+ * クライアントは今まで送るだけで一度も読み直していなかったため、2台目の端末は
+ * 最初の取り込み以降ずっと古いままだった。その状態で編集すると、もう一方の端末の
+ * 変更を黙って上書きしてしまう。開いた時点で追いつかせることで、これを防ぐ。
+ *
+ * ローカルを優先する。未送信の変更・編集中・同期停止中は引き直さない。
+ */
+function usePullFromServer(
+  schedule: Schedule | undefined,
+  onScheduleUpdate: ((updater: (s: Schedule) => Schedule) => void) | undefined,
+  scheduleRef: React.MutableRefObject<Schedule | undefined>,
+  backupTimerRef: React.MutableRefObject<number | null>,
+  adoptedJsonRef: React.MutableRefObject<string | null>,
+  isEditing: boolean
+): void {
+  const isEditingRef = useRef(isEditing);
+  useEffect(() => {
+    isEditingRef.current = isEditing;
+  }, [isEditing]);
+
+  const canPull = useCallback(
+    (s: Schedule | undefined): s is CloudSchedule =>
+      !!s?.slug &&
+      !!s.editToken &&
+      !isEditingRef.current &&
+      backupTimerRef.current === null &&
+      !hasPendingSync(s.id) &&
+      !isScheduleSyncPaused(s.id),
+    [backupTimerRef]
+  );
+
+  const pull = useCallback(async () => {
+    const before = scheduleRef.current;
+    if (!onScheduleUpdate || !canPull(before)) return;
+
+    let fetched;
+    try {
+      fetched = await getScheduleForEdit(before.slug, before.editToken);
+    } catch {
+      // 行が消えている(404)・トークンが通らない(403)・通信失敗のいずれでも
+      // ローカルには触らない。引き直しは取れたときだけ反映する片道の処理。
+      return;
+    }
+
+    // 取得中に別のスケジュールへ切り替わった／編集が始まっていたら捨てる
+    const after = scheduleRef.current;
+    if (!canPull(after) || after.id !== before.id || after.slug !== before.slug)
+      return;
+
+    const merged: Schedule = {
+      ...after,
+      name: fetched.name,
+      rotation: fetched.rotation,
+      groups: fetched.groups,
+      members: fetched.members,
+      rotationConfig: fetched.rotationConfig,
+      assignmentMode: fetched.assignmentMode,
+      designThemeId: fetched.designThemeId,
+    };
+    const mergedJson = JSON.stringify(toScheduleData(merged));
+    if (mergedJson === JSON.stringify(toScheduleData(after))) return;
+
+    // 取り込んだ内容をそのまま送り返さないよう useSyncOnChange へ知らせる
+    adoptedJsonRef.current = mergedJson;
+    onScheduleUpdate(() => merged);
+  }, [onScheduleUpdate, scheduleRef, adoptedJsonRef, canPull]);
+
+  // 起動時とスケジュール切り替え時。同じ対象で二重に引かないよう鍵で覚える
+  const pulledKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const key = `${schedule?.id ?? ""}:${schedule?.slug ?? ""}`;
+    if (pulledKeyRef.current === key) return;
+    pulledKeyRef.current = key;
+    void pull();
+  }, [schedule?.id, schedule?.slug, pull]);
+
+  // タブに戻ってきたとき。開きっぱなしの端末には効かないが、
+  // 端末を持ち替える使い方はこれで拾える
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") void pull();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [pull]);
+}
+
 function useSyncOnChange(
   schedule: Schedule | undefined,
   attemptAutoBackup: (s: Schedule) => Promise<Schedule | undefined>,
   onScheduleUpdate: ((updater: (s: Schedule) => Schedule) => void) | undefined,
   scheduleRef: React.MutableRefObject<Schedule | undefined>,
-  backupTimerRef: React.MutableRefObject<number | null>
+  backupTimerRef: React.MutableRefObject<number | null>,
+  adoptedJsonRef: React.MutableRefObject<string | null>
 ): void {
   const prevJsonRef = useRef<string>("");
 
@@ -152,6 +247,13 @@ function useSyncOnChange(
     if (!schedule) return;
 
     const json = JSON.stringify(toScheduleData(schedule));
+
+    // 引き直しで取り込んだ内容は、サーバと同じなので送り返さない
+    if (adoptedJsonRef.current === json) {
+      adoptedJsonRef.current = null;
+      prevJsonRef.current = json;
+      return;
+    }
 
     const changed = prevJsonRef.current && prevJsonRef.current !== json;
     prevJsonRef.current = json;
@@ -223,7 +325,9 @@ function useSyncOnChange(
 
 export function useAutoSync(
   schedule: Schedule | undefined,
-  onScheduleUpdate?: (updater: (s: Schedule) => Schedule) => void
+  onScheduleUpdate?: (updater: (s: Schedule) => Schedule) => void,
+  /** 設定モーダル等で下書きを編集中。裏で土台が入れ替わらないよう引き直しを止める */
+  options?: { isEditing?: boolean }
 ): {
   syncStatus: SyncStatus;
   cancelPendingBackup: () => void;
@@ -237,12 +341,22 @@ export function useAutoSync(
     scheduleRef,
     backupTimerRef,
   } = useAutoBackup(schedule, onScheduleUpdate, setSyncStatus);
+  const adoptedJsonRef = useRef<string | null>(null);
+  usePullFromServer(
+    schedule,
+    onScheduleUpdate,
+    scheduleRef,
+    backupTimerRef,
+    adoptedJsonRef,
+    options?.isEditing ?? false
+  );
   useSyncOnChange(
     schedule,
     attemptAutoBackup,
     onScheduleUpdate,
     scheduleRef,
-    backupTimerRef
+    backupTimerRef,
+    adoptedJsonRef
   );
   return { syncStatus, cancelPendingBackup, prepareForManualSave };
 }
