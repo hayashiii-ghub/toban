@@ -576,8 +576,11 @@ const THEME_ID_SEPARATOR = "/";
 const tint = (pct: number) =>
   `color-mix(in srgb, var(--dt-border-color) ${pct}%, transparent)`;
 
-/** カード見出しの既定。旧テーマが AssignmentsGrid に直書きしていた式と同じ */
-const DEFAULT_HEADER_BG =
+/**
+ * カード見出しの既定。旧テーマが AssignmentsGrid に直書きしていた式と同じ。
+ * surface を持たない旧9テーマはこの値で描かれるので、実際に効いている既定値。
+ */
+export const DEFAULT_HEADER_BG =
   "color-mix(in srgb, var(--dt-page-bg) 60%, var(--dt-card-bg))";
 
 /** 見出しの色を残しつつカード面を透かす。既定とほぼ同じ色に見えて、粒やつやが下から出る */

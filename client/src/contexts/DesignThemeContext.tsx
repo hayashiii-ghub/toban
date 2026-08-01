@@ -1,5 +1,9 @@
 import { createContext, useEffect, useMemo } from "react";
-import { getThemeById, type DesignTheme } from "@/rotation/designThemes";
+import {
+  getThemeById,
+  DEFAULT_HEADER_BG,
+  type DesignTheme,
+} from "@/rotation/designThemes";
 
 interface DesignThemeContextType {
   theme: DesignTheme;
@@ -61,8 +65,7 @@ export function applyThemeToRoot(theme: DesignTheme) {
   root.style.setProperty("--dt-surface-texture", surface?.texture ?? "none");
   root.style.setProperty(
     "--dt-card-header-bg",
-    surface?.headerBg ??
-      "color-mix(in srgb, var(--dt-page-bg) 60%, var(--dt-card-bg))"
+    surface?.headerBg ?? DEFAULT_HEADER_BG
   );
 
   // 紙面は選んだ質感に追従する。旧テーマは質感を持たないので無地のまま
