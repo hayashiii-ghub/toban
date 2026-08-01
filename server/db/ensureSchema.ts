@@ -69,6 +69,8 @@ export async function ensureSchedulesSchema(
   }
 
   const appliedColumns: string[] = [];
+  // 失敗した promise を残すと、D1 の一時エラー1回でこの isolate が生きている間ずっと
+  // 同じエラーを返し続ける（DB が回復しても再試行されない）。失敗時は必ず捨てる。
   schemaReadyPromise = (async () => {
     const columnNames = new Set(await readSchedulesColumnNames(db));
 
@@ -97,7 +99,10 @@ export async function ensureSchedulesSchema(
     }
 
     schemaReady = true;
-  })();
+  })().catch(error => {
+    schemaReadyPromise = null;
+    throw error;
+  });
 
   await schemaReadyPromise;
   return { appliedColumns };

@@ -132,6 +132,39 @@ describe("flushPendingSync", () => {
   });
 });
 
+describe("再送しても直らないエラーの扱い", () => {
+  // 同じ内容を送り直せば必ず同じ結果になる 400 / 413 を保持し続けると、
+  // 復帰イベント（online / visibilitychange）のたびに無駄な再送が走る。
+  it.each([400, 413])("status=%i は保留を破棄して再送しない", async status => {
+    const { ApiError } = await import("./api");
+    vi.mocked(updateSchedule).mockRejectedValueOnce(
+      new ApiError("Rejected", status)
+    );
+
+    scheduleSyncDebounced(mockSchedule);
+    await flushPendingSync(mockSchedule.id);
+    expect(updateSchedule).toHaveBeenCalledTimes(1);
+
+    // 2度目の flush では保留が残っていないので送信されない
+    await flushPendingSync(mockSchedule.id);
+    expect(updateSchedule).toHaveBeenCalledTimes(1);
+  });
+
+  it("status=429 は保留を残し、復帰時に再送する", async () => {
+    const { ApiError } = await import("./api");
+    vi.mocked(updateSchedule).mockRejectedValueOnce(
+      new ApiError("Too many requests", 429)
+    );
+
+    scheduleSyncDebounced(mockSchedule);
+    await flushPendingSync(mockSchedule.id);
+    expect(updateSchedule).toHaveBeenCalledTimes(1);
+
+    await flushPendingSync(mockSchedule.id);
+    expect(updateSchedule).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("pauseScheduleSync / resumeScheduleSync", () => {
   it("pause 中はデバウンスタイマーが発火しない", async () => {
     scheduleSyncDebounced(mockSchedule);

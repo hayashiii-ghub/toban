@@ -82,4 +82,12 @@ describe("ShareModal", () => {
     expect(qr).toBeTruthy();
     expect(qr.dataset.value).toContain("/s/test-slug");
   });
+
+  // 共有した当番表は放置すると自動削除される。共有する画面で必ず伝える。
+  it("保存期間が表示される", () => {
+    render(<ShareModal {...defaultProps} />);
+    expect(
+      screen.getByText(/1年間まったく編集がないと自動で削除/)
+    ).toBeTruthy();
+  });
 });

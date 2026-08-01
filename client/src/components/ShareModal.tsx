@@ -220,6 +220,13 @@ export function ShareModal({ slug, editToken, scheduleName, onClose }: Props) {
             {copied ? t("share.copied") : t("share.copyUrl")}
           </button>
 
+          <p
+            className="text-xs text-center"
+            style={{ color: "var(--dt-text-muted)" }}
+          >
+            {t("share.retention")}
+          </p>
+
           {activeTab === "edit" && (
             <div
               className="flex items-start gap-2 px-3 py-2 rounded-lg"

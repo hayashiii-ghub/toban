@@ -21,6 +21,14 @@ export function getShareErrorMessage(
         ? tStandalone("shareErr.publish404")
         : tStandalone("shareErr.save404");
     }
+    // 429 / 413 は既定の「ネットワーク接続を確認してください」だと案内が逆向きになる。
+    // 回線は正常で、待つ・減らすことでしか解消しないため専用の文言を出す。
+    if (error.status === 429) {
+      return tStandalone("shareErr.rateLimit");
+    }
+    if (error.status === 413) {
+      return tStandalone("shareErr.tooLarge");
+    }
     if (error.status >= 500) {
       return stage === "publish"
         ? tStandalone("shareErr.publish500")

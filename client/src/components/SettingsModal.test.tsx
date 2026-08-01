@@ -143,4 +143,39 @@ describe("SettingsModal", () => {
     const { queryByText } = queryDialog(container);
     expect(queryByText("削除")).toBeNull();
   });
+
+  // 保存内容がサーバの検証を通らないと、PUT が 400 になって同期が黙って止まる
+  // （syncManager が 400 を破棄するため、画面上は正常に見えたまま）。
+  describe("保存内容がサーバの検証を通ること", () => {
+    const parseAsServer = async (payload: Record<string, unknown>) => {
+      const { createScheduleSchema } =
+        await import("../../../server/schemas/schedule");
+      return createScheduleSchema.safeParse({ ...payload, rotation: 0 });
+    };
+
+    it("絵文字が空のグループは既定の絵文字で保存される", async () => {
+      const props = createProps({
+        groups: [{ id: "g1", tasks: ["掃除"], emoji: "" }],
+      });
+      const { container } = render(<SettingsModal {...props} />);
+      fireEvent.click(queryDialog(container).getByText("保存する")!);
+
+      const saved = props.onSave.mock.calls[0][0];
+      expect(saved.groups[0].emoji).not.toBe("");
+
+      const parsed = await parseAsServer(saved);
+      expect(parsed.success).toBe(true);
+    });
+
+    it("空白だけの絵文字も既定の絵文字に戻す", async () => {
+      const props = createProps({
+        groups: [{ id: "g1", tasks: ["掃除"], emoji: "   " }],
+      });
+      const { container } = render(<SettingsModal {...props} />);
+      fireEvent.click(queryDialog(container).getByText("保存する")!);
+
+      const parsed = await parseAsServer(props.onSave.mock.calls[0][0]);
+      expect(parsed.success).toBe(true);
+    });
+  });
 });
