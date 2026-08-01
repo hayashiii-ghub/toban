@@ -20,24 +20,9 @@ import { faqPageSchema, serializeJsonLd } from "@shared/jsonLd";
 import { CONTACT_CATEGORIES } from "@shared/schemas";
 import { LIMITS } from "@shared/limits";
 import { TEMPLATES } from "@/rotation/constants";
+import { LP_COLORS as C, alpha } from "@/features/landing/theme";
 import { useT, useLocale } from "@/i18n";
 import "./landing.css";
-
-// 黒板テーマカラー
-const C = {
-  pageBg: "#F5F0E8",
-  primary: "#2E6B4F",
-  primaryHover: "#245A41",
-  cardBg: "#ffffff",
-  text: "#2A3A30",
-  textSecondary: "#4A6050",
-  textMuted: "#708878",
-  border: "#C2CCBA",
-  highlight: "#A8D8B8",
-  heroBg: "#2E6B4F",
-  heroText: "#ffffff",
-  heroSubtext: "#D0E8DC",
-} as const;
 
 const SHARE_URL =
   typeof window !== "undefined"
@@ -77,7 +62,7 @@ function ShareDropdown({ onClose }: { onClose: () => void }) {
       />
       <div
         className="absolute left-1/2 -translate-x-1/2 mt-2 z-50 w-56 rounded-xl shadow-lg border overflow-hidden"
-        style={{ backgroundColor: "#fff", borderColor: C.border }}
+        style={{ backgroundColor: C.cardBg, borderColor: C.border }}
       >
         <a
           href={lineShareUrl}
@@ -273,8 +258,8 @@ function ContactForm() {
       <button
         type="submit"
         disabled={status === "sending"}
-        className="inline-flex items-center justify-center gap-2 rounded-xl font-bold px-6 py-3 text-white transition-colors disabled:opacity-60"
-        style={{ backgroundColor: C.primary }}
+        className="inline-flex items-center justify-center gap-2 rounded-xl font-bold px-6 py-3 transition-colors disabled:opacity-60"
+        style={{ backgroundColor: C.primary, color: C.heroText }}
       >
         {status === "sending" ? (
           <Loader2 className="size-4 animate-spin" />
@@ -470,7 +455,7 @@ export default function LandingPage() {
                 <div
                   className="p-3 sm:py-4 text-center"
                   style={{
-                    backgroundColor: "color-mix(in srgb, #F5F0E8 60%, #ffffff)",
+                    backgroundColor: `color-mix(in srgb, ${C.pageBg} 60%, #ffffff)`,
                   }}
                 >
                   <div className="text-3xl sm:text-4xl mb-1" aria-hidden="true">
@@ -488,9 +473,9 @@ export default function LandingPage() {
                   <div
                     className="lp-pretty text-xs leading-relaxed p-1.5 text-center"
                     style={{
-                      backgroundColor: `${C.highlight}40`,
+                      backgroundColor: alpha(C.highlight, 25),
                       borderRadius: "4px",
-                      border: `2px solid ${C.primary}20`,
+                      border: `2px solid ${alpha(C.primary, 12)}`,
                       color: C.textSecondary,
                     }}
                   >
@@ -506,7 +491,7 @@ export default function LandingPage() {
       {/* ── テンプレート紹介 ── */}
       <section
         className="px-4 py-12 sm:py-16"
-        style={{ backgroundColor: `${C.primary}08` }}
+        style={{ backgroundColor: alpha(C.primary, 3) }}
       >
         <div className="max-w-4xl mx-auto">
           <h2
@@ -608,7 +593,7 @@ export default function LandingPage() {
       <section
         id="contact"
         className="px-4 py-12 sm:py-16"
-        style={{ backgroundColor: `${C.primary}08` }}
+        style={{ backgroundColor: alpha(C.primary, 3) }}
       >
         <div className="max-w-xl mx-auto">
           <h2

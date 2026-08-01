@@ -33,7 +33,8 @@ async function ensureFont() {
 
 await ensureFont();
 
-// 1200x630 OGP image. ブランドカラー: ダークグリーン #2D4A3E / クリーム #FFF8E7。
+// 1200x630 OGP image. ブランドカラー: ダークグリーン #2D4A3E / 生成り #EEE7DA
+// （LPの --lp-bg と同色。リンクプレビューと着地ページの地の色を揃える）。
 // Kiwi Maru は太字がないため weight は 500（Medium）で統一。
 const FF = "'Kiwi Maru','Hiragino Sans','Yu Gothic',serif";
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
@@ -43,13 +44,13 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" v
     </pattern>
   </defs>
 
-  <rect width="1200" height="630" fill="#FFF8E7"/>
+  <rect width="1200" height="630" fill="#EEE7DA"/>
   <rect width="1200" height="630" fill="url(#dots)"/>
 
   <text x="80" y="300" font-family="${FF}" font-weight="500" font-size="180" fill="#2D4A3E" letter-spacing="-0.02em">toban</text>
 
-  <text x="80" y="404" font-family="${FF}" font-weight="500" font-size="52" fill="#1F2937">当番表を、かんたんに作って</text>
-  <text x="80" y="468" font-family="${FF}" font-weight="500" font-size="52" fill="#1F2937">そのまま、きれいに印刷。</text>
+  <text x="80" y="404" font-family="${FF}" font-weight="500" font-size="52" fill="#2A3A30">当番表を、かんたんに作って</text>
+  <text x="80" y="468" font-family="${FF}" font-weight="500" font-size="52" fill="#2A3A30">そのまま、きれいに印刷。</text>
 
   <text x="1120" y="582" text-anchor="end" font-family="${FF}" font-weight="500" font-size="28" fill="#2D4A3E">toban.app</text>
 </svg>`;
@@ -61,7 +62,7 @@ const resvg = new Resvg(svg, {
     loadSystemFonts: true,
     defaultFontFamily: "Kiwi Maru",
   },
-  background: "#FFF8E7",
+  background: "#EEE7DA",
 });
 
 const png = resvg.render().asPng();

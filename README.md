@@ -48,6 +48,7 @@
 │   │   ├── Transfer.tsx      # 編集権限の引き継ぎページ（/transfer）
 │   │   └── NotFound.tsx      # 404ページ（/404 と、どのルートにも一致しないパス）
 │   ├── features/home/        # ホーム画面の機能コンポーネント
+│   ├── features/landing/     # LP・SEOページ共通のCTAと配色トークン（黒板テーマ準拠）
 │   ├── components/           # モーダル等の機能コンポーネント（ui/ は shadcn/ui、settings/ は設定モーダルの部品）
 │   ├── contexts/             # テーマの Context（DesignThemeContext: デザインテーマ / ThemeContext: ライト・ダーク）
 │   ├── rotation/             # コア型・ユーティリティ・定数・デフォルト状態・デザインテーマ定義

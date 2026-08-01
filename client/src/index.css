@@ -41,6 +41,21 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: "Kiwi Maru", serif;
+
+  /* LP・SEOページ（実体は :root の --lp-*） */
+  --color-lp-bg: var(--lp-bg);
+  --color-lp-card: var(--lp-card);
+  --color-lp-primary: var(--lp-primary);
+  --color-lp-primary-hover: var(--lp-primary-hover);
+  --color-lp-text: var(--lp-text);
+  --color-lp-text-secondary: var(--lp-text-secondary);
+  --color-lp-text-muted: var(--lp-text-muted);
+  --color-lp-border: var(--lp-border);
+  --color-lp-line: var(--lp-line);
+  --color-lp-highlight: var(--lp-highlight);
+  --color-lp-hero-bg: var(--lp-hero-bg);
+  --color-lp-hero-text: var(--lp-hero-text);
+  --color-lp-hero-subtext: var(--lp-hero-subtext);
 }
 
 :root {
@@ -110,6 +125,23 @@
   --dt-font-weight-bold: 500;
   --dt-font-weight-extra: 500;
   --dt-hover-translate: 0px;
+
+  /* LP・SEOページの配色。アプリ初期テーマ「こくばん」(designThemes.ts の
+     chalkboard) に合わせた固定値。テーマ切替では変化しない */
+  --lp-bg: #eee7da;
+  --lp-card: #fbfaf4;
+  --lp-primary: #294a3a;
+  --lp-primary-hover: #1f392c;
+  --lp-text: #2a3a30;
+  --lp-text-secondary: #4a6050;
+  --lp-text-muted: #708878;
+  /* border は黒板の木枠。カードが密に並ぶ一覧では line を使う */
+  --lp-border: #6b4a2e;
+  --lp-line: #dcd2c2;
+  --lp-highlight: #e7d08a;
+  --lp-hero-bg: #294a3a;
+  --lp-hero-text: #f3eedf;
+  --lp-hero-subtext: #bfd2c4;
 }
 
 @layer base {
