@@ -6,6 +6,7 @@ import type { Schedule } from "@/rotation/types";
 vi.mock("@/lib/api", async importOriginal => ({
   ...(await importOriginal()),
   createSchedule: vi.fn(),
+  getScheduleForEdit: vi.fn(),
 }));
 
 vi.mock("@/lib/syncManager", () => ({
@@ -13,6 +14,7 @@ vi.mock("@/lib/syncManager", () => ({
   setSyncStatusCallback: vi.fn(),
   flushPendingSync: vi.fn(),
   isScheduleSyncPaused: vi.fn(() => false),
+  hasPendingSync: vi.fn(() => false),
 }));
 
 function makeSchedule(overrides: Partial<Schedule> = {}): Schedule {
@@ -129,5 +131,162 @@ describe("useAutoSync", () => {
     expect(mockedCreate).toHaveBeenCalled();
 
     vi.useRealTimers();
+  });
+});
+
+/**
+ * サーバからの引き直し。クライアントは今まで送るだけで読み直していなかったため、
+ * 2台目の端末が古いまま編集して、もう一方の変更を黙って上書きしていた。
+ */
+describe("useAutoSync の引き直し", () => {
+  const cloud = () => makeSchedule({ slug: "abc", editToken: "tok123" });
+
+  /** サーバ側が別端末で更新済み、という状態を作る */
+  async function serverHas(overrides: Record<string, unknown> = {}) {
+    const { getScheduleForEdit } = await import("@/lib/api");
+    const fetched = {
+      slug: "abc",
+      name: "別端末で変えた名前",
+      rotation: 3,
+      groups: [{ id: "g1", emoji: "🧹", tasks: ["掃除"] }],
+      members: [
+        {
+          id: "m1",
+          name: "田中",
+          color: "#3B82F6",
+          bgColor: "#DBEAFE",
+          textColor: "#1E3A5F",
+        },
+      ],
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-02T00:00:00.000Z",
+      ...overrides,
+    };
+    vi.mocked(getScheduleForEdit).mockResolvedValue(
+      fetched as unknown as Awaited<ReturnType<typeof getScheduleForEdit>>
+    );
+    return fetched;
+  }
+
+  it("開いたときにサーバの内容を取り込む", async () => {
+    await serverHas();
+    const onUpdate = vi.fn();
+
+    await act(async () => {
+      renderHook(() => useAutoSync(cloud(), onUpdate));
+    });
+
+    expect(onUpdate).toHaveBeenCalledTimes(1);
+    const merged = onUpdate.mock.calls[0][0](cloud());
+    expect(merged.name).toBe("別端末で変えた名前");
+    // 順番も同期対象。端末をまたいで揃う
+    expect(merged.rotation).toBe(3);
+    // ローカル固有の値は保つ
+    expect(merged.slug).toBe("abc");
+    expect(merged.editToken).toBe("tok123");
+  });
+
+  it("取り込んだ内容をサーバへ送り返さない", async () => {
+    const fetched = await serverHas();
+    const { scheduleSyncDebounced } = await import("@/lib/syncManager");
+    vi.mocked(scheduleSyncDebounced).mockClear();
+
+    const adopted = {
+      ...cloud(),
+      name: fetched.name,
+      rotation: fetched.rotation,
+    };
+    const { rerender } = renderHook(({ s }) => useAutoSync(s, vi.fn()), {
+      initialProps: { s: cloud() },
+    });
+    // 取り込みによる state 更新が反映された状態を再現する
+    await act(async () => {
+      rerender({ s: adopted });
+    });
+
+    expect(vi.mocked(scheduleSyncDebounced)).not.toHaveBeenCalled();
+  });
+
+  it("未送信の変更があるときは引き直さない", async () => {
+    await serverHas();
+    const { getScheduleForEdit } = await import("@/lib/api");
+    const { hasPendingSync } = await import("@/lib/syncManager");
+    vi.mocked(hasPendingSync).mockReturnValue(true);
+    vi.mocked(getScheduleForEdit).mockClear();
+
+    await act(async () => {
+      renderHook(() => useAutoSync(cloud(), vi.fn()));
+    });
+
+    expect(vi.mocked(getScheduleForEdit)).not.toHaveBeenCalled();
+    vi.mocked(hasPendingSync).mockReturnValue(false);
+  });
+
+  it("編集中は引き直さない", async () => {
+    await serverHas();
+    const { getScheduleForEdit } = await import("@/lib/api");
+    vi.mocked(getScheduleForEdit).mockClear();
+
+    await act(async () => {
+      renderHook(() => useAutoSync(cloud(), vi.fn(), { isEditing: true }));
+    });
+
+    expect(vi.mocked(getScheduleForEdit)).not.toHaveBeenCalled();
+  });
+
+  it("クラウドに載っていないスケジュールは引き直さない", async () => {
+    await serverHas();
+    const { getScheduleForEdit } = await import("@/lib/api");
+    vi.mocked(getScheduleForEdit).mockClear();
+
+    await act(async () => {
+      renderHook(() => useAutoSync(makeSchedule(), vi.fn()));
+    });
+
+    expect(vi.mocked(getScheduleForEdit)).not.toHaveBeenCalled();
+  });
+
+  // 行が消えている(404)・トークンが通らない(403)・通信失敗のいずれでも、
+  // ローカルを消したり空にしたりしてはいけない
+  it("取得に失敗してもローカルには触らない", async () => {
+    const { getScheduleForEdit } = await import("@/lib/api");
+    vi.mocked(getScheduleForEdit).mockRejectedValue(new Error("Not found"));
+    const onUpdate = vi.fn();
+
+    await act(async () => {
+      renderHook(() => useAutoSync(cloud(), onUpdate));
+    });
+
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  it("サーバと同じ内容なら state を更新しない", async () => {
+    const local = cloud();
+    await serverHas({ name: local.name, rotation: local.rotation });
+    const onUpdate = vi.fn();
+
+    await act(async () => {
+      renderHook(() => useAutoSync(local, onUpdate));
+    });
+
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  it("タブに戻ったときにも引き直す", async () => {
+    await serverHas();
+    const { getScheduleForEdit } = await import("@/lib/api");
+
+    await act(async () => {
+      renderHook(() => useAutoSync(cloud(), vi.fn()));
+    });
+    const afterMount = vi.mocked(getScheduleForEdit).mock.calls.length;
+
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    expect(vi.mocked(getScheduleForEdit).mock.calls.length).toBeGreaterThan(
+      afterMount
+    );
   });
 });

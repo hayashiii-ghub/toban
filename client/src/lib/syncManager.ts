@@ -26,6 +26,15 @@ export function isScheduleSyncPaused(scheduleId: string): boolean {
   return pausedScheduleIds.has(scheduleId);
 }
 
+/**
+ * 未送信のローカル変更が残っているか。
+ * サーバからの引き直し（useAutoSync）が、まだ送れていない編集を
+ * 上書きしないためのガードとして参照される。
+ */
+export function hasPendingSync(scheduleId: string): boolean {
+  return pendingSchedules.has(scheduleId) || timers.has(scheduleId);
+}
+
 export function pauseScheduleSync(scheduleId: string): void {
   pausedScheduleIds.add(scheduleId);
   const timer = timers.get(scheduleId);
