@@ -80,7 +80,7 @@ export const TEMPLATES: ScheduleTemplate[] = [
   {
     name: "園内おそうじ当番",
     emoji: "🌷",
-    designThemeId: "zarazara/crayon",
+    designThemeId: "sarasara/crayon",
     groups: [
       { id: "g1", tasks: ["保育室の掃除・消毒"], emoji: "🧹" },
       { id: "g2", tasks: ["トイレ掃除・補充"], emoji: "🚿" },
@@ -121,7 +121,7 @@ export const TEMPLATES: ScheduleTemplate[] = [
   {
     name: "バス添乗・お迎え当番",
     emoji: "🚌",
-    designThemeId: "zarazara/crayon",
+    designThemeId: "sarasara/crayon",
     groups: [
       { id: "g1", tasks: ["朝バス添乗", "乗車人数確認"], emoji: "🌅" },
       { id: "g2", tasks: ["帰りバス添乗", "降車確認"], emoji: "🌇" },
@@ -154,7 +154,7 @@ export const TEMPLATES: ScheduleTemplate[] = [
   {
     name: "預かり保育当番",
     emoji: "🕐",
-    designThemeId: "zarazara/crayon",
+    designThemeId: "sarasara/crayon",
     groups: [
       { id: "g1", tasks: ["早朝保育（7:30〜）"], emoji: "🌅" },
       { id: "g2", tasks: ["延長保育（〜18:00）"], emoji: "🌇" },
@@ -187,7 +187,7 @@ export const TEMPLATES: ScheduleTemplate[] = [
   {
     name: "午睡チェック当番",
     emoji: "😴",
-    designThemeId: "zarazara/crayon",
+    designThemeId: "sarasara/crayon",
     assignmentMode: "task",
     groups: [
       {
@@ -243,7 +243,7 @@ export const TEMPLATES: ScheduleTemplate[] = [
   {
     name: "アレルギー対応確認",
     emoji: "⚠️",
-    designThemeId: "zarazara/crayon",
+    designThemeId: "sarasara/crayon",
     assignmentMode: "task",
     groups: [
       {

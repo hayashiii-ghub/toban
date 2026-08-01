@@ -68,7 +68,7 @@ function TemplateDetailContent({
     : "";
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: "var(--lp-bg)" }}>
+    <main className="lp-surface min-h-screen">
       {/* パンくず */}
       <nav
         className="px-4 pt-6 pb-2 max-w-3xl mx-auto"

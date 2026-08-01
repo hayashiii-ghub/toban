@@ -359,8 +359,8 @@ export default function LandingPage() {
 
   return (
     <main
-      className="lp min-h-screen"
-      style={{ backgroundColor: C.pageBg, fontFamily: "'Kiwi Maru', serif" }}
+      className="lp lp-surface min-h-screen"
+      style={{ fontFamily: "'Kiwi Maru', serif" }}
     >
       {/* ── ヒーロー ── */}
       <section
