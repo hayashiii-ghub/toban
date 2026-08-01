@@ -265,6 +265,22 @@ export const en: Record<string, string> = {
   // Theme picker
   "theme.selectAria": "Select the {name} theme",
   "theme.forPrint": "Print-friendly",
+  "theme.textureLabel": "Texture",
+  "theme.colorLabel": "Color",
+  "texture.sarasara": "sarasara",
+  "texture.zarazara": "zarazara",
+  "texture.mochimochi": "mochimochi",
+
+  // Theme color axis
+  "themeColor.print": "Print",
+  "themeColor.blackboard": "Blackboard",
+  "themeColor.daidai": "Orange",
+  "themeColor.sunflower": "Sunflower",
+  "themeColor.hydrangea": "Hydrangea",
+  "themeColor.sakura": "Cherry blossom",
+  "themeColor.freshGreen": "Fresh green",
+  "themeColor.sky": "Sky",
+  "themeColor.nightSky": "Night sky",
 
   // Font selection (whole app)
   "settings.sectionFont": "Font",
