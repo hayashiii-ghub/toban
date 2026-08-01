@@ -45,6 +45,9 @@ export const ja: Record<string, string> = {
   "share.copyFailed": "コピーに失敗しました。URLを選択してコピーしてください",
   "share.editWarning":
     "このURLを知っている人は当番表を編集できます。信頼できる相手にのみ共有してください。",
+  // 日数は server/worker.ts の CLEANUP_RETENTION_DAYS と揃える
+  "share.retention":
+    "共有した当番表は、1年間まったく編集がないと自動で削除されます。",
 
   // ランディングページ
   "lp.docTitle": "当番表作成アプリ toban（トバン）｜無料で作成・印刷・共有",
@@ -353,6 +356,10 @@ export const ja: Record<string, string> = {
     "保存はできましたが公開に失敗しました。時間をおいて再度お試しください",
   "shareErr.save500":
     "サーバーで保存に失敗しました。時間をおいて再度お試しください",
+  "shareErr.rateLimit":
+    "アクセスが集中しています。少し待ってからもう一度お試しください",
+  "shareErr.tooLarge":
+    "当番表が大きすぎて保存できません。グループやタスクを減らしてください",
   "shareErr.publishDefault": "保存はできましたが公開に失敗しました",
   "shareErr.saveDefault":
     "保存に失敗しました。ネットワーク接続を確認してください",

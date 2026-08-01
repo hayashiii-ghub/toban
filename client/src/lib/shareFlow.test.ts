@@ -67,6 +67,31 @@ describe("getShareErrorMessage", () => {
     });
   });
 
+  // 既定の文言は「ネットワーク接続を確認してください」。回線が正常なこの2つが
+  // そこへ落ちると案内が逆向きになるので、専用文言から外れないよう固定する。
+  describe("ApiError status 429 / 413（回線は正常なエラー）", () => {
+    it("status=429 → 待てば直ることを伝える", () => {
+      const error = new ApiError("Too many requests", 429);
+      expect(getShareErrorMessage(error, "save")).toBe(
+        "アクセスが集中しています。少し待ってからもう一度お試しください"
+      );
+    });
+
+    it("status=429 は publish でも同じ案内にする", () => {
+      const error = new ApiError("Too many requests", 429);
+      expect(getShareErrorMessage(error, "publish")).toBe(
+        "アクセスが集中しています。少し待ってからもう一度お試しください"
+      );
+    });
+
+    it("status=413 → 減らす操作を促す", () => {
+      const error = new ApiError("Payload too large", 413);
+      expect(getShareErrorMessage(error, "save")).toBe(
+        "当番表が大きすぎて保存できません。グループやタスクを減らしてください"
+      );
+    });
+  });
+
   describe("通常の Error（非 ApiError）", () => {
     it("stage=save → 保存に失敗しました。ネットワーク接続を確認してください", () => {
       const error = new Error("Network error");

@@ -247,7 +247,13 @@ export function SettingsModal({
     );
     const cleanedGroups = editGroups
       .map(g => {
-        const cleaned = { ...g, tasks: g.tasks.filter(t => t.trim() !== "") };
+        // 絵文字は空欄にできるが、サーバは min(1) を要求する。空のまま送ると PUT が
+        // 400 になり、同期が黙って止まる（syncManager は 400 を破棄する）ため既定へ戻す。
+        const cleaned = {
+          ...g,
+          emoji: g.emoji.trim() || "✨",
+          tasks: g.tasks.filter(t => t.trim() !== ""),
+        };
         if (cleaned.memberIds) {
           const validIds = cleaned.memberIds.filter(id =>
             activeMemberIds.includes(id)

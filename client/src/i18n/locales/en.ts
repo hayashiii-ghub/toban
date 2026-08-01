@@ -47,6 +47,9 @@ export const en: Record<string, string> = {
     "Couldn't copy. Please select the URL and copy it manually.",
   "share.editWarning":
     "Anyone with this URL can edit the schedule. Share only with people you trust.",
+  // Keep in sync with CLEANUP_RETENTION_DAYS in server/worker.ts
+  "share.retention":
+    "Shared schedules are deleted automatically after one year with no edits.",
 
   // Landing page
   "lp.docTitle": "toban — Free Duty Roster App & Maker | Create, Print & Share",
@@ -358,6 +361,9 @@ export const en: Record<string, string> = {
   "shareErr.publish500":
     "Saved, but publishing failed. Please try again later.",
   "shareErr.save500": "The server failed to save. Please try again later.",
+  "shareErr.rateLimit": "Too many requests right now. Please try again shortly",
+  "shareErr.tooLarge":
+    "This schedule is too large to save. Try removing some groups or tasks",
   "shareErr.publishDefault": "Saved, but publishing failed",
   "shareErr.saveDefault":
     "Failed to save. Please check your network connection.",

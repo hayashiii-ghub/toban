@@ -75,10 +75,11 @@ async function doSync(
           `[syncManager] 認証エラー (${error.status}): スケジュール ${schedule.id} の同期をスキップ`
         );
         pendingSchedules.delete(schedule.id);
-      } else if (error.status === 400) {
-        // Validation error — non-retriable, discard pending
+      } else if (error.status === 400 || error.status === 413) {
+        // Validation error / payload too large — 同じ内容を送り直しても必ず失敗する。
+        // 保持し続けると復帰イベントのたびに無駄な再送が走るので破棄する。
         console.warn(
-          `[syncManager] データ不正 (400): スケジュール ${schedule.id} の同期をスキップ`,
+          `[syncManager] 送信内容が不正 (${error.status}): スケジュール ${schedule.id} の同期をスキップ`,
           error.message
         );
         pendingSchedules.delete(schedule.id);
