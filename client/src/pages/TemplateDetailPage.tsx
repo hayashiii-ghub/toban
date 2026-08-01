@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useParams, Link } from "wouter";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import {
   TEMPLATE_SEO_MAP,
   TEMPLATE_SEO_DATA,
@@ -16,6 +16,7 @@ import {
   serializeJsonLd,
 } from "@shared/jsonLd";
 import { TEMPLATES } from "@/rotation/constants";
+import { LpCtaLink } from "@/features/landing/LpCtaLink";
 import type { ScheduleTemplate } from "@/rotation/types";
 import { useT, useLocale } from "@/i18n";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -67,26 +68,26 @@ function TemplateDetailContent({
     : "";
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: "#FFF8E7" }}>
+    <main className="min-h-screen" style={{ backgroundColor: "var(--lp-bg)" }}>
       {/* パンくず */}
       <nav
         className="px-4 pt-6 pb-2 max-w-3xl mx-auto"
         aria-label={t("templates.breadcrumbAria")}
       >
-        <ol className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
+        <ol className="flex flex-wrap items-center gap-1 text-xs text-lp-text-muted">
           <li>
-            <Link href="/about" className="hover:underline text-amber-700">
+            <Link href="/about" className="hover:underline text-lp-primary">
               {t("footer.about")}
             </Link>
           </li>
           <li aria-hidden="true">/</li>
           <li>
-            <Link href="/templates" className="hover:underline text-amber-700">
+            <Link href="/templates" className="hover:underline text-lp-primary">
               {t("templates.breadcrumb")}
             </Link>
           </li>
           <li aria-hidden="true">/</li>
-          <li className="text-gray-700 font-bold">{template.name}</li>
+          <li className="text-lp-text-secondary font-bold">{template.name}</li>
         </ol>
       </nav>
 
@@ -95,17 +96,17 @@ function TemplateDetailContent({
         {/* カテゴリバッジ */}
         {category && (
           <div className="mb-3">
-            <span className="inline-block text-xs font-bold text-amber-700 bg-amber-100 rounded-full px-3 py-1">
+            <span className="inline-block text-xs font-bold text-lp-primary bg-lp-highlight/40 rounded-full px-3 py-1">
               {category.emoji} {catLabel}
             </span>
           </div>
         )}
 
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-lp-text leading-tight">
           {heading}
         </h1>
 
-        <p className="mt-4 text-sm sm:text-base text-gray-600 leading-relaxed">
+        <p className="mt-4 text-sm sm:text-base text-lp-text-secondary leading-relaxed">
           {intro}
         </p>
       </article>
@@ -113,12 +114,12 @@ function TemplateDetailContent({
       {/* テンプレート内容プレビュー */}
       <section className="px-4 pb-10 max-w-3xl mx-auto">
         <h2
-          className={`text-lg font-extrabold text-gray-900 ${locale === "en" ? "mb-1" : "mb-4"}`}
+          className={`text-lg font-extrabold text-lp-text ${locale === "en" ? "mb-1" : "mb-4"}`}
         >
           {t("templatesDetail.contents")}
         </h2>
         {locale === "en" && (
-          <p className="text-xs text-gray-400 mb-4">
+          <p className="text-xs text-lp-text-muted mb-4">
             {t("templatesDetail.jaNote")}
           </p>
         )}
@@ -128,13 +129,13 @@ function TemplateDetailContent({
           {template.groups.map((group, i) => (
             <div
               key={group.id}
-              className="rounded-xl border border-gray-200 bg-white p-4"
+              className="rounded-xl border border-lp-line bg-lp-card p-4"
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xl" aria-hidden="true">
                   {group.emoji}
                 </span>
-                <h3 className="text-sm font-bold text-gray-800">
+                <h3 className="text-sm font-bold text-lp-text">
                   {template.assignmentMode === "task"
                     ? t("templatesDetail.taskN", { n: i + 1 })
                     : t("templatesDetail.groupN", { n: i + 1 })}
@@ -144,9 +145,9 @@ function TemplateDetailContent({
                 {group.tasks.map(task => (
                   <li
                     key={task}
-                    className="text-sm text-gray-600 flex items-start gap-2"
+                    className="text-sm text-lp-text-secondary flex items-start gap-2"
                   >
-                    <span className="text-amber-500 mt-0.5">-</span>
+                    <span className="text-lp-primary mt-0.5">-</span>
                     {task}
                   </li>
                 ))}
@@ -157,7 +158,7 @@ function TemplateDetailContent({
 
         {/* メンバー例 */}
         <div className="mt-6">
-          <h3 className="text-sm font-bold text-gray-700 mb-2">
+          <h3 className="text-sm font-bold text-lp-text-secondary mb-2">
             {t("templatesDetail.memberExample", {
               count: template.members.length,
             })}
@@ -177,7 +178,7 @@ function TemplateDetailContent({
               </span>
             ))}
           </div>
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-lp-text-muted mt-2">
             {t("templatesDetail.editNote")}
           </p>
         </div>
@@ -188,13 +189,13 @@ function TemplateDetailContent({
         <section className="px-4 pb-10 max-w-3xl mx-auto">
           {content.body.map(section => (
             <div key={section.heading} className="mb-8 last:mb-0">
-              <h2 className="text-lg font-extrabold text-gray-900 mb-3">
+              <h2 className="text-lg font-extrabold text-lp-text mb-3">
                 {section.heading}
               </h2>
               {section.paragraphs.map((paragraph, i) => (
                 <p
                   key={i}
-                  className="text-sm sm:text-base text-gray-600 leading-relaxed mb-3 last:mb-0"
+                  className="text-sm sm:text-base text-lp-text-secondary leading-relaxed mb-3 last:mb-0"
                 >
                   {paragraph}
                 </p>
@@ -207,19 +208,19 @@ function TemplateDetailContent({
       {/* よくある質問 */}
       {content && content.faq.length > 0 && (
         <section className="px-4 pb-10 max-w-3xl mx-auto">
-          <h2 className="text-lg font-extrabold text-gray-900 mb-4">
+          <h2 className="text-lg font-extrabold text-lp-text mb-4">
             {heading}のよくある質問
           </h2>
           <dl>
             {content.faq.map(item => (
               <div
                 key={item.question}
-                className="rounded-xl border border-gray-200 bg-white p-4 mb-3 last:mb-0"
+                className="rounded-xl border border-lp-line bg-lp-card p-4 mb-3 last:mb-0"
               >
-                <dt className="text-sm font-bold text-gray-800 mb-2">
+                <dt className="text-sm font-bold text-lp-text mb-2">
                   {item.question}
                 </dt>
-                <dd className="text-sm text-gray-600 leading-relaxed">
+                <dd className="text-sm text-lp-text-secondary leading-relaxed">
                   {item.answer}
                 </dd>
               </div>
@@ -232,7 +233,7 @@ function TemplateDetailContent({
       <div className="px-4 pb-6 max-w-3xl mx-auto text-center">
         <Link
           href="/templates"
-          className="inline-flex items-center gap-2 text-sm font-bold text-amber-700 hover:underline"
+          className="inline-flex items-center gap-2 text-sm font-bold text-lp-primary hover:underline"
         >
           <ArrowLeft className="size-4" />
           {t("templatesDetail.backToList")}
@@ -241,7 +242,7 @@ function TemplateDetailContent({
 
       {/* 他のテンプレートへのリンク（内部リンク強化） */}
       <section className="px-4 pb-24 max-w-3xl mx-auto">
-        <h2 className="text-base font-extrabold text-gray-900 mb-3">
+        <h2 className="text-base font-extrabold text-lp-text mb-3">
           {t("templatesDetail.related")}
         </h2>
         <RelatedTemplates currentSlug={seo.slug} categoryId={seo.categoryId} />
@@ -271,13 +272,9 @@ function TemplateDetailContent({
       />
 
       {/* 固定CTAボタン */}
-      <a
-        href={`/?template=${seo.templateIndex}`}
-        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-xl bg-[#2E6B4F] hover:bg-[#245A41] text-white font-bold px-5 py-3 shadow-lg transition-colors print:hidden"
-      >
+      <LpCtaLink href={`/?template=${seo.templateIndex}`} variant="fixed">
         {t("templatesDetail.createFromThis")}
-        <ArrowRight className="size-4" />
-      </a>
+      </LpCtaLink>
     </main>
   );
 }
@@ -310,12 +307,12 @@ function RelatedTemplates({
           <Link
             key={tpl.slug}
             href={`/templates/${tpl.slug}`}
-            className="group flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 hover:border-amber-300 transition-colors"
+            className="group flex items-center gap-3 rounded-lg border border-lp-line bg-lp-card p-3 hover:border-lp-primary transition-colors"
           >
             <span className="text-lg" aria-hidden="true">
               {t.emoji}
             </span>
-            <span className="text-sm font-bold text-gray-700 group-hover:text-amber-700 transition-colors">
+            <span className="text-sm font-bold text-lp-text-secondary group-hover:text-lp-primary transition-colors">
               {t.name}
             </span>
           </Link>

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { JUNBAN_PAGE_SEO, JUNBAN_PAGE_SEO_EN } from "@shared/seo-templates";
 import {
   faqPageSchema,
@@ -9,6 +9,7 @@ import {
 } from "@shared/jsonLd";
 import type { Member, TaskGroup } from "@/rotation/types";
 import { RotationDisc } from "@/features/home/RotationDisc";
+import { LpCtaLink } from "@/features/landing/LpCtaLink";
 import { useT, useLocale } from "@/i18n";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
@@ -57,28 +58,28 @@ export default function JunbanPage() {
   }, []);
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: "#FFF8E7" }}>
+    <main className="min-h-screen" style={{ backgroundColor: "var(--lp-bg)" }}>
       {/* パンくず */}
       <nav
         className="px-4 pt-6 pb-2 max-w-3xl mx-auto"
         aria-label={t("templates.breadcrumbAria")}
       >
-        <ol className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
+        <ol className="flex flex-wrap items-center gap-1 text-xs text-lp-text-muted">
           <li>
-            <Link href="/about" className="hover:underline text-amber-700">
+            <Link href="/about" className="hover:underline text-lp-primary">
               {t("footer.about")}
             </Link>
           </li>
           <li aria-hidden="true">/</li>
-          <li className="text-gray-700 font-bold">{seo.heading}</li>
+          <li className="text-lp-text-secondary font-bold">{seo.heading}</li>
         </ol>
       </nav>
 
       <article className="px-4 pb-8 max-w-3xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-lp-text leading-tight">
           {seo.heading}
         </h1>
-        <p className="mt-4 text-sm sm:text-base text-gray-600 leading-relaxed">
+        <p className="mt-4 text-sm sm:text-base text-lp-text-secondary leading-relaxed">
           {seo.intro}
         </p>
 
@@ -86,9 +87,9 @@ export default function JunbanPage() {
           {seo.benefits.map(b => (
             <li
               key={b}
-              className="text-sm sm:text-base text-gray-700 flex items-start gap-2"
+              className="text-sm sm:text-base text-lp-text-secondary flex items-start gap-2"
             >
-              <span className="text-amber-500 mt-0.5" aria-hidden="true">
+              <span className="text-lp-primary mt-0.5" aria-hidden="true">
                 ●
               </span>
               {b}
@@ -99,7 +100,7 @@ export default function JunbanPage() {
 
       {/* 円盤の実例 */}
       <section className="px-4 pb-10 max-w-2xl mx-auto">
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
+        <div className="rounded-2xl border border-lp-line bg-lp-card p-4 sm:p-6">
           <RotationDisc
             groups={SAMPLE_GROUPS}
             members={SAMPLE_MEMBERS}
@@ -111,32 +112,28 @@ export default function JunbanPage() {
 
       {/* CTA: 円盤ビューへ直接着地 */}
       <div className="px-4 pb-10 max-w-3xl mx-auto text-center">
-        <a
-          href="/?view=disc"
-          className="inline-flex items-center gap-2 rounded-xl bg-[#2E6B4F] hover:bg-[#245A41] text-white font-bold px-6 py-3 shadow-lg transition-colors"
-        >
+        <LpCtaLink href="/?view=disc">
           {locale === "en"
             ? "Decide order with the wheel"
             : "円盤ビューで順番を決める"}
-          <ArrowRight className="size-4" />
-        </a>
+        </LpCtaLink>
       </div>
 
       {/* FAQ */}
       <section className="px-4 pb-10 max-w-3xl mx-auto">
-        <h2 className="text-lg font-extrabold text-gray-900 mb-4">
+        <h2 className="text-lg font-extrabold text-lp-text mb-4">
           {t("lp.faqHeading")}
         </h2>
         <dl className="flex flex-col gap-4">
           {seo.faq.map(f => (
             <div
               key={f.question}
-              className="rounded-xl border border-gray-200 bg-white p-4"
+              className="rounded-xl border border-lp-line bg-lp-card p-4"
             >
-              <dt className="text-sm font-bold text-gray-800 mb-1">
+              <dt className="text-sm font-bold text-lp-text mb-1">
                 {f.question}
               </dt>
-              <dd className="text-sm text-gray-600 leading-relaxed">
+              <dd className="text-sm text-lp-text-secondary leading-relaxed">
                 {f.answer}
               </dd>
             </div>
@@ -147,7 +144,7 @@ export default function JunbanPage() {
       <div className="px-4 pb-24 max-w-3xl mx-auto text-center">
         <Link
           href="/templates"
-          className="inline-flex items-center gap-2 text-sm font-bold text-amber-700 hover:underline"
+          className="inline-flex items-center gap-2 text-sm font-bold text-lp-primary hover:underline"
         >
           <ArrowLeft className="size-4" />
           {t("templates.breadcrumb")}

@@ -8,6 +8,7 @@ import {
   type TemplateSEO,
 } from "@shared/seo-templates";
 import { TEMPLATES } from "@/rotation/constants";
+import { LpCtaLink } from "@/features/landing/LpCtaLink";
 import {
   breadcrumbSchema,
   itemListSchema,
@@ -44,20 +45,20 @@ export default function TemplatesPage() {
   );
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: "#FFF8E7" }}>
+    <main className="min-h-screen" style={{ backgroundColor: "var(--lp-bg)" }}>
       {/* パンくず */}
       <nav
         className="px-4 pt-6 pb-2 max-w-3xl mx-auto"
         aria-label={t("templates.breadcrumbAria")}
       >
-        <ol className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
+        <ol className="flex flex-wrap items-center gap-1 text-xs text-lp-text-muted">
           <li>
-            <Link href="/about" className="hover:underline text-amber-700">
+            <Link href="/about" className="hover:underline text-lp-primary">
               {t("footer.about")}
             </Link>
           </li>
           <li aria-hidden="true">/</li>
-          <li className="text-gray-700 font-bold">
+          <li className="text-lp-text-secondary font-bold">
             {t("templates.breadcrumb")}
           </li>
         </ol>
@@ -65,10 +66,10 @@ export default function TemplatesPage() {
 
       {/* ヘッダー */}
       <div className="px-4 pb-6 max-w-3xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-lp-text leading-tight">
           {t("templates.heading")}
         </h1>
-        <p className="mt-4 text-sm sm:text-base text-gray-600 leading-relaxed">
+        <p className="mt-4 text-sm sm:text-base text-lp-text-secondary leading-relaxed">
           {t("templates.subA")}
           <strong>{t("templates.subFree")}</strong>
           {t("templates.subB", { count: TEMPLATE_SEO_DATA.length })}
@@ -85,11 +86,11 @@ export default function TemplatesPage() {
               locale === "en" ? TEMPLATE_CATEGORIES_EN[cat.id] : undefined;
             return (
               <section key={cat.id} id={cat.id}>
-                <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 mb-1">
+                <h2 className="text-lg sm:text-xl font-extrabold text-lp-text mb-1">
                   <span className="mr-2">{cat.emoji}</span>
                   {catEn?.label ?? cat.label}
                 </h2>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-lp-text-muted mb-4">
                   {catEn?.description ?? cat.description}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -100,7 +101,7 @@ export default function TemplatesPage() {
                       <Link
                         key={tpl.slug}
                         href={`/templates/${tpl.slug}`}
-                        className="group block rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md hover:border-amber-300 transition-all duration-150"
+                        className="group block rounded-xl border border-lp-line bg-lp-card p-4 shadow-sm hover:shadow-md hover:border-lp-primary transition-all duration-150"
                       >
                         <div className="flex items-start gap-3">
                           <span
@@ -110,15 +111,15 @@ export default function TemplatesPage() {
                             {template.emoji}
                           </span>
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm font-extrabold text-gray-900 group-hover:text-amber-700 transition-colors">
+                            <div className="text-sm font-extrabold text-lp-text group-hover:text-lp-primary transition-colors">
                               {template.name}
                             </div>
-                            <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                            <div className="text-xs text-lp-text-muted mt-1 line-clamp-2">
                               {template.groups
                                 .map(g => g.tasks.join("、"))
                                 .join(" / ")}
                             </div>
-                            <div className="text-xs text-gray-400 mt-1">
+                            <div className="text-xs text-lp-text-muted mt-1">
                               {template.groups.length}
                               {template.assignmentMode === "task"
                                 ? "タスク"
@@ -126,7 +127,7 @@ export default function TemplatesPage() {
                               ・{template.members.length}名
                             </div>
                           </div>
-                          <ArrowRight className="size-4 text-gray-300 group-hover:text-amber-500 flex-shrink-0 mt-1 transition-colors" />
+                          <ArrowRight className="size-4 text-lp-line group-hover:text-lp-primary flex-shrink-0 mt-1 transition-colors" />
                         </div>
                       </Link>
                     );
@@ -142,7 +143,7 @@ export default function TemplatesPage() {
       <div className="px-4 pb-24 max-w-3xl mx-auto text-center">
         <Link
           href="/about"
-          className="inline-flex items-center gap-2 text-sm font-bold text-amber-700 hover:underline"
+          className="inline-flex items-center gap-2 text-sm font-bold text-lp-primary hover:underline"
         >
           <ArrowLeft className="size-4" />
           {t("footer.about")}
@@ -172,13 +173,9 @@ export default function TemplatesPage() {
       />
 
       {/* 固定CTAボタン */}
-      <a
-        href="/"
-        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-xl bg-[#2E6B4F] hover:bg-[#245A41] text-white font-bold px-5 py-3 shadow-lg transition-colors print:hidden"
-      >
+      <LpCtaLink href="/" variant="fixed">
         {t("lp.createSchedule")}
-        <ArrowRight className="size-4" />
-      </a>
+      </LpCtaLink>
     </main>
   );
 }
