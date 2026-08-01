@@ -45,6 +45,28 @@ export function applyThemeToRoot(theme: DesignTheme) {
   root.style.setProperty("--dt-shadow-card-lg", shadows.cardLg);
 
   root.style.setProperty("--dt-hover-translate", effects.hoverTranslate);
+
+  // 質感（surface）を持たない旧テーマは、今までの見た目と同じ既定値で埋める
+  const surface = theme.surface;
+  root.style.setProperty(
+    "--dt-chip-border-width",
+    surface?.chipBorderWidth ?? "2px"
+  );
+  root.style.setProperty("--dt-chip-shadow", surface?.chipShadow ?? "none");
+  root.style.setProperty("--dt-shadow-print", surface?.printShadow ?? "none");
+  root.style.setProperty(
+    "--dt-print-border-width",
+    surface?.printBorderWidth ?? borders.width
+  );
+  root.style.setProperty("--dt-surface-texture", surface?.texture ?? "none");
+  root.style.setProperty(
+    "--dt-card-header-bg",
+    surface?.headerBg ??
+      "color-mix(in srgb, var(--dt-page-bg) 60%, var(--dt-card-bg))"
+  );
+
+  // 紙面は選んだ質感に追従する。旧テーマは質感を持たないので無地のまま
+  root.style.setProperty("--dt-page-texture", surface?.pageTexture ?? "none");
 }
 
 interface DesignThemeProviderProps {

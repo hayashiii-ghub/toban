@@ -12,7 +12,7 @@ export const DEFAULT_APP_STATE: AppState = {
       name: "はじめてガイド",
       rotation: 0,
       assignmentMode: "task",
-      designThemeId: "chalkboard",
+      designThemeId: "sarasara/chalkboard",
       groups: [
         {
           id: "g1",
@@ -91,7 +91,7 @@ export const DEFAULT_APP_STATE_EN: AppState = {
       name: "Getting Started",
       rotation: 0,
       assignmentMode: "task",
-      designThemeId: "chalkboard",
+      designThemeId: "sarasara/chalkboard",
       groups: [
         {
           id: "g1",

@@ -258,6 +258,22 @@ export const ja: Record<string, string> = {
   // テーマ選択
   "theme.selectAria": "{name}テーマを選択",
   "theme.forPrint": "印刷向け",
+  "theme.textureLabel": "質感",
+  "theme.colorLabel": "色",
+  "texture.sarasara": "さらさら",
+  "texture.zarazara": "ざらざら",
+  "texture.mochimochi": "もちもち",
+
+  // テーマの色軸。メンバーの色パレットは color.* を使う
+  "themeColor.print": "いんさつ",
+  "themeColor.blackboard": "こくばん",
+  "themeColor.daidai": "だいだい",
+  "themeColor.sunflower": "ひまわり",
+  "themeColor.hydrangea": "あじさい",
+  "themeColor.sakura": "さくら",
+  "themeColor.freshGreen": "わかば",
+  "themeColor.sky": "そら",
+  "themeColor.nightSky": "よぞら",
 
   // フォント選択（アプリ全体）
   "settings.sectionFont": "文字",

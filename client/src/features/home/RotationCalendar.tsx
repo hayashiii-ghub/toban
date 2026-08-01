@@ -153,9 +153,8 @@ export function RotationCalendar({
     <div className="px-3 sm:px-4 py-3 sm:py-4 pb-8 sm:pb-12 rotation-print-calendar-section">
       <div className="max-w-4xl mx-auto">
         <m.div
-          className="theme-border theme-shadow-sm p-3 sm:p-5 rotation-print-card"
+          className="theme-border theme-shadow-sm theme-surface p-3 sm:p-5 rotation-print-card"
           style={{
-            backgroundColor: "var(--dt-card-bg)",
             borderRadius: "var(--dt-border-radius)",
           }}
           initial={{ y: 10, opacity: 0 }}

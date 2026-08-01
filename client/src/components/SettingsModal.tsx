@@ -18,7 +18,7 @@ import { AccordionSection } from "./settings/AccordionSection";
 import { DesignThemePicker } from "./settings/DesignThemePicker";
 import { FontPicker } from "./settings/FontPicker";
 import { RotationConfigEditor } from "./settings/RotationConfigEditor";
-import { getThemeById } from "@/rotation/designThemes";
+import { getThemeById, getThemeLabel } from "@/rotation/designThemes";
 import { getFontById, getSavedFontId } from "@/fonts";
 import { applyThemeToRoot } from "@/contexts/DesignThemeContext";
 import { useT } from "@/i18n";
@@ -487,7 +487,7 @@ export function SettingsModal({
           {/* テーマ */}
           <AccordionSection
             title={t("settings.sectionDesign")}
-            summary={getThemeById(editDesignThemeId).name}
+            summary={getThemeLabel(editDesignThemeId, t)}
             defaultOpen={false}
           >
             <DesignThemePicker

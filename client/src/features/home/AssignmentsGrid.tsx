@@ -48,10 +48,9 @@ export function AssignmentsGrid({
                     ? `${group.tasks[0] ?? ""}: ${member.name}`
                     : `${member.name}: ${group.tasks.join("・")}`
                 }
-                className="theme-border theme-shadow rotation-print-card overflow-hidden flex flex-col"
+                className="theme-border theme-shadow theme-surface rotation-print-card overflow-hidden flex flex-col"
                 style={{
                   borderRadius: "var(--dt-border-radius)",
-                  backgroundColor: "var(--dt-card-bg)",
                 }}
                 initial={
                   stagger
@@ -83,8 +82,7 @@ export function AssignmentsGrid({
                     <div
                       className="flex-1 px-3 sm:px-4 py-3 sm:py-4 text-center"
                       style={{
-                        backgroundColor:
-                          "color-mix(in srgb, var(--dt-page-bg) 60%, var(--dt-card-bg))",
+                        backgroundColor: "var(--dt-card-header-bg)",
                       }}
                     >
                       <div
@@ -109,7 +107,8 @@ export function AssignmentsGrid({
                         style={{
                           backgroundColor: member.bgColor,
                           borderRadius: "var(--dt-border-radius-sm)",
-                          border: `2px solid ${member.color}40`,
+                          border: `var(--dt-chip-border-width, 2px) solid ${member.color}40`,
+                          boxShadow: "var(--dt-chip-shadow, none)",
                           color: member.textColor,
                         }}
                         initial={
@@ -166,7 +165,8 @@ export function AssignmentsGrid({
                           style={{
                             backgroundColor: member.bgColor,
                             borderRadius: "var(--dt-border-radius-sm)",
-                            border: `2px solid ${member.color}40`,
+                            border: `var(--dt-chip-border-width, 2px) solid ${member.color}40`,
+                            boxShadow: "var(--dt-chip-shadow, none)",
                             color: member.textColor,
                           }}
                           initial={

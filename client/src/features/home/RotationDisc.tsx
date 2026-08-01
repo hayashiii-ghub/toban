@@ -59,9 +59,8 @@ export function RotationDisc({
     return (
       <div className="px-3 sm:px-4 py-3 sm:py-4 rotation-print-disc-section">
         <div
-          className="max-w-2xl mx-auto theme-border theme-shadow-sm p-4 text-center"
+          className="max-w-2xl mx-auto theme-border theme-shadow-sm theme-surface p-4 text-center"
           style={{
-            backgroundColor: "var(--dt-card-bg)",
             borderRadius: "var(--dt-border-radius)",
           }}
         >

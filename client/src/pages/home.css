@@ -2,6 +2,13 @@
   display: none;
 }
 
+/* 紙面。選んだ質感の粒を重ねる（値は質感側が --dt-page-texture で渡す）。
+   背景色はテーマが持つので、ここは粒だけ乗せる。
+   印刷では下の @media print がページ背景を白へ落とすため、粒は画面にだけ出る。 */
+.rotation-page {
+  background-image: var(--dt-page-texture, none);
+}
+
 @page {
   margin: 8mm;
 }
@@ -34,8 +41,13 @@
   .rotation-print-card {
     break-inside: avoid;
     page-break-inside: avoid;
-    box-shadow: none !important;
-    border: var(--dt-border-width, 2px) solid var(--dt-border-color, #333) !important;
+    /* 影を一律で消すと、陰影で立体を出す質感（もちもち）が印刷で潰れる。
+       紙に落とす必要のない外側の影だけ質感側が落とし、inset は残す。 */
+    box-shadow: var(--dt-shadow-print, none) !important;
+    /* 画面で枠を持たない質感（もちもち）は、紙では inset の陰影が白黒でほぼ飛んで
+       カードの輪郭が消える。印刷用の太さを質感側から受け取る。 */
+    border: var(--dt-print-border-width, var(--dt-border-width, 2px)) solid
+      var(--dt-border-color, #333) !important;
   }
 
   .rotation-print-header {
