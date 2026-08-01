@@ -142,6 +142,10 @@
   --lp-hero-bg: #294a3a;
   --lp-hero-text: #f3eedf;
   --lp-hero-subtext: #bfd2c4;
+  /* 紙面の粒。designThemes.ts の SARA_PAGE（さらさらの紙面）と同じ値。
+     LP は遅延ロードなので、テーマ定義を丸ごと読み込まずに済むよう配色と同じく複製する。
+     さらさらの粒を変えたらこちらも合わせること */
+  --lp-page-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='sp'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.015 0.5' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23sp)' opacity='0.1'/%3E%3C/svg%3E");
 }
 
 @layer base {
@@ -208,6 +212,13 @@
   /* Design Theme utilities */
   .theme-border {
     border: var(--dt-border-width) solid var(--dt-border-color);
+  }
+
+  /* LP・SEOページの紙面。アプリ本体と同じ「さらさら」の粒を乗せて手ざわりを揃える。
+     配色トークンと同じく、テーマ切替では変化しない固定値。 */
+  .lp-surface {
+    background-color: var(--lp-bg);
+    background-image: var(--lp-page-texture);
   }
 
   /* カード面。質感の粒を乗せるのはこの面だけで、モーダルやダイアログには
