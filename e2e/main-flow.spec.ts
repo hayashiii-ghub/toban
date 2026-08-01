@@ -68,8 +68,38 @@ test.describe("メインフロー", () => {
   });
 
   test("共有ボタンが存在する", async ({ page }) => {
-    // API 未接続のため共有フローの完走はスキップ、ボタンの存在のみ確認
     await expect(page.getByRole("button", { name: "共有" })).toBeVisible();
+  });
+
+  // 共有モーダルは実 API がないと開けないため、ユニットテストでは
+  // react-qr-code をモックしている。その結果 QRCode の import が壊れていても
+  // 誰も気づけず、本番で共有が丸ごと落ちた（React error #130）。
+  // ここだけは本物のモジュールを描画して、モーダルが開くことを保証する。
+  test("共有モーダルが開く（API をスタブ）", async ({ page }) => {
+    await page.route("**/api/schedules**", route => {
+      const isPublish = new URL(route.request().url()).pathname.endsWith(
+        "/publish"
+      );
+      const body =
+        route.request().method() === "POST" && !isPublish
+          ? '{"slug":"AbCdEfGhIj","editToken":"tok"}'
+          : '{"ok":true}';
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body,
+      });
+    });
+
+    await page.getByRole("button", { name: "共有" }).click();
+
+    const modal = page.getByRole("dialog");
+    await expect(modal).toBeVisible({ timeout: 10000 });
+    await expect(modal.getByText("/s/AbCdEfGhIj")).toBeVisible();
+    // QRCode が描画されていること（壊れていると SVG ごと出ない）
+    await expect(modal.locator("svg[viewBox]").first()).toBeVisible();
+    // エラーバウンダリに落ちていないこと
+    await expect(page.getByText("予期しないエラーが発生しました")).toBeHidden();
   });
 
   test("ランディングページが表示される", async ({ page }) => {

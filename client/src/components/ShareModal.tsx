@@ -1,7 +1,9 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { m } from "framer-motion";
 import { X, Copy, Check, AlertTriangle } from "lucide-react";
-import QRCode from "react-qr-code";
+// 既定 import だと Vite の CJS interop でモジュールオブジェクトが渡り、
+// React が要素の型を解決できずモーダルごと落ちる（React error #130）。
+import { QRCode } from "react-qr-code";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { encodeShareTransferData } from "@/lib/shareTransfer";

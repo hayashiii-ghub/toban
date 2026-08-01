@@ -31,11 +31,14 @@ vi.mock("framer-motion", () => {
   };
 });
 
-vi.mock("react-qr-code", () => ({
-  default: (props: { value: string }) => (
+// このモックがある限り、実際の import が壊れていてもここでは気づけない。
+// 本物を描画する担保は e2e の「共有モーダルが開く」に置いてある。
+vi.mock("react-qr-code", () => {
+  const QRCode = (props: { value: string }) => (
     <div data-testid="qr-code" data-value={props.value} />
-  ),
-}));
+  );
+  return { QRCode, default: QRCode };
+});
 
 Object.assign(navigator, {
   clipboard: { writeText: vi.fn(() => Promise.resolve()) },
