@@ -76,11 +76,27 @@ describe("ShareModal", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("QRコードが表示される", () => {
+  // 共有元の端末では自分のQRを読めないので、既定は畳んである
+  it("QRコードは初期状態では表示されず、トグルで開く", () => {
     render(<ShareModal {...defaultProps} />);
+    expect(screen.queryByTestId("qr-code")).toBeNull();
+
+    fireEvent.click(screen.getByText("QRコードを表示"));
     const qr = screen.getByTestId("qr-code");
-    expect(qr).toBeTruthy();
     expect(qr.dataset.value).toContain("/s/test-slug");
+  });
+
+  // 編集URLを渡す前に警告を読ませたいので、コピー操作より上に出す
+  it("編集タブでは警告がコピーボタンより前にある", () => {
+    render(<ShareModal {...defaultProps} />);
+    fireEvent.click(screen.getByText("✏️ 編集もできる"));
+
+    const warning = screen.getByText(/信頼できる相手にのみ共有/);
+    const copyButton = screen.getByText("URLをコピー");
+    expect(
+      warning.compareDocumentPosition(copyButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
   // 共有した当番表は放置すると自動削除される。共有する画面で必ず伝える。

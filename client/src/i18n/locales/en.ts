@@ -39,6 +39,8 @@ export const en: Record<string, string> = {
   "share.descEdit":
     'Use this to edit together. You can give edit access to "{name}".',
   "share.lineShare": "Share on LINE",
+  "share.showQr": "Show QR code",
+  "share.hideQr": "Hide QR code",
   "share.copied": "Copied",
   "share.copyUrl": "Copy URL",
   "share.copiedView": "View link copied",
