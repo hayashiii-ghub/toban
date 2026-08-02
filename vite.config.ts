@@ -28,17 +28,13 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\/api\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "api-cache",
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
-              networkTimeoutSeconds: 5,
-            },
-          },
-        ],
+        // /api/ は runtimeCaching に載せない。
+        // Cache Storage は cache-control: no-store を尊重しないので、載せると
+        // 通信できないときに古い応答が 200 として返る。useAutoSync の引き直しは
+        // throw しか見ていないため、それを最新のサーバ内容として取り込み、
+        // ローカルの新しい編集を巻き戻したうえでサーバへも書き戻してしまう。
+        // オフライン時の読み取りは localStorage が担っているので、外して困らない。
+        // 既存端末に残る api-cache は、読む経路が無くなるので参照されない。
       },
     }),
   ],
