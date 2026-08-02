@@ -38,6 +38,8 @@ export const ja: Record<string, string> = {
   "share.descEdit":
     "一緒に編集したいときはこちら。「{name}」の編集権限を相手に渡せます。",
   "share.lineShare": "LINEで共有",
+  "share.showQr": "QRコードを表示",
+  "share.hideQr": "QRコードを隠す",
   "share.copied": "コピーしました",
   "share.copyUrl": "URLをコピー",
   "share.copiedView": "閲覧用URLをコピーしました",

@@ -18,3 +18,6 @@ Object.defineProperty(window, "matchMedia", {
 
 // window.print stub
 window.print = vi.fn();
+
+// jsdom は scrollIntoView を実装していない
+Element.prototype.scrollIntoView = vi.fn();
