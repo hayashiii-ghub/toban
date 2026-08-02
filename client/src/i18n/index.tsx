@@ -17,8 +17,6 @@ import {
 import { ja } from "./locales/ja";
 import { en } from "./locales/en";
 
-export type { Locale };
-
 const LANG_STORAGE_KEY = "toban-lang";
 
 const dicts: Record<Locale, Record<string, string>> = { ja, en };

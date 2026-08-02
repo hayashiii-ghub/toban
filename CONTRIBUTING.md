@@ -28,8 +28,8 @@ pnpm dev:full
 ## PR の出し方
 
 1. リポジトリをフォークする
-2. フィーチャーブランチを作成する（`git checkout -b feature/my-feature`）
-3. 変更をコミットする（`git commit -m '機能: 〇〇を追加'`）
+2. フィーチャーブランチを作成する（`git checkout -b feat/my-feature`）
+3. 変更をコミットする（`git commit -m 'feat: 〇〇を追加'`）
 4. ブランチをプッシュする（`git push origin feature/my-feature`）
 5. Pull Request を作成する
 
@@ -45,4 +45,7 @@ pnpm format:check && pnpm check && pnpm lint && pnpm test && pnpm build
 - **Prettier** でコードを整形してください（`pnpm format`）。CI が `prettier --check` で検査するため、整形漏れがあると落ちます
 - **ESLint** のルールに従ってください（`pnpm lint`）
 - 共有型は `shared/types.ts` に定義してください
-- UI の文字列はすべて日本語で記述してください
+- 入力の文字数・件数の上限は `shared/limits.ts` に定義してください（server / UI / WebMCP の単一の真実源）
+- UI の文字列は `client/src/i18n` の辞書（ja / en）を通してください。直接埋め込まず、両方に追加します
+- 翻訳するのは UI の枠だけです。テンプレート・テーマ等のコンテンツは日本語のままにしてください
+- コミットメッセージは `feat:` `fix:` `chore:` `docs:` などの接頭辞 + 日本語の要約で書いてください

@@ -3,7 +3,7 @@
 
 export type Locale = "ja" | "en";
 
-export const LOCALES: readonly Locale[] = ["ja", "en"];
+const LOCALES: readonly Locale[] = ["ja", "en"];
 export const DEFAULT_LOCALE: Locale = "ja";
 
 export function isLocale(value: unknown): value is Locale {

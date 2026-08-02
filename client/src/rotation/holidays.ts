@@ -9,7 +9,7 @@ import {
   startOfLocalDay,
 } from "./dateUtils";
 
-export interface JapaneseHoliday {
+interface JapaneseHoliday {
   date: string; // "YYYY-MM-DD"
   name: string;
 }

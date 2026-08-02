@@ -10,8 +10,6 @@ export const CONTACT_CATEGORIES = [
 
 export const contactCategorySchema = z.enum(CONTACT_CATEGORIES);
 
-export type ContactCategory = z.infer<typeof contactCategorySchema>;
-
 /** タスクグループスキーマ */
 export const taskGroupSchema = z.object({
   id: z.string(),

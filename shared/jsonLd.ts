@@ -6,7 +6,7 @@
  * （</script> ブレイク・XSS の defense-in-depth）。
  */
 
-export type JsonLdObject = Record<string, unknown>;
+type JsonLdObject = Record<string, unknown>;
 
 export function faqPageSchema(
   faq: { question: string; answer: string }[]

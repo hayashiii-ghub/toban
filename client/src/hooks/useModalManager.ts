@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 
 export type ModalType = "settings" | "newSchedule" | "confirmDelete" | null;
 
-export interface ModalState {
+interface ModalState {
   type: ModalType;
   /** confirmDelete 時の対象 scheduleId */
   deleteTargetId: string | null;
