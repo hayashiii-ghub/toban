@@ -9,8 +9,7 @@ import { useScheduleManager } from "@/hooks/useScheduleManager";
 import { useShareFlow } from "@/hooks/useShareFlow";
 import { useTabDragDrop } from "@/hooks/useTabDragDrop";
 import { useViewTab } from "@/hooks/useViewTab";
-import { safeGetItem } from "@/lib/storage";
-import { STORAGE_KEY, TEMPLATES } from "@/rotation/constants";
+import { TEMPLATES } from "@/rotation/constants";
 import { computeAssignments, getEffectiveRotation } from "@/rotation/utils";
 
 export function useHomeState() {
@@ -97,6 +96,10 @@ export function useHomeState() {
     saveState(state);
   }, [state, saveState]);
 
+  // /templates からの ?template=N 着地だけをここで処理する。
+  // 保存データが無い初回訪問は loadState が defaultState（「はじめてガイド」）を
+  // seed する設計で、モーダルは出さない（出すと useOnboarding のツアーが
+  // isModalOpen で抑制されてしまう）。
   useEffect(() => {
     if (mountedRef.current) return;
     mountedRef.current = true;
@@ -107,11 +110,9 @@ export function useHomeState() {
       if (addScheduleFromTemplateIndex(idx, TEMPLATES)) {
         closeModal();
       }
-    } else if (safeGetItem(STORAGE_KEY) === null) {
-      openNewSchedule();
     }
     window.history.replaceState({}, "", window.location.pathname);
-  }, [addScheduleFromTemplateIndex, closeModal, openNewSchedule]);
+  }, [addScheduleFromTemplateIndex, closeModal]);
 
   const onAddSchedule = useCallback(
     (template: Parameters<typeof handleAddSchedule>[0]) => {
