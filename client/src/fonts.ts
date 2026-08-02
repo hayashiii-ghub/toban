@@ -2,7 +2,7 @@
 // localStorage に保存する個人設定。既定の Kiwi Maru は index.html で先読み済み。
 // それ以外は選択時に初めて取得する（遅延ロード）ので、既定ユーザーの負荷は増えない。
 
-export interface AppFont {
+interface AppFont {
   id: string;
   /** i18n キー（表示名） */
   labelKey: string;
@@ -44,7 +44,7 @@ export const APP_FONTS: AppFont[] = [
   },
 ];
 
-export const DEFAULT_FONT_ID = "standard";
+const DEFAULT_FONT_ID = "standard";
 const FONT_STORAGE_KEY = "toban-font";
 
 export function getFontById(id: string | null | undefined): AppFont {

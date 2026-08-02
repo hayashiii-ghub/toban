@@ -3,7 +3,7 @@ type RequiredColumn = {
   sql: string;
 };
 
-export type SchedulesSchemaStatus = {
+type SchedulesSchemaStatus = {
   requiredColumns: string[];
   existingColumns: string[];
   missingColumns: string[];

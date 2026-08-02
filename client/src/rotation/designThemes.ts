@@ -587,7 +587,7 @@ export const DEFAULT_HEADER_BG =
 const TRANSLUCENT_HEADER_BG =
   "color-mix(in srgb, var(--dt-page-bg) 60%, transparent)";
 
-export interface DesignTexture {
+interface DesignTexture {
   id: string;
   /** 日本語名。合成テーマの name を組み立てるのに使う */
   name: string;
@@ -600,7 +600,7 @@ export interface DesignTexture {
   surface: DesignThemeSurface;
 }
 
-export interface DesignColor {
+interface DesignColor {
   id: string;
   /** 日本語名。合成テーマの name を組み立てるのに使う */
   name: string;

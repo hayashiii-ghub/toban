@@ -13,14 +13,14 @@
  * - toban に無い機能（通知・リマインダー等）は書かない
  */
 
-export interface TemplateContentSection {
+interface TemplateContentSection {
   /** h2 見出し */
   heading: string;
   /** 段落。1段落あたり100〜250字程度 */
   paragraphs: string[];
 }
 
-export interface TemplateContent {
+interface TemplateContent {
   body: TemplateContentSection[];
   faq: { question: string; answer: string }[];
 }

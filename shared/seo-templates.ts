@@ -24,7 +24,7 @@ export interface TemplateSEO {
   categoryId: string;
 }
 
-export interface TemplateCategory {
+interface TemplateCategory {
   id: string;
   label: string;
   emoji: string;
@@ -835,7 +835,7 @@ export const COMMON_FAQ_EN: { question: string; answer: string }[] = [
  * 円盤は固定ローテーションを回す方式でランダム抽選ではないため、コピーは
  * 「順番が回る・一目でわかる」見せ方に限定し、抽選は約束しない（FAQ で明記）。
  */
-export interface JunbanPageSEO {
+interface JunbanPageSEO {
   path: string;
   title: string;
   description: string;
