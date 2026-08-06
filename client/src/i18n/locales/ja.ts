@@ -73,7 +73,7 @@ export const ja: Record<string, string> = {
   "lp.feat.print.label": "印刷がきれい",
   "lp.feat.print.desc":
     "カード・一覧表・カレンダー・円盤の4形式で印刷できます。",
-  "lp.feat.share.label": "URLで共有",
+  "lp.feat.share.label": "LINEで共有",
   "lp.feat.share.desc": "共有URLを発行してLINEやメールで送れます。",
   "lp.feat.free.label": "完全無料",
   "lp.feat.free.desc": "すべての機能を無料でお使いいただけます。",
