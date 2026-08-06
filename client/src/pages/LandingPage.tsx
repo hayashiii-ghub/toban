@@ -621,24 +621,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* JSON-LD: 構造化データ（serializeJsonLd が < をエスケープ） */}
+      {/* JSON-LD: 構造化データ（serializeJsonLd が < をエスケープ）。
+          WebApplication はここでは出さない。index.html が SPA シェルとして
+          全ルートに配っており、そちらは @id と featureList を持つ詳しい版なので、
+          ここで出すと同じアプリを2回宣言することになる。 */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: serializeJsonLd([
-            {
-              "@context": "https://schema.org",
-              "@type": "WebApplication",
-              name: "toban",
-              url: "https://toban.app",
-              description:
-                "学校・保育園・介護施設・自治会・オフィス・家庭などの当番表を無料で作成・印刷・共有できるWebアプリ",
-              applicationCategory: "UtilitiesApplication",
-              operatingSystem: "All",
-              offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" },
-            },
-            faqPageSchema(COMMON_FAQ),
-          ]),
+          __html: serializeJsonLd([faqPageSchema(COMMON_FAQ)]),
         }}
       />
     </main>
