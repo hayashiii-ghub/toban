@@ -76,46 +76,10 @@
         "screenshot": "https://toban.app/pwa-512.png"
       }
     </script>
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "tobanは無料ですか？",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "はい、完全無料でお使いいただけます。アカウント登録も不要で、ブラウザだけですぐに当番表を作成できます。"
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "作った当番表は印刷できますか？",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "はい、ブラウザの印刷機能を使って、きれいなレイアウトで印刷や画像保存ができます。印刷ダイアログからPDF保存も可能です。カード表示・一覧表・カレンダー・円盤の4つの形式から選べます。"
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "当番表をLINEなどで共有するにはどうすればいいですか？",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "共有ボタンからURLを発行できます。発行したURLはLINEやメールでそのまま送れます。閲覧用URLを送れば誰でも当番表を確認でき、編集用URLを渡せば共同で編集することもできます。QRコードでの共有にも対応しています。"
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "ローテーションは自動で切り替わりますか？",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "日付モードを設定すれば、開始日と周期に基づいて自動的にローテーションが切り替わります。土日や祝日をスキップする設定もあります。"
-            }
-          }
-        ]
-      }
-    </script>
+    <!-- FAQPage の構造化データはここに置かない。index.html は SPA シェルとして
+         全ルートに配られるため、FAQ が可視表示されない / でも Q&A を主張することに
+         なり、また /about では LandingPage が出す FAQPage と二重になる。
+         FAQ は COMMON_FAQ を単一の出所として /about 側だけが出す。 -->
 
     <script
       async
