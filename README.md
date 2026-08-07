@@ -112,7 +112,24 @@ AIエージェントがブラウザ上で当番表を操作できるよう [WebM
 
 **共有（外部公開）の実行は tool に含めていない。** 実名を含む当番表を公開 URL 化する操作は、誤発火による意図しない公開を避けるため、ユーザの明示操作（共有ボタン）に限定している。`get_share_link` は既存リンクの参照のみ。
 
-動作確認は Chrome Canary で `chrome://flags/#enable-webmcp-testing` を Enabled にし、`pnpm dev` で Home 画面を開いて `navigator.modelContext` を確認する。
+Chrome の WebMCP には Imperative API（JS から `registerTool` する）と Declarative API（`<script type="application/json">` でツールを宣言する）の2系統がある。toban は状態を持つ操作を公開するため Imperative API を使っている。
+
+**Cloudflare が提供する同名の WebMCP 機能とは別物。** あちらはダッシュボードのトグルでエッジから `/.webmcp/bridge.js` を注入し、汎用ツール（画像の Content Credentials、`/mcp` エンドポイントの中継）を登録する代行サービス。toban はドメイン固有のツールを公開するため `useTobanTools` で自前に `registerTool` している。Cloudflare 側のトグルは有効にしていない（toban に `/mcp` も対象画像も無く、有効にしても何も登録されない）。
+
+### 動作確認
+
+ローカル開発では Chrome の flag を使う（Chrome 公式が local development 用と位置づけているもの）。
+
+1. `chrome://flags/#enable-webmcp-testing` を Enabled にして Chrome を再起動
+2. `pnpm dev` で Home 画面を開き、`navigator.modelContext` を確認
+
+**本番（toban.app）では flag は使えないため、Origin Trial のトークンが要る。** 未登録の現状では、対応ブラウザの利用者であってもツールは登録されない。有効化するには [Chrome Origin Trials](https://developer.chrome.com/origintrials) で `https://toban.app` を WebMCP のトライアルに登録し、発行されたトークンを `client/index.html` の `<head>` に置く。
+
+```html
+<meta http-equiv="origin-trial" content="TOKEN" />
+```
+
+**トークンには有効期限があり、切れてもエラーは出ずに黙って無効になる。** 期限が近づいたら再発行して差し替える。有効かどうかは、flag を切った通常の Chrome で `https://toban.app/` を開き `navigator.modelContext` が存在するかで判定する（flag を有効にした Chrome では常に存在するため、確認にならない）。
 
 ## ライセンス
 
