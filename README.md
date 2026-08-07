@@ -123,13 +123,17 @@ Chrome の WebMCP には Imperative API（JS から `registerTool` する）と 
 1. `chrome://flags/#enable-webmcp-testing` を Enabled にして Chrome を再起動
 2. `pnpm dev` で Home 画面を開き、`navigator.modelContext` を確認
 
-**本番（toban.app）では flag は使えないため、Origin Trial のトークンが要る。** 未登録の現状では、対応ブラウザの利用者であってもツールは登録されない。有効化するには [Chrome Origin Trials](https://developer.chrome.com/origintrials) で `https://toban.app` を WebMCP のトライアルに登録し、発行されたトークンを `client/index.html` の `<head>` に置く。
+**本番（toban.app）では flag は使えないため、Origin Trial のトークンが要る。** `client/index.html` の `<head>` に `<meta http-equiv="origin-trial">` として登録済み。これが無いと `navigator.modelContext` 自体が生えず、`useTobanTools` は no-op になる。
 
-```html
-<meta http-equiv="origin-trial" content="TOKEN" />
-```
+|          |                                             |
+| -------- | ------------------------------------------- |
+| 対象     | Chrome 149〜156                             |
+| 期限     | **2026-11-17**                              |
+| オリジン | `https://toban.app`（サブドメインは対象外） |
 
-**トークンには有効期限があり、切れてもエラーは出ずに黙って無効になる。** 期限が近づいたら再発行して差し替える。有効かどうかは、flag を切った通常の Chrome で `https://toban.app/` を開き `navigator.modelContext` が存在するかで判定する（flag を有効にした Chrome では常に存在するため、確認にならない）。
+**期限切れはエラーにならず無言で無効化される。** 近づいたら [Chrome Origin Trials](https://developer.chrome.com/origintrials) で再発行して `client/index.html` のトークンを差し替える。トライアルが Chrome 156 で終わるため、それ以降は正式リリースを待つか再度延長を確認する。トークンはオリジンに紐づく公開値で、秘密情報ではない。
+
+有効かどうかは、**flag を切った通常の Chrome** で `https://toban.app/` を開き `navigator.modelContext` が存在するかで判定する（flag を有効にした Chrome では常に存在するため、確認にならない）。
 
 ## ライセンス
 
