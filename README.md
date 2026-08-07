@@ -112,6 +112,13 @@ AIエージェントがブラウザ上で当番表を操作できるよう [WebM
 
 **共有（外部公開）の実行は tool に含めていない。** 実名を含む当番表を公開 URL 化する操作は、誤発火による意図しない公開を避けるため、ユーザの明示操作（共有ボタン）に限定している。`get_share_link` は既存リンクの参照のみ。
 
+[tool security](https://developer.chrome.com/docs/ai/webmcp/secure-tools) の指針に沿って以下を守る。テストで検査しているので、tool を足すときも自動的に効く。
+
+- **出力は 1 件あたり 1,500 字以内。** `result()` が一律に切り詰めるので、個別に数える必要はない
+- **ユーザ入力（当番表名・メンバー名）を返す tool には `untrustedContentHint`。** 共有リンク経由で他人が作った表を開けるため、間接プロンプトインジェクションの持ち込み口になりうる
+- **状態を変えない tool には `readOnlyHint`。** エージェントが確認を挟むかの判断に使う
+- **`exposedTo` は使わない。** 既定ではクロスオリジンから観測・実行されない
+
 Chrome の WebMCP には Imperative API（JS から `registerTool` する）と Declarative API（`<script type="application/json">` でツールを宣言する）の2系統がある。toban は状態を持つ操作を公開するため Imperative API を使っている。
 
 **Cloudflare が提供する同名の WebMCP 機能とは別物。** あちらはダッシュボードのトグルでエッジから `/.webmcp/bridge.js` を注入し、汎用ツール（画像の Content Credentials、`/mcp` エンドポイントの中継）を登録する代行サービス。toban はドメイン固有のツールを公開するため `useTobanTools` で自前に `registerTool` している。Cloudflare 側のトグルは有効にしていない（toban に `/mcp` も対象画像も無く、有効にしても何も登録されない）。

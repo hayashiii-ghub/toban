@@ -959,6 +959,102 @@ describe("duplicate_schedule", () => {
   });
 });
 
+describe("出力の文字数予算", () => {
+  // 大きな当番表でも 1 tool の出力が Chrome 推奨の 1,500 字を超えないこと。
+  // メンバー・グループ・タスクを上限まで積んだ表を 10 件用意する。
+  const bigGet = () => {
+    const members = Array.from({ length: LIMITS.members }, (_, i) =>
+      member(`m${i}`, `山田花子${i}`)
+    );
+    const groups = Array.from({ length: LIMITS.groups }, (_, i) =>
+      group(
+        `g${i}`,
+        "🧹",
+        Array.from({ length: LIMITS.tasksPerGroup }, (_, j) => `ゴミ出し${j}`)
+      )
+    );
+    const schedules = Array.from({ length: 10 }, (_, i) =>
+      sched({ id: `s${i}`, name: `フロア${i}当番表`, members, groups })
+    );
+    return makeGet({
+      state: { schedules, activeScheduleId: "s0" },
+      activeSchedule: schedules[0],
+      assignments: groups.map((g, i) => ({ group: g, member: members[i] })),
+      // 出力長だけを見たいので、副作用のあるハンドラは黙って受ける
+      selectSchedule: vi.fn(),
+      changeTab: vi.fn(),
+      handleRotate: vi.fn(),
+      handlePrint: vi.fn(),
+      onAddSchedule: vi.fn(),
+      onSaveSettings: vi.fn(),
+      onDuplicateSchedule: vi.fn(),
+      updateActiveSchedule: vi.fn(),
+    } as Partial<HomeState>);
+  };
+
+  it("全 tool の出力が 1,500 字以内に収まる", async () => {
+    const get = bigGet();
+    for (const tool of buildTobanTools(get)) {
+      const { content } = await tool.execute({}, undefined);
+      const text = content.map(c => c.text).join("");
+      expect(text.length, `${tool.name} の出力が長すぎる`).toBeLessThanOrEqual(
+        1500
+      );
+    }
+  });
+
+  it("切り詰めたときは省略した旨を末尾に付ける", async () => {
+    const { content } = await toolNamed(
+      "get_schedule_details",
+      bigGet()
+    ).execute({}, undefined);
+    expect(content[0].text).toContain("以降を省略しました");
+  });
+
+  it("収まる出力には省略の注記を付けない", async () => {
+    const { content } = await toolNamed("list_schedules", makeGet()).execute(
+      {},
+      undefined
+    );
+    expect(content[0].text).not.toContain("以降を省略しました");
+  });
+});
+
+describe("annotations", () => {
+  // ユーザ入力（当番表名・メンバー名）を出力に含む tool は、間接プロンプト
+  // インジェクションの持ち込み口として untrustedContentHint を付ける。
+  const UNTRUSTED = [
+    "list_schedules",
+    "get_current_assignments",
+    "get_schedule_details",
+    "get_share_link",
+    "switch_schedule",
+    "remove_member",
+    "update_member",
+  ];
+
+  it("ユーザ入力を返す tool に untrustedContentHint を付けている", () => {
+    const tools = buildTobanTools(makeGet());
+    for (const name of UNTRUSTED) {
+      const tool = tools.find(t => t.name === name);
+      expect(tool?.annotations?.untrustedContentHint, name).toBe(true);
+    }
+  });
+
+  it("状態を変えない tool にだけ readOnlyHint を付けている", () => {
+    const readOnly = buildTobanTools(makeGet())
+      .filter(t => t.annotations?.readOnlyHint)
+      .map(t => t.name)
+      .sort();
+    expect(readOnly).toEqual([
+      "get_current_assignments",
+      "get_schedule_details",
+      "get_share_link",
+      "list_schedules",
+    ]);
+  });
+});
+
 describe("useTobanTools (登録フック)", () => {
   it("registerTool が throw してもフックはクラッシュしない", () => {
     const nav = navigator as unknown as { modelContext?: unknown };

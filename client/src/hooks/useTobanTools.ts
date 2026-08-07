@@ -19,8 +19,29 @@ import {
 /** useHomeState() の戻り値。tool はこの派生値/ハンドラだけを介して動く。 */
 type HomeState = ReturnType<typeof useHomeState>;
 
+/**
+ * Chrome の WebMCP ガイドラインが推奨する tool 出力 1 件あたりの上限。
+ * 超えるとエージェント側のガードレールに当たる。
+ * https://developer.chrome.com/docs/ai/webmcp/secure-tools
+ *
+ * 通常の当番表（40人 / 5グループ / 表3件）では最大でも 400 字程度で収まるが、
+ * メンバー 50 人 × グループ 20 件のような大きな表では
+ * get_schedule_details / get_current_assignments が 3,000 字近くまで伸びる。
+ * 個別に数えるのではなく result() で一律に丸め、追加した tool が漏れないようにする。
+ */
+const MAX_OUTPUT_LENGTH = 1500;
+const TRUNCATION_NOTE = "\n…（長いため以降を省略しました）";
+
+/** 予算を超えた出力を行単位で切り詰める。行境界が取れなければ文字数で切る。 */
+function clamp(text: string): string {
+  if (text.length <= MAX_OUTPUT_LENGTH) return text;
+  const head = text.slice(0, MAX_OUTPUT_LENGTH - TRUNCATION_NOTE.length);
+  const lastBreak = head.lastIndexOf("\n");
+  return (lastBreak > 0 ? head.slice(0, lastBreak) : head) + TRUNCATION_NOTE;
+}
+
 function result(text: string): WebMCPToolResult {
-  return { content: [{ type: "text", text }] };
+  return { content: [{ type: "text", text: clamp(text) }] };
 }
 
 function rotationLabel(rotation: number): string {
@@ -92,13 +113,21 @@ function saveEdit(
   });
 }
 
+/**
+ * 当番表の名前・メンバー名はすべてユーザが入力した値で、共有リンク経由で
+ * 他人が作った表を開くこともある。それらを出力に含む tool には
+ * untrustedContentHint を付け、間接プロンプトインジェクションの持ち込み口である
+ * ことをエージェントに知らせる。見つからなかったときに候補を列挙する tool
+ * （switch_schedule / remove_member / update_member）も対象に含める。
+ * https://developer.chrome.com/docs/ai/webmcp/secure-tools
+ */
 function listSchedulesTool(get: () => HomeState): WebMCPTool {
   return {
     name: "list_schedules",
     description:
       "List all duty rosters (当番表) the user has. Returns each roster's name, member count, and group count; the currently displayed roster is marked. Use to see what rosters exist or before switching rosters.",
     inputSchema: { type: "object", properties: {} },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     async execute() {
       const { state, activeSchedule } = get();
       const { schedules } = state;
@@ -120,7 +149,7 @@ function currentAssignmentsTool(get: () => HomeState): WebMCPTool {
     description:
       "Get who is currently on duty for the active duty roster: each task group paired with its assigned member, plus the current rotation step. Use when the user asks who is on duty now.",
     inputSchema: { type: "object", properties: {} },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     async execute() {
       const { activeSchedule, assignments, effectiveRotation } = get();
       if (!activeSchedule)
@@ -147,7 +176,7 @@ function scheduleDetailsTool(get: () => HomeState): WebMCPTool {
     description:
       "Get the full setup of the active duty roster: member names, task groups, rotation mode (manual or date-based), and assignment mode. Use before editing or to explain how the roster is configured.",
     inputSchema: { type: "object", properties: {} },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     async execute() {
       const { activeSchedule } = get();
       if (!activeSchedule)
@@ -188,6 +217,7 @@ function switchScheduleTool(get: () => HomeState): WebMCPTool {
       },
       required: ["name"],
     },
+    annotations: { untrustedContentHint: true },
     async execute(input) {
       const { state, selectSchedule } = get();
       const { name } = nameInputSchema.parse(input);
@@ -363,6 +393,7 @@ function removeMemberTool(get: () => HomeState): WebMCPTool {
       },
       required: ["name"],
     },
+    annotations: { untrustedContentHint: true },
     async execute(input) {
       const { activeSchedule, onSaveSettings } = get();
       if (!activeSchedule)
@@ -449,7 +480,7 @@ function shareLinkTool(get: () => HomeState): WebMCPTool {
     description:
       "Get the public share URL of the active roster if it has already been shared. Does NOT create or publish a new link — sharing must be done by the user via the share button.",
     inputSchema: { type: "object", properties: {} },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     async execute() {
       const { activeSchedule } = get();
       if (!activeSchedule)
@@ -542,6 +573,7 @@ function updateMemberTool(get: () => HomeState): WebMCPTool {
       },
       required: ["name"],
     },
+    annotations: { untrustedContentHint: true },
     async execute(input) {
       const { activeSchedule, onSaveSettings } = get();
       if (!activeSchedule)
