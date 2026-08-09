@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@radix-ui/react-tooltip": "^1.2.16",
-    "@sentry/react": "^10.52.0",
+    "@sentry/react": "^10.69.0",
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.40.0",
     "hono": "^4.12.32",
@@ -36,7 +36,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-qr-code": "^2.2.0",
-    "resend": "^6.12.4",
+    "resend": "^6.18.1",
     "sonner": "^2.0.7",
     "wouter": "^3.10.0",
     "zod": "^4.4.3"
