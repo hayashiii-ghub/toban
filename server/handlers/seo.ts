@@ -176,8 +176,8 @@ export async function handleScheduleOgp(
 // ─── LP のプリレンダリング (bot用) ───
 
 export function renderLandingPageHtml(origin: string): string {
-  const title = "当番表作成アプリ toban（トバン）｜無料で作成・印刷・共有";
-  const desc = `学校・保育園・介護施設・自治会・オフィス・家庭などの当番表をかんたんに作れる無料の当番表作成アプリ。アカウント登録・インストール不要、エクセルがなくてもブラウザだけで印刷品質の当番表がすぐ完成し、LINEやメールで共有できます。用途別のテンプレートを${TEMPLATE_SEO_DATA.length}種類用意。`;
+  const title = "当番表作成アプリ toban｜無料で簡単作成・印刷・共有";
+  const desc = `学校・保育園・介護施設・自治会・オフィス・家庭などの当番表をかんたんに作れる無料の当番表作成アプリ。アカウント登録・インストール不要、エクセルがなくてもスマホ・パソコンのブラウザだけで印刷品質の当番表がすぐ完成し、LINEやメールで共有できます。用途別のテンプレートを${TEMPLATE_SEO_DATA.length}種類用意。`;
 
   const faqHtml = COMMON_FAQ.map(
     f => `<dt>${escapeHtml(f.question)}</dt><dd>${escapeHtml(f.answer)}</dd>`
@@ -244,7 +244,7 @@ ${buildSocialMetaTags({ title, description: desc, url: `${origin}/`, origin, typ
 // ─── テンプレートページのプリレンダリング (bot用) ───
 
 export function renderTemplateListHtml(origin: string): string {
-  const title = "当番表テンプレート一覧｜無料で使えるtoban（トバン）";
+  const title = "当番表テンプレート一覧｜無料で使えるtoban";
   // h1 は見出しであってタイトルタグではない。ブランドサフィックスを含めない
   const h1 = "当番表テンプレート一覧";
   const desc = `学校・保育園・介護施設・自治会・飲食店・家庭など、すぐ使える無料テンプレートを${TEMPLATE_SEO_DATA.length}種類ご用意。テンプレートを選んで、メンバーや担当を編集するだけで当番表が完成します。`;

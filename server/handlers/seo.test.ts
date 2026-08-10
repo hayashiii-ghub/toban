@@ -545,7 +545,7 @@ describe("renderTemplateListHtml", () => {
     // 一覧ページはブランド想起の受け皿として残す（個別LPとは扱いが違う）
     const html = renderTemplateListHtml(origin);
     expect(html).toContain(
-      "<title>当番表テンプレート一覧｜無料で使えるtoban（トバン）</title>"
+      "<title>当番表テンプレート一覧｜無料で使えるtoban</title>"
     );
   });
 
