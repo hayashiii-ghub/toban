@@ -52,7 +52,7 @@ export const ja: Record<string, string> = {
     "共有した当番表は、1年間まったく編集がないと自動で削除されます。",
 
   // ランディングページ
-  "lp.docTitle": "当番表作成アプリ toban（トバン）｜無料で作成・印刷・共有",
+  "lp.docTitle": "当番表作成アプリ toban｜無料で簡単作成・印刷・共有",
   "lp.shareText":
     "かんたん当番表、すぐ完成。掃除・給食・日直のローテーション表を無料で作成できます。",
   "lp.shareTitle": "toban｜かんたん当番表",
@@ -383,7 +383,7 @@ export const ja: Record<string, string> = {
   "cal.wd6": "土",
 
   // テンプレート一覧ページ
-  "templates.docTitle": "当番表テンプレート一覧｜無料で使えるtoban（トバン）",
+  "templates.docTitle": "当番表テンプレート一覧｜無料で使えるtoban",
   "templates.breadcrumb": "テンプレート一覧",
   "templates.breadcrumbAria": "パンくず",
   "templates.heading": "当番表テンプレート一覧",

@@ -1,6 +1,6 @@
 export { TEMPLATES } from "@shared/templates";
 
-export const APP_TITLE = "toban（トバン）｜無料で当番表を作成・印刷・共有";
+export const APP_TITLE = "toban｜無料で当番表を簡単作成・印刷・共有";
 
 export const ANIMATION_DURATION_MS = 500;
 export const CARD_STAGGER_DELAY = 0.08;
