@@ -72,7 +72,7 @@ export const en: Record<string, string> = {
   "lp.featuresHeading": "Why toban",
   "lp.feat.noSignup.label": "No sign-up",
   "lp.feat.noSignup.desc":
-    "No account, no Excel needed. Works right in your browser.",
+    "No Excel needed. Works right in your browser, on your phone or your computer.",
   "lp.feat.print.label": "Clean printing",
   "lp.feat.print.desc":
     "Print in four formats: cards, table, calendar, or wheel.",

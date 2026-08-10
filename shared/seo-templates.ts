@@ -519,9 +519,9 @@ export const COMMON_FAQ = [
       "Google Chrome または Microsoft Edge の最新版を推奨しています。印刷レイアウトが最もきれいに出力されます。Safari や Firefox でも基本機能は動作しますが、印刷時のレイアウトが崩れる場合があります。",
   },
   {
-    question: "スマートフォンでも使えますか？",
+    question: "スマホでも使えますか？",
     answer:
-      "はい、当番表の作成・閲覧・共有はスマートフォンでも問題なくお使いいただけます。印刷やPDF保存をする場合は、パソコンの Google Chrome からの操作を推奨します。",
+      "はい、当番表の作成・閲覧・共有はスマホでも問題なくお使いいただけます。iPhone・Android どちらのブラウザでもそのまま動き、アプリのインストールは不要です。印刷やPDF保存をする場合は、パソコンの Google Chrome からの操作を推奨します。",
   },
   {
     question: "データはどこに保存されますか？",
@@ -815,7 +815,7 @@ export const COMMON_FAQ_EN: { question: string; answer: string }[] = [
   {
     question: "Can I use it on a smartphone?",
     answer:
-      "Yes, creating, viewing, and sharing rosters all work fine on a smartphone. For printing or saving as PDF, we recommend Google Chrome on a computer.",
+      "Yes, creating, viewing, and sharing rosters all work fine on a smartphone. It runs as-is in the browser on both iPhone and Android, with no app to install. For printing or saving as PDF, we recommend Google Chrome on a computer.",
   },
   {
     question: "Where is my data stored?",

@@ -69,7 +69,7 @@ export const ja: Record<string, string> = {
   "lp.featuresHeading": "tobanの特徴",
   "lp.feat.noSignup.label": "登録不要",
   "lp.feat.noSignup.desc":
-    "アカウント不要・エクセル不要。ブラウザだけで完結します。",
+    "エクセル不要。スマホでもパソコンでも、ブラウザだけで完結します。",
   "lp.feat.print.label": "印刷がきれい",
   "lp.feat.print.desc":
     "カード・一覧表・カレンダー・円盤の4形式で印刷できます。",
