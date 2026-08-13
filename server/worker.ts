@@ -17,7 +17,7 @@ import {
 interface Env {
   ASSETS: { fetch: typeof fetch };
   DB: D1Database;
-  RESEND_API_KEY: string;
+  SLACK_WEBHOOK_URL: string;
 }
 
 // クラウド保存の保持期間。この日数だけ更新がない行は scheduled で削除する。

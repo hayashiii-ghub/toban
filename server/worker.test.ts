@@ -22,7 +22,7 @@ describe("SEO response policy", () => {
     const env = {
       ASSETS: { fetch: vi.fn() },
       DB: {},
-      RESEND_API_KEY: "",
+      SLACK_WEBHOOK_URL: "",
     } as never;
 
     const response = await worker.fetch(request, env, {} as ExecutionContext);
@@ -43,7 +43,7 @@ describe("SEO response policy", () => {
           ),
       },
       DB: {},
-      RESEND_API_KEY: "",
+      SLACK_WEBHOOK_URL: "",
     } as never;
 
     const response = await worker.fetch(request, env, {} as ExecutionContext);

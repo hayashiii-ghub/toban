@@ -1,23 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Hono } from "hono";
 import { CONTACT_CATEGORIES } from "../../shared/schemas";
 
-// Capture the payload passed to resend.emails.send so we assert on values
-// (subject / body / replyTo), never on call counts.
-const sentEmails = vi.hoisted(() => [] as Array<Record<string, unknown>>);
-vi.mock("resend", () => ({
-  // 通常 function 式で constructor 可能にする（new Resend(...) される）
-  Resend: vi.fn(function () {
-    return {
-      emails: {
-        send: vi.fn(async (payload: Record<string, unknown>) => {
-          sentEmails.push(payload);
-          return { data: { id: "test-email-id" }, error: null };
-        }),
-      },
-    };
-  }),
-}));
+const slackRequests: Array<{ url: string; payload: { text: string } }> = [];
+const fetchMock = vi.fn();
 
 async function makeApp() {
   const { default: contactRoutes } = await import("./contact");
@@ -26,7 +12,13 @@ async function makeApp() {
   return app;
 }
 
-function post(app: Hono, body: Record<string, unknown>) {
+function post(
+  app: Hono,
+  body: Record<string, unknown>,
+  bindings: Record<string, string> = {
+    SLACK_WEBHOOK_URL: "https://hooks.slack.com/services/test/webhook",
+  }
+) {
   return app.request(
     "/api/contact",
     {
@@ -34,7 +26,7 @@ function post(app: Hono, body: Record<string, unknown>) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     },
-    { RESEND_API_KEY: "test-key" }
+    bindings
   );
 }
 
@@ -46,32 +38,85 @@ const valid = (overrides: Record<string, unknown> = {}) => ({
 });
 
 beforeEach(() => {
-  sentEmails.length = 0;
+  slackRequests.length = 0;
+  fetchMock.mockReset();
+  fetchMock.mockImplementation(
+    async (input: string | URL | Request, init?: RequestInit) => {
+      slackRequests.push({
+        url: String(input),
+        payload: JSON.parse(String(init?.body)) as { text: string },
+      });
+      return new Response("ok", { status: 200 });
+    }
+  );
+  vi.stubGlobal("fetch", fetchMock);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe("POST /api/contact", () => {
   // drift guard: 公開している全種別が server に受理されること
   it.each(CONTACT_CATEGORIES)(
-    "accepts advertised category %s and uses it in the email",
+    "accepts advertised category %s and posts it to Slack",
     async category => {
       const app = await makeApp();
       const res = await post(app, valid({ category }));
 
       expect(res.status).toBe(200);
-      expect(sentEmails).toHaveLength(1);
-      expect(sentEmails[0].subject).toBe(`[toban] ${category}`);
-      expect(
-        (sentEmails[0].text as string).startsWith(`種別: ${category}`)
-      ).toBe(true);
+      expect(slackRequests).toHaveLength(1);
+      expect(slackRequests[0].url).toBe(
+        "https://hooks.slack.com/services/test/webhook"
+      );
+      expect(slackRequests[0].payload.text).toContain(`種別: ${category}`);
+      expect(slackRequests[0].payload.text).toContain(
+        "メール: user@example.com"
+      );
+      expect(slackRequests[0].payload.text).toContain("ボタンが押せません");
     }
   );
+
+  it("escapes Slack control syntax in user input", async () => {
+    const app = await makeApp();
+    const res = await post(
+      app,
+      valid({
+        email: "user+test@example.com",
+        message: "<!channel> & <script>",
+      })
+    );
+
+    expect(res.status).toBe(200);
+    expect(slackRequests[0].payload.text).toContain(
+      "&lt;!channel&gt; &amp; &lt;script&gt;"
+    );
+  });
+
+  it("returns 500 when Slack rejects the notification", async () => {
+    fetchMock.mockImplementation(
+      async () => new Response("channel_not_found", { status: 404 })
+    );
+    const app = await makeApp();
+    const res = await post(app, valid());
+
+    expect(res.status).toBe(500);
+  });
+
+  it("returns 500 when the Slack webhook is not configured", async () => {
+    const app = await makeApp();
+    const res = await post(app, valid(), {});
+
+    expect(res.status).toBe(500);
+    expect(slackRequests).toHaveLength(0);
+  });
 
   it("rejects an unknown category with 400 and sends nothing", async () => {
     const app = await makeApp();
     const res = await post(app, valid({ category: "ハッキング相談" }));
 
     expect(res.status).toBe(400);
-    expect(sentEmails).toHaveLength(0);
+    expect(slackRequests).toHaveLength(0);
   });
 
   it("rejects a missing category with 400", async () => {
@@ -87,6 +132,6 @@ describe("POST /api/contact", () => {
     const res = await post(app, valid({ url: "http://spam.example/bot" }));
 
     expect(res.status).toBe(200);
-    expect(sentEmails).toHaveLength(0);
+    expect(slackRequests).toHaveLength(0);
   });
 });

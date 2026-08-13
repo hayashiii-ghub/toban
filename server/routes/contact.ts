@@ -1,10 +1,11 @@
 import { Hono } from "hono";
-import { Resend } from "resend";
 import { z } from "zod";
 import { contactCategorySchema } from "../../shared/schemas";
 import { LIMITS } from "../../shared/limits";
 
-type Env = { Bindings: { RESEND_API_KEY: string } };
+type Env = { Bindings: { SLACK_WEBHOOK_URL: string } };
+
+const SLACK_TIMEOUT_MS = 5_000;
 
 const contactSchema = z.object({
   category: contactCategorySchema,
@@ -16,10 +17,15 @@ const contactSchema = z.object({
   url: z.string().optional(),
 });
 
-/** メール用文字列から制御文字を除去 */
+/** 通知用文字列から制御文字を除去 */
 function sanitizeControlChars(str: string): string {
   // eslint-disable-next-line no-control-regex -- 意図的に制御文字を除去している
   return str.replace(/[\r\n\t\x00-\x1f]/g, " ").trim();
+}
+
+/** Slack がメンションやリンクとして解釈する制御記法を無効化する */
+function escapeSlackText(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 const app = new Hono<Env>();
@@ -51,24 +57,46 @@ app.post("/", async c => {
   const safeEmail = sanitizeControlChars(email);
   const safeMessage = sanitizeControlChars(message);
 
-  const resend = new Resend(c.env.RESEND_API_KEY);
-  const { error } = await resend.emails.send({
-    from: "toban お問い合わせ <noreply@send.shigoto.dev>",
-    to: "hay@shigoto.dev",
-    replyTo: safeEmail,
-    subject: `[toban] ${category}`,
-    text: `種別: ${category}\nメール: ${safeEmail}\n\n${safeMessage}`,
-  });
-
-  if (error) {
-    console.error("Resend error:", error);
+  if (!c.env.SLACK_WEBHOOK_URL) {
+    console.error("Slack webhook is not configured");
     return c.json(
       { error: "送信に失敗しました。しばらくしてからお試しください。" },
       500
     );
   }
 
-  return c.json({ ok: true });
+  const text = [
+    ":incoming_envelope: [toban] 新しいお問い合わせ",
+    `種別: ${category}`,
+    `メール: ${escapeSlackText(safeEmail)}`,
+    "",
+    escapeSlackText(safeMessage),
+  ].join("\n");
+
+  try {
+    const response = await fetch(c.env.SLACK_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(SLACK_TIMEOUT_MS),
+    });
+
+    if (response.ok) {
+      return c.json({ ok: true });
+    }
+
+    console.error("Slack webhook rejected notification:", response.status);
+  } catch (error) {
+    console.error(
+      "Slack webhook failed:",
+      error instanceof Error ? error.name : "UnknownError"
+    );
+  }
+
+  return c.json(
+    { error: "送信に失敗しました。しばらくしてからお試しください。" },
+    500
+  );
 });
 
 export default app;

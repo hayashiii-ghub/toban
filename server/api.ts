@@ -6,7 +6,7 @@ import contactRoutes from "./routes/contact";
 import { getSchedulesSchemaStatus } from "./db/ensureSchema";
 
 type Env = {
-  Bindings: { DB: D1Database; ENVIRONMENT?: string; RESEND_API_KEY: string };
+  Bindings: { DB: D1Database; ENVIRONMENT?: string; SLACK_WEBHOOK_URL: string };
 };
 
 const app = new Hono<Env>();

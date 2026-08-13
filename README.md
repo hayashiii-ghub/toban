@@ -92,12 +92,12 @@ pnpm format:check && pnpm check && pnpm lint && pnpm test && pnpm build
 
 Cloudflare 側で設定する環境変数:
 
-| 変数                                | 用途                                                |
-| ----------------------------------- | --------------------------------------------------- |
-| `CLOUDFLARE_D1_DATABASE_ID`         | D1 データベースID                                   |
-| `CLOUDFLARE_D1_PREVIEW_DATABASE_ID` | プレビュー用（任意）                                |
-| `RESEND_API_KEY`                    | お問い合わせフォーム送信用（`wrangler secret put`） |
-| `VITE_SENTRY_DSN`                   | Sentry DSN（任意。ビルド時に `.env` か CI で設定）  |
+| 変数                                | 用途                                               |
+| ----------------------------------- | -------------------------------------------------- |
+| `CLOUDFLARE_D1_DATABASE_ID`         | D1 データベースID                                  |
+| `CLOUDFLARE_D1_PREVIEW_DATABASE_ID` | プレビュー用（任意）                               |
+| `SLACK_WEBHOOK_URL`                 | お問い合わせのSlack通知用（`wrangler secret put`） |
+| `VITE_SENTRY_DSN`                   | Sentry DSN（任意。ビルド時に `.env` か CI で設定） |
 
 ## CI
 
