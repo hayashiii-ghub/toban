@@ -48,7 +48,7 @@ export function AssignmentsGrid({
                     ? `${group.tasks.join("・")}: ${member.name}`
                     : `${member.name}: ${group.tasks.join("・")}`
                 }
-                className="theme-border theme-shadow theme-surface rotation-print-card overflow-hidden min-w-0 flex flex-col [overflow-wrap:anywhere]"
+                className={`theme-border theme-shadow theme-surface rotation-print-card overflow-hidden min-w-0 flex flex-col [overflow-wrap:anywhere] ${isTaskMode ? "rotation-task-card" : ""}`}
                 style={{
                   borderRadius: "var(--dt-border-radius)",
                 }}
@@ -76,39 +76,42 @@ export function AssignmentsGrid({
               >
                 {isTaskMode ? (
                   <>
-                    {/* タスクモード: タスク絵文字+名前が上、メンバーが下。
-                        タスク名の行数はカードごとに違うので、見出し側を flex-1 で
-                        伸ばしてメンバーチップをカード下端に揃える（絵文字は上端揃えのまま）。 */}
+                    {/* 同じ行で見出し・補足タスク・メンバーの高さを共有する。
+                        見出しの折り返しが異なっても補足の開始位置が揃う。 */}
                     <div
-                      className="flex-1 px-3 sm:px-4 py-3 sm:py-4 text-center"
+                      className="rotation-task-card-header flex-1 px-3 sm:px-4 py-3 sm:py-4 text-center"
                       style={{
                         backgroundColor: "var(--dt-card-header-bg)",
                       }}
                     >
-                      <div
-                        className="text-3xl sm:text-4xl mb-1"
-                        aria-hidden="true"
-                      >
-                        {group.emoji}
-                      </div>
-                      <div
-                        className="text-base sm:text-lg"
-                        style={{
-                          color: "var(--dt-text)",
-                          fontWeight: "var(--dt-font-weight-extra)",
-                        }}
-                      >
-                        {group.tasks[0] ?? ""}
-                      </div>
-                      {group.tasks.slice(1).map((task, taskIndex) => (
-                        <p
-                          key={`${group.id}-task-${taskIndex + 1}`}
-                          className="mt-1.5 text-sm font-medium"
-                          style={{ color: "var(--dt-text-secondary)" }}
+                      <div>
+                        <div
+                          className="text-3xl sm:text-4xl mb-1"
+                          aria-hidden="true"
                         >
-                          {task}
-                        </p>
-                      ))}
+                          {group.emoji}
+                        </div>
+                        <div
+                          className="text-base sm:text-lg"
+                          style={{
+                            color: "var(--dt-text)",
+                            fontWeight: "var(--dt-font-weight-extra)",
+                          }}
+                        >
+                          {group.tasks[0] ?? ""}
+                        </div>
+                      </div>
+                      <div>
+                        {group.tasks.slice(1).map((task, taskIndex) => (
+                          <p
+                            key={`${group.id}-task-${taskIndex + 1}`}
+                            className="mt-1.5 text-sm font-medium"
+                            style={{ color: "var(--dt-text-secondary)" }}
+                          >
+                            {task}
+                          </p>
+                        ))}
+                      </div>
                     </div>
                     <div className="p-2.5 sm:p-3 flex flex-col gap-1.5 sm:gap-2">
                       <m.div

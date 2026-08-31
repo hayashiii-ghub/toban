@@ -9,6 +9,24 @@
   background-image: var(--dt-page-texture, none);
 }
 
+/* Share content rows across neighboring task cards without fixed title heights.
+   Each responsive row sizes itself; member-mode cards keep their flex layout. */
+@supports (grid-template-rows: subgrid) {
+  .rotation-task-card {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 3;
+    row-gap: 0;
+  }
+
+  .rotation-task-card-header {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 2;
+    row-gap: 0;
+  }
+}
+
 @page {
   margin: 8mm;
 }
