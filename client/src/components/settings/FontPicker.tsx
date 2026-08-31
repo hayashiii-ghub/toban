@@ -64,7 +64,7 @@ export function FontPicker({ onChange }: FontPickerProps) {
                 color: "var(--dt-text)",
               }}
             >
-              あいう Aa
+              {t("font.sample")}
             </div>
             <div
               className="text-xs mt-1.5 font-bold"

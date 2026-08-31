@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { translate } from "@/i18n/core";
+import { en } from "@/i18n/locales/en";
+import { ja } from "@/i18n/locales/ja";
 import {
   DESIGN_THEMES,
   THEME_COLORS,
@@ -100,13 +103,23 @@ describe("2軸の合成", () => {
     }
   });
 
-  it("表示名は翻訳を通す。旧テーマは凍結した日本語名のまま", () => {
-    const t = (key: string) => `[${key}]`;
-    expect(getThemeLabel("sarasara/sakura", t)).toBe("[themeColor.sakura]");
-    expect(getThemeLabel("mochimochi/sakura", t)).toBe(
-      "[themeColor.sakura]（[texture.mochimochi]）"
-    );
-    expect(getThemeLabel("crayon", t)).toBe("クレヨン");
+  it("英語では旧テーマ名と合成名の書式も翻訳する", () => {
+    const t = (key: string, params?: Record<string, string | number>) =>
+      translate({ ja, en }, "en", key, params);
+    expect(getThemeLabel("sarasara/sakura", t)).toBe("Cherry blossom");
+    expect(getThemeLabel("mochimochi/sakura", t)).toBe("Cherry blossom (Soft)");
+    expect(getThemeLabel("crayon", t)).toBe("Crayon");
+    expect(getThemeLabel("lavender", t)).toBe("Lavender");
+    expect(getThemeLabel("whiteboard", t)).toBe("Whiteboard");
+  });
+
+  it("日本語では旧テーマ名と合成名の書式を維持する", () => {
+    const t = (key: string, params?: Record<string, string | number>) =>
+      translate({ ja, en }, "ja", key, params);
+    for (const theme of DESIGN_THEMES) {
+      expect(getThemeLabel(theme.id, t)).toBe(theme.name);
+    }
+    expect(getThemeLabel("mochimochi/sakura", t)).toBe("さくら（もちもち）");
   });
 
   it("zarazara/crayon は旧クレヨンテーマの枠を引き継ぐ", () => {

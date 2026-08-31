@@ -1,5 +1,4 @@
-// English dictionary. UI chrome only.
-// Template / member / theme content stays Japanese (see ja.ts).
+// English UI dictionary. Template content is localized separately.
 // Keys mirror ja.ts; missing keys fall back to ja at runtime.
 
 export const en: Record<string, string> = {
@@ -10,6 +9,8 @@ export const en: Record<string, string> = {
   "footer.about": "About toban",
 
   // Common
+  "common.share": "Share",
+  "common.edit": "Edit",
   "common.close": "Close",
 
   // Rotation label (shared + Home)
@@ -27,28 +28,24 @@ export const en: Record<string, string> = {
     "A network error occurred. Please check your connection.",
   "shared.copied": "Schedule copied",
   "shared.createYourOwn": "Create your own schedule",
-  "shared.copyToMine": "Copy this schedule to my own",
+  "shared.copyToMine": "Make a copy",
   "shared.printHeader": "{label} · Printed: {date}",
 
   // Share modal
-  "share.title": "Share",
+  "share.title": "Share schedule",
   "share.tabView": "👀 View only",
   "share.tabEdit": "✏️ Can edit",
-  "share.descView":
-    'Use this to show your schedule to everyone. Anyone can view "{name}".',
-  "share.descEdit":
-    'Use this to edit together. You can give edit access to "{name}".',
+  "share.descView": 'Anyone with this link can view "{name}".',
+  "share.descEdit": 'Anyone with this link can edit "{name}".',
   "share.lineShare": "Share on LINE",
   "share.showQr": "Show QR code",
   "share.hideQr": "Hide QR code",
   "share.copied": "Copied",
-  "share.copyUrl": "Copy URL",
-  "share.copiedView": "View link copied",
+  "share.copyUrl": "Copy link",
+  "share.copiedView": "View-only link copied",
   "share.copiedEdit": "Edit link copied",
-  "share.copyFailed":
-    "Couldn't copy. Please select the URL and copy it manually.",
-  "share.editWarning":
-    "Anyone with this URL can edit the schedule. Share only with people you trust.",
+  "share.copyFailed": "Couldn't copy the link. Select it and copy it manually.",
+  "share.editWarning": "Share this link only with people you trust.",
   // Keep in sync with CLEANUP_RETENTION_DAYS in server/worker.ts
   "share.retention":
     "Shared schedules are deleted automatically after one year with no edits.",
@@ -61,7 +58,7 @@ export const en: Record<string, string> = {
   "lp.shareToban": "Share toban",
   "lp.shareMenuClose": "Close share menu",
   "lp.shareX": "Share on X",
-  "lp.urlCopied": "URL copied",
+  "lp.urlCopied": "Link copied",
   "lp.copyFailed": "Couldn't copy",
   "lp.createSchedule": "Create a schedule",
   "lp.heroTitleA": "Easy duty rosters,",
@@ -73,11 +70,11 @@ export const en: Record<string, string> = {
   "lp.feat.noSignup.label": "No sign-up",
   "lp.feat.noSignup.desc":
     "No Excel needed. Works right in your browser, on your phone or your computer.",
-  "lp.feat.print.label": "Clean printing",
+  "lp.feat.print.label": "Ready to print",
   "lp.feat.print.desc":
     "Print in four formats: cards, table, calendar, or wheel.",
-  "lp.feat.share.label": "Share by URL",
-  "lp.feat.share.desc": "Generate a share URL and send it via LINE or email.",
+  "lp.feat.share.label": "Share with a link",
+  "lp.feat.share.desc": "Copy a link and send it to your group.",
   "lp.feat.free.label": "Completely free",
   "lp.feat.free.desc": "All features are free to use.",
   "lp.templatesHeading": "Ready-to-use templates",
@@ -111,7 +108,7 @@ export const en: Record<string, string> = {
   "common.duplicate": "Duplicate",
   "common.cancel": "Cancel",
 
-  // New schedule modal (frame only; template list stays Japanese)
+  // New schedule modal
   "newSchedule.title": "Create a new schedule",
   "newSchedule.instruction":
     "Choose a template. You can edit everything later.",
@@ -119,7 +116,7 @@ export const en: Record<string, string> = {
   "newSchedule.createBlankDesc": "Build a schedule from a blank slate",
 
   // Settings modal
-  "settings.title": "Edit",
+  "settings.title": "Edit schedule",
   "settings.unsaved": "Unsaved",
   "settings.newTask": "New task",
   "settings.confirmClose": "Your changes haven't been saved. Close anyway?",
@@ -128,8 +125,8 @@ export const en: Record<string, string> = {
   "settings.maxMembersReached": "Up to {n} members allowed.",
   "settings.maxGroupsReached": "Up to {n} groups allowed.",
   "settings.maxTasksReached": "Up to {n} tasks per group allowed.",
-  "settings.rotationManual": "Switch manually",
-  "settings.rotationDate": "Auto by date",
+  "settings.rotationManual": "Manual",
+  "settings.rotationDate": "Automatic",
   "settings.viewByTask": "By task",
   "settings.viewByMember": "By member",
   "settings.summaryTaskMode": "{tasks} tasks · {members} people",
@@ -137,15 +134,15 @@ export const en: Record<string, string> = {
   "settings.sectionBasic": "Basic settings",
   "settings.scheduleName": "Schedule name",
   "settings.scheduleNamePlaceholder":
-    "e.g. Cleaning duty, Lunch duty, Daily duty...",
-  "settings.pin": "Pin to front",
+    "e.g. Office cleaning, Lunch duty, Household chores",
+  "settings.pin": "Pin schedule",
   "settings.unpin": "Unpin",
-  "settings.pinTab": "Pin tab to front",
-  "settings.chooseView": "Choose a view",
-  "settings.whoDoesWhat": "Who does what",
-  "settings.whatByWhom": "What, by whom",
+  "settings.pinTab": "Pin schedule",
+  "settings.chooseView": "Organize by",
+  "settings.whoDoesWhat": "By member",
+  "settings.whatByWhom": "By task",
   "settings.sectionDesign": "Theme",
-  "settings.sectionContent": "Edit content",
+  "settings.sectionContent": "Members and tasks",
 
   // Group / member / task editing
   "group.moveGroupUp": "Move group up",
@@ -180,7 +177,7 @@ export const en: Record<string, string> = {
   "onboarding.stepAria": "Step {current}/{total}: {title} — {desc}",
   "onboarding.skip": "Skip",
   "onboarding.back": "Back",
-  "onboarding.start": "Get started!",
+  "onboarding.start": "Get started",
   "onboarding.next": "Next",
   "onboarding.tabs.title": "Switch between schedules",
   "onboarding.tabs.desc": "Use the tabs to switch schedules",
@@ -189,10 +186,9 @@ export const en: Record<string, string> = {
   "onboarding.rotation.title": "Advance the rotation",
   "onboarding.rotation.desc": "Use the arrows to move to the next turn",
   "onboarding.view.title": "Change the view",
-  "onboarding.view.desc": "Choose from cards, table, or calendar",
+  "onboarding.view.desc": "Choose cards, a table, a calendar, or a wheel",
   "onboarding.print.title": "Print or save as PDF",
-  "onboarding.print.desc":
-    "Print the current view as-is. PDF export works too.",
+  "onboarding.print.desc": "Print this view or save it as a PDF.",
   "onboarding.share.title": "Share with everyone",
   "onboarding.share.desc": "Share easily via QR code or LINE",
   "onboarding.add.title": "Add a schedule",
@@ -204,37 +200,39 @@ export const en: Record<string, string> = {
   "rotation.nextAria": "Advance to next turn",
   "rotation.currentAria": "Current turn: {n}",
   "rotation.current": "Current turn",
-  "rotation.autoByDate": "Switches automatically by date",
+  "rotation.autoByDate": "Rotates automatically",
   "rotation.shareAria": "Share",
   "rotation.cloudSaved": "Saved to cloud",
   "rotation.cloudUnsaved": "Not saved to cloud",
   "rotation.editAria": "Edit schedule",
 
   // Rotation settings
-  "rotationConfig.howToRotate": "How to rotate",
+  "rotationConfig.howToRotate": "Rotation",
+  "rotationConfig.automatic": "Automatic",
   "rotationConfig.startDate": "Start date",
-  "rotationConfig.cycleDays": "Rotate every how many days?",
+  "rotationConfig.cycleDays": "Rotate every",
   "rotationConfig.cycleDaysAria": "How many days between rotations",
+  "rotationConfig.dayUnit": "day",
   "rotationConfig.daysUnit": "days",
   "rotationConfig.skipSat": "Skip Saturdays",
   "rotationConfig.skipSun": "Skip Sundays",
-  "rotationConfig.skipHoliday": "Skip holidays",
+  "rotationConfig.skipHoliday": "Skip Japanese public holidays",
 
   // View switch / print
   "view.cards": "Cards",
   "view.table": "Table",
   "view.calendar": "Calendar",
-  "view.disc": "Disc",
-  "disc.offDuty": "Off",
-  "disc.sheetOuter": "Outer ring (fixed — roles) — cut along the outer line",
+  "view.disc": "Wheel",
+  "disc.offDuty": "Off duty",
+  "disc.sheetOuter": "Outer ring (tasks): cut along the outer edge.",
   "disc.sheetInner":
-    "Inner disc (rotating — members) — cut along the outer line, center it on the outer ring and pin",
+    "Inner disc (members): cut along the outer edge, align the centers, and attach with a pin.",
   "disc.unsupported":
-    "This chart can't be shown as a disc. Please use the Table view.",
+    "This schedule can't be shown as a wheel. Use Table view instead.",
   "disc.unsupportedGroupPool":
-    "Charts with group-specific members can't be shown as a disc. Please use the Table view.",
+    "Schedules with different members for each task group can't be shown as a wheel. Use Table view instead.",
   "disc.unsupportedTooManyTasks":
-    "To use the disc, keep members ≥ tasks (currently {members} members, {tasks} tasks). Merge tasks or add members to enable the disc. Until then, please use the Table view.",
+    "The wheel needs at least as many members as tasks. You have {members} members and {tasks} tasks. Combine tasks, add members, or use Table view.",
   "print.print": "Print",
   "print.printAria": "Print",
 
@@ -254,10 +252,10 @@ export const en: Record<string, string> = {
   "tabs.addAria": "Add a new schedule",
 
   // Quick-view table
-  "quickTable.heading": "Rotation quick view",
+  "quickTable.heading": "Rotation overview",
   "quickTable.scrollHint": "Scroll horizontally",
-  "quickTable.tableAria": "Rotation quick-view table",
-  "quickTable.assignee": "Assignee",
+  "quickTable.tableAria": "Rotation overview",
+  "quickTable.assignee": "Task",
 
   // Card grid
   "assignments.listAria": "Assignment list",
@@ -268,13 +266,23 @@ export const en: Record<string, string> = {
   "color.custom": "Custom color",
 
   // Theme picker
+  "legacyTheme.sunflower": "Sunflower",
+  "legacyTheme.crayon": "Crayon",
+  "legacyTheme.lavender": "Lavender",
+  "legacyTheme.whiteboard": "Whiteboard",
+  "legacyTheme.nature": "Fresh green",
+  "legacyTheme.sakura": "Cherry blossom",
+  "legacyTheme.nightsky": "Night sky",
+  "legacyTheme.chalkboard": "Blackboard",
+  "legacyTheme.ocean": "Ocean",
+  "theme.compositeLabel": "{color} ({texture})",
   "theme.selectAria": "Select the {name} theme",
   "theme.forPrint": "Print-friendly",
   "theme.textureLabel": "Texture",
   "theme.colorLabel": "Color",
-  "texture.sarasara": "sarasara",
-  "texture.zarazara": "zarazara",
-  "texture.mochimochi": "mochimochi",
+  "texture.sarasara": "Smooth",
+  "texture.zarazara": "Textured",
+  "texture.mochimochi": "Soft",
 
   // Theme color axis
   "themeColor.print": "Print",
@@ -291,6 +299,7 @@ export const en: Record<string, string> = {
   "settings.sectionFont": "Font",
   "font.appliesToAll": "Applies to every roster",
   "font.selectAria": "Select the {name} font",
+  "font.sample": "Aa Bb",
   "font.standard": "Standard",
   "font.handwriting": "Handwriting",
   "font.elegant": "Elegant",
@@ -316,7 +325,7 @@ export const en: Record<string, string> = {
   "confirmDelete.confirm": "Delete",
 
   // Install prompt
-  "install.androidTitle": "Add as app",
+  "install.androidTitle": "Install toban",
   "install.androidDesc": "Quick access from your home screen",
   "install.add": "Add",
   "install.iosTitle": "Add to home screen",
@@ -371,8 +380,8 @@ export const en: Record<string, string> = {
     "Failed to save. Please check your network connection.",
 
   // Today banner
-  "today.label": "Today's duty ({date})",
-  "current.label": "Current duty ({turn})",
+  "today.label": "Today's assignments ({date})",
+  "current.label": "Current assignments ({turn})",
 
   // Calendar
   "cal.manualNote": "Manual mode: assignments are fixed",
@@ -396,10 +405,16 @@ export const en: Record<string, string> = {
   "templates.subB":
     " — {count} of them. Pick one and just edit the members and assignments to finish your roster.",
 
+  // Template summaries
+  "templateSummary.task.one": "{count} task",
+  "templateSummary.task.other": "{count} tasks",
+  "templateSummary.group.one": "{count} group",
+  "templateSummary.group.other": "{count} groups",
+  "templateSummary.member.one": "{count} person",
+  "templateSummary.member.other": "{count} people",
+
   // Template detail page
   "templatesDetail.contents": "Template contents",
-  "templatesDetail.jaNote":
-    "The contents below are shown in Japanese. You can edit everything freely after creating.",
   "templatesDetail.taskN": "Task {n}",
   "templatesDetail.groupN": "Group {n}",
   "templatesDetail.memberExample": "Example members ({count})",
@@ -412,5 +427,5 @@ export const en: Record<string, string> = {
   // Roster notices
   "summary.saveFailed":
     "Could not save on this device. Keep this page open and check storage space and settings to avoid losing your changes.",
-  "summary.beforeStart": "Initial placement (starts {date})",
+  "summary.beforeStart": "Starting assignments · Starts {date}",
 };

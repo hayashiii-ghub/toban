@@ -8,7 +8,8 @@ import type {
   RotationConfig,
   Schedule,
 } from "@/rotation/types";
-import { MEMBER_PRESETS, TEMPLATES } from "@/rotation/constants";
+import { MEMBER_PRESETS } from "@/rotation/constants";
+import { findTemplate, getTemplates } from "@shared/template-localization";
 import {
   addMemberToSchedule,
   computeAssignments,
@@ -705,7 +706,8 @@ export function buildTobanTools(
             english() ? "en" : "ja"
           );
         else {
-          const template = TEMPLATES.find(t => t.name === input.template);
+          const locale = english() ? "en" : "ja";
+          const template = findTemplate(input.template!, locale);
           if (!template)
             throw new ToolError(
               "NOT_FOUND",
@@ -713,7 +715,7 @@ export function buildTobanTools(
                 "テンプレートが見つかりません。独自の条件はdefinitionで指定できます。",
                 "Template not found. Use definition for custom requirements."
               ),
-              { templates: TEMPLATES.map(t => t.name) }
+              { templates: getTemplates(locale).map(t => t.name) }
             );
           created = createScheduleFromTemplate(template);
         }

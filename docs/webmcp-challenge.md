@@ -6,6 +6,8 @@ Toban turns a chat request into an editable, printable duty roster on the page. 
 
 ## Try the experience
 
+English browsers start in English. You can also use the language button at the bottom of the app. Switching languages changes the interface, not the contents of existing rosters.
+
 With a connected WebMCP client, open Toban's home page and ask:
 
 > Create Office duties for Alex, Sam, Riley and Jordan. Four separate duties: vacuuming, rubbish, wiping desks and watering plants. Start September 1, 2026, rotate each eligible day, and pause rotation on Saturdays, Sundays and Japanese holidays. Show it as a table.
@@ -31,7 +33,7 @@ Japanese equivalent:
 - Optional pauses on Saturdays, Sundays and Japanese holidays. Pausing does not advance the calculated turn: cards/table retain that turn, while the existing calendar presentation leaves paused dates blank. It is not an individual availability constraint.
 - New date inputs are limited to 1980–2099, matching the existing holiday calculator's documented equinox range and bounding computation. The calculator uses Toban's existing modern Japanese holiday rules and 2020/2021 exceptions; it does not claim a complete historical legal calendar.
 - Temporary absence, per-person weekday restrictions, simultaneous multi-person duties, shifts and optimization are unsupported. A client should explain the limitation before approximating a request. `update_member.skip` is persistent exclusion until changed back, never “today only.”
-- Cards, table, calendar and disc remain the existing views. Disc retains its existing restrictions for rosters that cannot be represented as one wheel; the other views remain available.
+- Cards, table, calendar and wheel remain the existing views. The wheel keeps the existing `disc` tool value and its restrictions; the other views remain available.
 - Print means requesting the browser dialog. A tool cannot attest that the user printed or saved a PDF; clients that block it must use the visible Print button.
 
 ## Run locally
@@ -152,6 +154,16 @@ The Codex in-app client returned `PRINT_REQUESTED`, but its interface did not ex
 - A synthetic two-person roster was created through the production editor, saved to cloud, reloaded, changed from plant watering to supplies and intentionally shared. Its separate public page and public API showed the saved content. A subsequent edit also reached the public URL while preserving the other task and daily rotation settings. A fresh 390px-wide shared page had no horizontal overflow. The visible Print button was invoked without page errors; the native dialog is not observable through this connection.
 - The synthetic roster was deleted through the UI after verification. Its public API then returned 404. No user roster was edited or deleted.
 - A previously open browser initially retained the old service-worker page; a further normal reload loaded the current asset. No cache or browser storage was cleared. The user subsequently confirmed production WebMCP operation in Chrome/nekuda; this is user-observed evidence, distinct from the agent UI/API checks.
+
+## English UI follow-up (2026-08-31)
+
+- Localized all 32 built-in templates, including the blank starter: names, tasks and sample members are English when created in English. The picker, gallery, detail pages and template links use the same data. Saved rosters, IDs, assignments, colors and themes are preserved.
+- Template-based WebMCP creation accepts both the displayed English name and the original Japanese name; the created content follows the active interface language.
+- Shortened and aligned control labels, added singular/plural forms, localized theme names and the browser page title, and formatted future start dates in English. No new explanatory banners were added.
+- The holiday option explicitly says Japanese public holidays. English holiday names wrap inside calendar cells, including on narrow screens; holiday dates and rotation calculations are unchanged.
+- The final local checks passed 749 unit tests in 53 files and all 21 Playwright E2E tests, along with type checking, lint, formatting and the production build. English blank/template creation, switching languages without translating saved data, one/four-day settings, calendar labels, print output and sharing were exercised. Desktop, 390px mobile and print screenshots were reviewed independently.
+- The English sharing E2E uses an isolated in-memory API fixture, and printing records the dialog request plus print CSS. Those checks do not publish real schedules or prove a physical print/PDF save.
+- Template categories are shared through a small module so opening the app does not load the SEO template descriptions. The main bundle remains about 629 kB; the existing 500 kB chunk warning remains.
 
 ## What is new for the challenge
 

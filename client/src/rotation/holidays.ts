@@ -14,6 +14,28 @@ interface JapaneseHoliday {
   name: string;
 }
 
+// Display labels only: the holiday calendar and date calculations stay Japanese.
+const HOLIDAY_NAMES_EN: Record<string, string> = {
+  元日: "New Year's Day",
+  成人の日: "Coming of Age Day",
+  建国記念の日: "National Foundation Day",
+  天皇誕生日: "Emperor's Birthday",
+  春分の日: "Vernal Equinox Day",
+  昭和の日: "Showa Day",
+  憲法記念日: "Constitution Memorial Day",
+  みどりの日: "Greenery Day",
+  こどもの日: "Children's Day",
+  海の日: "Marine Day",
+  山の日: "Mountain Day",
+  敬老の日: "Respect for the Aged Day",
+  秋分の日: "Autumnal Equinox Day",
+  スポーツの日: "Sports Day",
+  文化の日: "Culture Day",
+  勤労感謝の日: "Labor Thanksgiving Day",
+  振替休日: "Substitute Holiday",
+  国民の休日: "National Holiday",
+};
+
 // 年単位キャッシュ
 const cache = new Map<number, JapaneseHoliday[]>();
 
@@ -157,14 +179,18 @@ export function getHolidaysForYear(year: number): JapaneseHoliday[] {
 /** 指定月の祝日マップ（日 → 祝日名） */
 export function getHolidaysForMonth(
   year: number,
-  month: number
+  month: number,
+  locale: "ja" | "en" = "ja"
 ): Map<number, string> {
   const holidays = getHolidaysForYear(year);
   const prefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
   const map = new Map<number, string>();
   for (const h of holidays) {
     if (h.date.startsWith(prefix)) {
-      map.set(parseInt(h.date.slice(8), 10), h.name);
+      map.set(
+        parseInt(h.date.slice(8), 10),
+        locale === "en" ? (HOLIDAY_NAMES_EN[h.name] ?? h.name) : h.name
+      );
     }
   }
   return map;

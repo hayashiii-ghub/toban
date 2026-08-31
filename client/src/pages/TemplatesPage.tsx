@@ -7,7 +7,7 @@ import {
   TEMPLATE_SEO_DATA,
   type TemplateSEO,
 } from "@shared/seo-templates";
-import { TEMPLATES } from "@/rotation/constants";
+import { getTemplates } from "@shared/template-localization";
 import { LpCtaLink } from "@/features/landing/LpCtaLink";
 import {
   breadcrumbSchema,
@@ -24,6 +24,7 @@ for (const t of TEMPLATE_SEO_DATA) byCategory.get(t.categoryId)?.push(t);
 export default function TemplatesPage() {
   const t = useT();
   const { locale } = useLocale();
+  const localizedTemplates = getTemplates(locale);
   const description = `${t("templates.subA")}${t("templates.subFree")}${t("templates.subB", { count: TEMPLATE_SEO_DATA.length })}`;
   usePageMeta({
     title: t("templates.docTitle"),
@@ -39,7 +40,7 @@ export default function TemplatesPage() {
   // 下のカード描画と同じ条件（template が引けないものは出さない）を使う。
   const listedTemplates = TEMPLATE_CATEGORIES.flatMap(cat =>
     (byCategory.get(cat.id) ?? []).flatMap(tpl => {
-      const template = TEMPLATES[tpl.templateIndex];
+      const template = localizedTemplates[tpl.templateIndex];
       return template ? [{ slug: tpl.slug, name: template.name }] : [];
     })
   );
@@ -95,7 +96,7 @@ export default function TemplatesPage() {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {templates.map(tpl => {
-                    const template = TEMPLATES[tpl.templateIndex];
+                    const template = localizedTemplates[tpl.templateIndex];
                     if (!template) return null;
                     return (
                       <Link
@@ -116,15 +117,23 @@ export default function TemplatesPage() {
                             </div>
                             <div className="text-xs text-lp-text-muted mt-1 line-clamp-2">
                               {template.groups
-                                .map(g => g.tasks.join("、"))
+                                .map(g =>
+                                  g.tasks.join(locale === "en" ? ", " : "、")
+                                )
                                 .join(" / ")}
                             </div>
                             <div className="text-xs text-lp-text-muted mt-1">
-                              {template.groups.length}
-                              {template.assignmentMode === "task"
-                                ? "タスク"
-                                : "グループ"}
-                              ・{template.members.length}名
+                              {t(
+                                `templateSummary.${template.assignmentMode === "task" ? "task" : "group"}.${template.groups.length === 1 ? "one" : "other"}`,
+                                { count: template.groups.length }
+                              )}
+                              {locale === "en" ? " · " : "・"}
+                              {locale === "en"
+                                ? t(
+                                    `templateSummary.member.${template.members.length === 1 ? "one" : "other"}`,
+                                    { count: template.members.length }
+                                  )
+                                : `${template.members.length}名`}
                             </div>
                           </div>
                           <ArrowRight className="size-4 text-lp-line group-hover:text-lp-primary flex-shrink-0 mt-1 transition-colors" />
@@ -157,10 +166,10 @@ export default function TemplatesPage() {
           __html: serializeJsonLd([
             breadcrumbSchema([
               {
-                name: "toban について",
+                name: t("footer.about"),
                 item: window.location.origin + "/about",
               },
-              { name: "テンプレート一覧" },
+              { name: t("templates.breadcrumb") },
             ]),
             itemListSchema(
               listedTemplates.map(tpl => ({

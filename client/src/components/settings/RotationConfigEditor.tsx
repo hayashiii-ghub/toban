@@ -52,7 +52,7 @@ export function RotationConfigEditor({ config, onUpdate }: Props) {
               }))
             }
           >
-            {t("rotation.autoByDate")}
+            {t("rotationConfig.automatic")}
           </button>
         </div>
       </fieldset>
@@ -120,7 +120,11 @@ export function RotationConfigEditor({ config, onUpdate }: Props) {
                   className="shrink-0"
                   style={{ color: "var(--dt-text-muted)" }}
                 >
-                  {t("rotationConfig.daysUnit")}
+                  {t(
+                    (config.cycleDays || 1) === 1
+                      ? "rotationConfig.dayUnit"
+                      : "rotationConfig.daysUnit"
+                  )}
                 </span>
               </div>
             </div>

@@ -326,6 +326,12 @@ for (const locale of ["ja", "en"] as const) {
             ...definition,
             name: "Office duties",
             members: ["Alex", "Sam", "Riley", "Jordan"],
+            task_groups: [
+              "Clean floors",
+              "Take out trash",
+              "Wipe desks",
+              "Water plants",
+            ].map(task => ({ tasks: [task] })),
           }
         : definition;
     expect(
@@ -375,7 +381,7 @@ for (const locale of ["ja", "en"] as const) {
     ).toHaveValue("1");
     for (const label of locale === "ja"
       ? ["土曜はお休み", "日曜はお休み", "祝日はお休み"]
-      : ["Skip Saturdays", "Skip Sundays", "Skip holidays"]) {
+      : ["Skip Saturdays", "Skip Sundays", "Skip Japanese public holidays"]) {
       await expect(editor.getByLabel(label)).toBeChecked();
     }
     await editor

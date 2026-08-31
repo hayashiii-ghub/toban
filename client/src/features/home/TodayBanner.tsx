@@ -1,6 +1,6 @@
 import type { TaskGroup, Member, AssignmentMode } from "@/rotation/types";
 import { computeAssignments } from "@/rotation/utils";
-import { useT, useDateLocale } from "@/i18n";
+import { useT, useDateLocale, useLocale } from "@/i18n";
 import { parseIsoDateLocal, startOfLocalDay } from "@/rotation/dateUtils";
 
 interface TodayBannerProps {
@@ -26,6 +26,7 @@ export function TodayBanner({
 }: TodayBannerProps) {
   const t = useT();
   const dateLocale = useDateLocale();
+  const { locale } = useLocale();
   const assignments = computeAssignments(
     groups,
     members,
@@ -41,13 +42,21 @@ export function TodayBanner({
     day: "numeric",
     weekday: "short",
   });
+  const parsedStartDate = startDate ? parseIsoDateLocal(startDate) : null;
   const beforeStart =
     isDateMode &&
-    startDate &&
-    (parseIsoDateLocal(startDate)?.getTime() ?? 0) >
-      startOfLocalDay(new Date()).getTime();
+    parsedStartDate &&
+    parsedStartDate.getTime() > startOfLocalDay(new Date()).getTime();
+  const startDateLabel =
+    locale === "en" && parsedStartDate
+      ? parsedStartDate.toLocaleDateString(dateLocale, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : (startDate ?? "");
   const label = beforeStart
-    ? t("summary.beforeStart", { date: startDate })
+    ? t("summary.beforeStart", { date: startDateLabel })
     : isDateMode
       ? t("today.label", { date: today })
       : t("current.label", { turn: rotationLabel });

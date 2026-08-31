@@ -17,11 +17,13 @@ import { useScheduleManager } from "@/hooks/useScheduleManager";
 import { useShareFlow } from "@/hooks/useShareFlow";
 import { useTabDragDrop } from "@/hooks/useTabDragDrop";
 import { useViewTab } from "@/hooks/useViewTab";
-import { TEMPLATES } from "@/rotation/constants";
+import { getTemplates } from "@shared/template-localization";
+import { useLocale } from "@/i18n";
 import { computeAssignments, getEffectiveRotation } from "@/rotation/utils";
 import type { AppState, Schedule } from "@/rotation/types";
 
 export function useHomeState() {
+  const { locale } = useLocale();
   const toolEditingRef = useRef(false);
   const shareVisibleRef = useRef(false);
   const {
@@ -187,12 +189,12 @@ export function useHomeState() {
     const templateParam = params.get("template");
     if (templateParam !== null) {
       const idx = parseInt(templateParam, 10);
-      if (addScheduleFromTemplateIndex(idx, TEMPLATES)) {
+      if (addScheduleFromTemplateIndex(idx, getTemplates(locale))) {
         closeModal();
       }
     }
     window.history.replaceState({}, "", window.location.pathname);
-  }, [addScheduleFromTemplateIndex, closeModal]);
+  }, [addScheduleFromTemplateIndex, closeModal, locale]);
 
   const onAddSchedule = useCallback(
     (template: Parameters<typeof handleAddSchedule>[0]) => {

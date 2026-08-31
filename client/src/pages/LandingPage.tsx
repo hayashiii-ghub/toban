@@ -19,7 +19,7 @@ import {
 import { faqPageSchema, serializeJsonLd } from "@shared/jsonLd";
 import { CONTACT_CATEGORIES } from "@shared/schemas";
 import { LIMITS } from "@shared/limits";
-import { TEMPLATES } from "@/rotation/constants";
+import { getTemplates } from "@shared/template-localization";
 import { LP_COLORS as C, alpha } from "@/features/landing/theme";
 import { useT, useLocale } from "@/i18n";
 import "./landing.css";
@@ -509,7 +509,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {featuredTemplates.map(tpl => {
               if (!tpl) return null;
-              const template = TEMPLATES[tpl.templateIndex];
+              const template = getTemplates(locale)[tpl.templateIndex];
               if (!template) return null;
               return (
                 <Link
@@ -536,7 +536,9 @@ export default function LandingPage() {
                       className="text-xs mt-1 line-clamp-2"
                       style={{ color: C.textMuted }}
                     >
-                      {template.groups.map(g => g.tasks.join("、")).join(" / ")}
+                      {template.groups
+                        .map(g => g.tasks.join(locale === "en" ? ", " : "、"))
+                        .join(" / ")}
                     </div>
                   </div>
                   <ArrowRight

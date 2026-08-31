@@ -175,7 +175,7 @@ export function RotationControls({
                   />
                 </span>
               )}
-              {t("share.title")}
+              {t("common.share")}
             </button>
             <button
               type="button"
@@ -189,7 +189,7 @@ export function RotationControls({
               aria-label={t("rotation.editAria")}
             >
               <Pencil className="size-3.5 sm:size-4" aria-hidden="true" />{" "}
-              {t("settings.title")}
+              {t("common.edit")}
             </button>
           </div>
         </m.div>

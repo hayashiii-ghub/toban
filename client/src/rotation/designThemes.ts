@@ -591,7 +591,7 @@ interface DesignTexture {
   id: string;
   /** 日本語名。合成テーマの name を組み立てるのに使う */
   name: string;
-  /** 表示名の i18n キー。オノマトペは英訳できないので en はローマ字表記 */
+  /** 表示名の i18n キー。英語は質感に合う短いラベルを使う */
   labelKey: string;
   description: string;
   borders: DesignThemeBorders;
@@ -870,9 +870,8 @@ const DEFAULT_TEXTURE_ID = sarasara.id;
 const DEFAULT_COLOR_ID = whiteboard.id;
 
 /**
- * 表示名の組み立てルール。既定の質感は色名だけにして、それ以外だけ質感を併記する。
- * composeTheme（日本語固定）と getThemeLabel（翻訳済み）の両方から呼ぶので、
- * 片方だけ書式を変えて画面とテストがずれることがない。
+ * composeTheme の日本語固定名。既定の質感は色名だけにして、それ以外は質感を併記する。
+ * UI の表示名は getThemeLabel で、同じ規則のまま言語に合う書式を使う。
  */
 function formatThemeName(
   colorLabel: string,
@@ -940,21 +939,27 @@ export function composeTheme(textureId: string, colorId: string): DesignTheme {
 /**
  * 表示用のテーマ名。合成テーマは質感・色それぞれの i18n キーを引くので、
  * DesignTheme.name（日本語固定）ではなくこちらを画面で使う。
- * 旧テーマは凍結した日本語名をそのまま返す。
+ * 旧テーマも表示名だけ翻訳し、ID や凍結したテーマ定義は変更しない。
  */
 export function getThemeLabel(
   id: string | undefined,
-  t: (key: string) => string
+  t: (key: string, params?: Record<string, string | number>) => string
 ): string {
   const legacy = id ? DESIGN_THEMES.find(theme => theme.id === id) : undefined;
-  if (legacy) return legacy.name;
+  if (legacy) return t(`legacyTheme.${legacy.id}`);
 
   const { textureId, colorId } = splitThemeId(id);
   const texture = THEME_TEXTURES.find(tx => tx.id === textureId);
   const color = THEME_COLORS.find(c => c.id === colorId);
-  if (!texture || !color) return DESIGN_THEMES[0].name;
+  if (!texture || !color) return t(`legacyTheme.${DESIGN_THEMES[0].id}`);
 
-  return formatThemeName(t(color.labelKey), t(texture.labelKey), textureId);
+  const colorLabel = t(color.labelKey);
+  return textureId === DEFAULT_TEXTURE_ID
+    ? colorLabel
+    : t("theme.compositeLabel", {
+        color: colorLabel,
+        texture: t(texture.labelKey),
+      });
 }
 
 export function getThemeById(id: string | undefined): DesignTheme {

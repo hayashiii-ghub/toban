@@ -11,7 +11,7 @@ import {
   computeDateRotationForDate,
 } from "@/rotation/utils";
 import { getHolidaysForMonth } from "@/rotation/holidays";
-import { useT, useDateLocale } from "@/i18n";
+import { useT, useDateLocale, useLocale } from "@/i18n";
 import { TaskLegend } from "@/features/home/TaskLegend";
 
 interface RotationCalendarProps {
@@ -52,6 +52,7 @@ export function RotationCalendar({
 }: RotationCalendarProps) {
   const t = useT();
   const dateLocale = useDateLocale();
+  const { locale } = useLocale();
   const weekdayLabels = [
     t("cal.wd0"),
     t("cal.wd1"),
@@ -91,8 +92,8 @@ export function RotationCalendar({
     [year, month]
   );
   const holidayMap = useMemo(
-    () => getHolidaysForMonth(year, month),
-    [year, month]
+    () => getHolidaysForMonth(year, month, locale),
+    [year, month, locale]
   );
 
   const dayAssignments = useMemo(() => {
@@ -310,7 +311,9 @@ export function RotationCalendar({
                 >
                   {day && (
                     <>
-                      <div className="flex items-center gap-0.5 mb-0.5 min-h-[16px] sm:min-h-[20px]">
+                      <div
+                        className={`flex ${locale === "en" && holidayName ? "flex-col items-start" : "items-center"} gap-0.5 mb-0.5 min-h-[16px] sm:min-h-[20px]`}
+                      >
                         <span
                           className={`text-xs sm:text-sm font-bold leading-none shrink-0 ${
                             isToday
@@ -334,7 +337,11 @@ export function RotationCalendar({
                         </span>
                         {holidayName && (
                           <span
-                            className="text-[8px] sm:text-[10px] leading-tight truncate"
+                            className={
+                              locale === "en"
+                                ? "text-[9px] sm:text-[10px] leading-tight w-full [overflow-wrap:anywhere]"
+                                : "text-[8px] sm:text-[10px] leading-tight truncate"
+                            }
                             style={{ color: "#EF4444" }}
                             title={holidayName}
                           >
@@ -440,7 +447,9 @@ export function RotationCalendar({
                   style={cellStyle}
                 >
                   {day && (
-                    <div className="flex items-center gap-0.5 mb-0.5 min-h-[16px] sm:min-h-[20px]">
+                    <div
+                      className={`flex ${locale === "en" && holidayName ? "flex-col items-start" : "items-center"} gap-0.5 mb-0.5 min-h-[16px] sm:min-h-[20px]`}
+                    >
                       <span
                         className={`text-xs sm:text-sm font-bold leading-none shrink-0 ${
                           isToday
@@ -464,7 +473,11 @@ export function RotationCalendar({
                       </span>
                       {holidayName && (
                         <span
-                          className="text-[8px] sm:text-[10px] leading-tight truncate"
+                          className={
+                            locale === "en"
+                              ? "text-[9px] sm:text-[10px] leading-tight w-full [overflow-wrap:anywhere]"
+                              : "text-[8px] sm:text-[10px] leading-tight truncate"
+                          }
                           style={{ color: "#EF4444" }}
                           title={holidayName}
                         >

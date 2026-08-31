@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
 import { NewScheduleModal } from "@/components/NewScheduleModal";
@@ -19,6 +20,9 @@ import "./home.css";
 export default function Home() {
   const s = useHomeState();
   const t = useT();
+  useEffect(() => {
+    document.title = t("lp.docTitle");
+  }, [t]);
   useTobanTools(s); // WebMCP tools を登録（非対応ブラウザでは no-op）
 
   if (!s.activeSchedule) {

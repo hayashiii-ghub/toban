@@ -1,5 +1,6 @@
 import type { AppState } from "@/rotation/types";
-import { STORAGE_KEY, TEMPLATES } from "@/rotation/constants";
+import { STORAGE_KEY } from "@/rotation/constants";
+import { getTemplates } from "@shared/template-localization";
 import {
   DEFAULT_APP_STATE,
   DEFAULT_APP_STATE_EN,
@@ -35,8 +36,9 @@ export function loadState(): AppState {
     return defaultState;
   }
 
+  const templates = getTemplates(locale);
   const customSchedule = createScheduleFromTemplate(
-    TEMPLATES[TEMPLATES.length - 1]
+    templates[templates.length - 1]
   );
   return { schedules: [customSchedule], activeScheduleId: customSchedule.id };
 }

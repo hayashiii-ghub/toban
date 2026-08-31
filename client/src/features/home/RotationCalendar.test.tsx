@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, cleanup, fireEvent } from "@testing-library/react";
+import { LanguageProvider } from "@/i18n";
 import { RotationCalendar } from "./RotationCalendar";
 import type { Member, RotationConfig, TaskGroup } from "@shared/types";
 
@@ -185,4 +186,27 @@ describe("RotationCalendar", () => {
     // March 20, 2026 is 春分の日
     expect(container.textContent).toContain("春分の日");
   });
+});
+
+it("shows English holiday labels while preserving user-entered roster text", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(2026, 8, 1));
+  localStorage.setItem("toban-lang", "en");
+  try {
+    const { container } = render(
+      <LanguageProvider>
+        <RotationCalendar groups={groups} members={members} rotation={0} />
+      </LanguageProvider>
+    );
+    expect(container.textContent).toContain("September 2026");
+    expect(container.textContent).toContain("Respect for the Aged Day");
+    expect(container.textContent).not.toContain("敬老の日");
+    expect(container.textContent).toContain("掃除");
+    expect(container.textContent).toContain("田中");
+  } finally {
+    cleanup();
+    localStorage.removeItem("toban-lang");
+    document.documentElement.lang = "ja";
+    vi.useRealTimers();
+  }
 });

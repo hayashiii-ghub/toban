@@ -82,13 +82,12 @@ export const DEFAULT_APP_STATE: AppState = {
 /**
  * 英語ロケールでの初回表示用デフォルト。
  * 英語ユーザがクリーンな状態で開いたとき、日本語ガイドではなく英語ガイドを seed する。
- * テンプレート一覧（gallery）は日本語のままなので、ここはコールドスタートの入口だけ英語化する。
  */
 export const DEFAULT_APP_STATE_EN: AppState = {
   schedules: [
     {
       id: "s_default_1",
-      name: "Getting Started",
+      name: "Getting started",
       rotation: 0,
       assignmentMode: "task",
       designThemeId: "sarasara/chalkboard",
@@ -97,7 +96,7 @@ export const DEFAULT_APP_STATE_EN: AppState = {
           id: "g1",
           tasks: [
             "Pick a template",
-            "Choose any roster from the Template button",
+            "Select + to choose a template or start from scratch",
           ],
           emoji: "📋",
         },
@@ -105,7 +104,7 @@ export const DEFAULT_APP_STATE_EN: AppState = {
           id: "g2",
           tasks: [
             "Edit members & tasks",
-            "Tap a name or task to change it freely",
+            "Select Edit to add names and update tasks",
           ],
           emoji: "✏️",
         },
@@ -121,7 +120,7 @@ export const DEFAULT_APP_STATE_EN: AppState = {
           id: "g4",
           tasks: [
             "Print or share",
-            "When you're done, print, save as PDF, or share by URL",
+            "Print your schedule, save a PDF, or share a link",
           ],
           emoji: "🖨️",
         },

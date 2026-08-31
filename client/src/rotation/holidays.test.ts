@@ -182,3 +182,22 @@ describe("countSkipDays", () => {
     expect(countSkipDays(d, d, { skipSaturday: true })).toBe(0);
   });
 });
+
+describe("localized holiday labels", () => {
+  it("translates labels without changing dates or contaminating the Japanese cache", () => {
+    const jaBefore = getHolidaysForMonth(2026, 8);
+    const en = getHolidaysForMonth(2026, 8, "en");
+    expect(en.get(21)).toBe("Respect for the Aged Day");
+    expect(en.get(22)).toBe("National Holiday");
+    expect(en.get(23)).toBe("Autumnal Equinox Day");
+    expect([...en.keys()]).toEqual([...jaBefore.keys()]);
+    expect(getHolidaysForMonth(2026, 8)).toEqual(jaBefore);
+    expect(getHolidaysForMonth(2026, 8).get(21)).toBe("敬老の日");
+  });
+
+  it("translates substitute holidays too", () => {
+    expect(getHolidaysForMonth(2026, 4, "en").get(6)).toBe(
+      "Substitute Holiday"
+    );
+  });
+});

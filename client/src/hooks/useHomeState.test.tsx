@@ -3,6 +3,7 @@ import { act, cleanup, renderHook } from "@testing-library/react";
 import { useHomeState } from "./useHomeState";
 import { STORAGE_KEY, TEMPLATES } from "@/rotation/constants";
 import { DEFAULT_APP_STATE } from "@/rotation/defaultState";
+import { LanguageProvider } from "@/i18n";
 
 afterEach(cleanup);
 
@@ -59,6 +60,26 @@ describe("?template=N での着地", () => {
     expect(result.current.activeSchedule?.name).toBe(TEMPLATES[0].name);
     expect(result.current.modal.type).toBeNull();
     // クエリは履歴から消す（リロードで作り直さないため）
+    expect(window.location.search).toBe("");
+  });
+
+  it("English template links create English content without changing saved Japanese rosters", () => {
+    localStorage.setItem("toban-lang", "en");
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_APP_STATE));
+    window.history.replaceState({}, "", "/?template=0");
+
+    const { result } = renderHook(() => useHomeState(), {
+      wrapper: LanguageProvider,
+    });
+
+    expect(result.current.activeSchedule?.name).toBe("Office cleaning");
+    expect(result.current.activeSchedule?.groups[0].tasks).toEqual([
+      "Vacuuming & mopping",
+    ]);
+    expect(result.current.activeSchedule?.members[0].name).toBe("Alex");
+    expect(result.current.state.schedules[0]).toEqual(
+      DEFAULT_APP_STATE.schedules[0]
+    );
     expect(window.location.search).toBe("");
   });
 

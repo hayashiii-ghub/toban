@@ -1,4 +1,4 @@
-// 日本語辞書。UI の枠（chrome）のみ。テンプレ/メンバー/テーマの中身は対象外。
+// 日本語UI辞書。テンプレートの内容は別のデータ定義で管理する。
 // キーは namespace.key 形式。文字列抽出の各 step でここに追記していく。
 
 export const ja: Record<string, string> = {
@@ -9,6 +9,8 @@ export const ja: Record<string, string> = {
   "footer.about": "toban について",
 
   // 共通
+  "common.share": "共有",
+  "common.edit": "編集",
   "common.close": "閉じる",
 
   // 回転ラベル（共有/Home 共用）
@@ -108,7 +110,7 @@ export const ja: Record<string, string> = {
   "common.duplicate": "複製",
   "common.cancel": "キャンセル",
 
-  // 新規作成モーダル（枠のみ。テンプレ一覧は日本語固定）
+  // 新規作成モーダル
   "newSchedule.title": "新しい当番表を作成",
   "newSchedule.instruction":
     "テンプレートを選択してください。後から自由に編集できます。",
@@ -206,9 +208,11 @@ export const ja: Record<string, string> = {
 
   // ローテーション設定
   "rotationConfig.howToRotate": "交代のしかた",
+  "rotationConfig.automatic": "日付で自動切り替え",
   "rotationConfig.startDate": "開始日",
   "rotationConfig.cycleDays": "何日ごとに交代？",
   "rotationConfig.cycleDaysAria": "何日ごとに交代するか",
+  "rotationConfig.dayUnit": "日ごと",
   "rotationConfig.daysUnit": "日ごと",
   "rotationConfig.skipSat": "土曜はお休み",
   "rotationConfig.skipSun": "日曜はお休み",
@@ -261,6 +265,16 @@ export const ja: Record<string, string> = {
   "color.custom": "カスタムカラー",
 
   // テーマ選択
+  "legacyTheme.sunflower": "ひまわり",
+  "legacyTheme.crayon": "クレヨン",
+  "legacyTheme.lavender": "ラベンダー",
+  "legacyTheme.whiteboard": "ホワイトボード",
+  "legacyTheme.nature": "わかば",
+  "legacyTheme.sakura": "さくら",
+  "legacyTheme.nightsky": "よぞら",
+  "legacyTheme.chalkboard": "こくばん",
+  "legacyTheme.ocean": "うみ",
+  "theme.compositeLabel": "{color}（{texture}）",
   "theme.selectAria": "{name}テーマを選択",
   "theme.forPrint": "印刷向け",
   "theme.textureLabel": "質感",
@@ -284,6 +298,7 @@ export const ja: Record<string, string> = {
   "settings.sectionFont": "文字",
   "font.appliesToAll": "すべての当番表に適用されます",
   "font.selectAria": "{name}の文字を選択",
+  "font.sample": "あいう Aa",
   "font.standard": "標準",
   "font.handwriting": "手書き",
   "font.elegant": "エレガント",
@@ -394,9 +409,14 @@ export const ja: Record<string, string> = {
     "を{count}種類ご用意しました。テンプレートを選んで、メンバーや担当を自由に編集するだけで当番表が完成します。",
 
   // テンプレート詳細ページ
+  "templateSummary.task.one": "{count}タスク",
+  "templateSummary.task.other": "{count}タスク",
+  "templateSummary.group.one": "{count}グループ",
+  "templateSummary.group.other": "{count}グループ",
+  "templateSummary.member.one": "{count}人",
+  "templateSummary.member.other": "{count}人",
+
   "templatesDetail.contents": "テンプレートの内容",
-  "templatesDetail.jaNote":
-    "※ 以下の内容は日本語で表示されます（作成後に自由に編集できます）。",
   "templatesDetail.taskN": "タスク {n}",
   "templatesDetail.groupN": "グループ {n}",
   "templatesDetail.memberExample": "メンバー例（{count}名）",

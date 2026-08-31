@@ -15,7 +15,7 @@ import {
   faqPageSchema,
   serializeJsonLd,
 } from "@shared/jsonLd";
-import { TEMPLATES } from "@/rotation/constants";
+import { getTemplates } from "@shared/template-localization";
 import { LpCtaLink } from "@/features/landing/LpCtaLink";
 import type { ScheduleTemplate } from "@/rotation/types";
 import { useT, useLocale } from "@/i18n";
@@ -24,9 +24,10 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import NotFound from "./NotFound";
 
 export default function TemplateDetailPage() {
+  const { locale } = useLocale();
   const { slug } = useParams<{ slug: string }>();
   const seo = slug ? TEMPLATE_SEO_MAP.get(slug) : undefined;
-  const template = seo ? TEMPLATES[seo.templateIndex] : undefined;
+  const template = seo ? getTemplates(locale)[seo.templateIndex] : undefined;
 
   if (!slug || !seo || !template) return <NotFound />;
 
@@ -113,16 +114,9 @@ function TemplateDetailContent({
 
       {/* テンプレート内容プレビュー */}
       <section className="px-4 pb-10 max-w-3xl mx-auto">
-        <h2
-          className={`text-lg font-extrabold text-lp-text ${locale === "en" ? "mb-1" : "mb-4"}`}
-        >
+        <h2 className="text-lg font-extrabold text-lp-text mb-4">
           {t("templatesDetail.contents")}
         </h2>
-        {locale === "en" && (
-          <p className="text-xs text-lp-text-muted mb-4">
-            {t("templatesDetail.jaNote")}
-          </p>
-        )}
 
         {/* グループ/タスク一覧 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -258,11 +252,11 @@ function TemplateDetailContent({
               : []),
             breadcrumbSchema([
               {
-                name: "toban について",
+                name: t("footer.about"),
                 item: window.location.origin + "/about",
               },
               {
-                name: "テンプレート一覧",
+                name: t("templates.breadcrumb"),
                 item: window.location.origin + "/templates",
               },
               { name: template.name },
@@ -287,6 +281,8 @@ function RelatedTemplates({
   currentSlug: string;
   categoryId: string;
 }) {
+  const { locale } = useLocale();
+  const localizedTemplates = getTemplates(locale);
   const sameCategory = TEMPLATE_SEO_DATA.filter(
     t => t.categoryId === categoryId && t.slug !== currentSlug
   );
@@ -301,7 +297,7 @@ function RelatedTemplates({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
       {related.map(tpl => {
-        const t = TEMPLATES[tpl.templateIndex];
+        const t = localizedTemplates[tpl.templateIndex];
         if (!t) return null;
         return (
           <Link

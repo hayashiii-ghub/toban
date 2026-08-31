@@ -21,7 +21,7 @@ import { RotationConfigEditor } from "./settings/RotationConfigEditor";
 import { getThemeById, getThemeLabel } from "@/rotation/designThemes";
 import { getFontById, getSavedFontId } from "@/fonts";
 import { applyThemeToRoot } from "@/contexts/DesignThemeContext";
-import { useT } from "@/i18n";
+import { useLocale, useT } from "@/i18n";
 
 interface Props {
   scheduleName: string;
@@ -63,6 +63,7 @@ export function SettingsModal({
   onClose,
 }: Props) {
   const t = useT();
+  const { locale } = useLocale();
   const [editName, setEditName] = useState(scheduleName);
   const [editGroups, setEditGroups] = useState<TaskGroup[]>(() =>
     deepClone(groups)
@@ -306,16 +307,22 @@ export function SettingsModal({
       ? t("settings.viewByTask")
       : t("settings.viewByMember");
   const basicSummary = `${editName || scheduleName} / ${assignmentModeLabel} / ${rotationModeLabel}`;
+  const countLabel = (kind: "task" | "group" | "member", count: number) =>
+    t(`templateSummary.${kind}.${count === 1 ? "one" : "other"}`, { count });
   const taskSummary =
-    editAssignmentMode === "task"
-      ? t("settings.summaryTaskMode", {
-          tasks: editGroups.length,
-          members: editMembers.length,
-        })
-      : t("settings.summaryMemberMode", {
-          members: editMembers.length,
-          groups: editGroups.length,
-        });
+    locale === "en"
+      ? editAssignmentMode === "task"
+        ? `${countLabel("task", editGroups.length)} · ${countLabel("member", editMembers.length)}`
+        : `${countLabel("member", editMembers.length)} · ${countLabel("group", editGroups.length)}`
+      : editAssignmentMode === "task"
+        ? t("settings.summaryTaskMode", {
+            tasks: editGroups.length,
+            members: editMembers.length,
+          })
+        : t("settings.summaryMemberMode", {
+            members: editMembers.length,
+            groups: editGroups.length,
+          });
 
   return (
     <m.div

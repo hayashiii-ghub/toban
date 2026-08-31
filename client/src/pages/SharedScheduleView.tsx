@@ -3,7 +3,6 @@ import { useParams, useLocation } from "wouter";
 import { toast } from "sonner";
 import { getSchedule, ApiError } from "@/lib/api";
 import type { ScheduleDTO } from "@/rotation/types";
-import { APP_TITLE } from "@/rotation/constants";
 import {
   computeAssignments,
   computeDateRotation,
@@ -70,13 +69,13 @@ export default function SharedScheduleView() {
 
   const scheduleName = schedule?.name;
   useEffect(() => {
-    if (scheduleName) {
-      document.title = `${scheduleName} - toban`;
-    }
+    document.title = scheduleName
+      ? `${scheduleName} - toban`
+      : t("lp.docTitle");
     return () => {
-      document.title = APP_TITLE;
+      document.title = t("lp.docTitle");
     };
-  }, [scheduleName]);
+  }, [scheduleName, t]);
 
   const effectiveRotation = useMemo(() => {
     if (!schedule) return 0;

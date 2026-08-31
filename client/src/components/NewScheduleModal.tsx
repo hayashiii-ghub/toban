@@ -2,25 +2,27 @@ import { useCallback, useRef, useState } from "react";
 import { m, AnimatePresence } from "framer-motion";
 import { ChevronDown, FileText, Plus, X } from "lucide-react";
 import type { ScheduleTemplate } from "@/rotation/types";
-import { TEMPLATES } from "@/rotation/constants";
+import { getTemplates } from "@shared/template-localization";
+import {
+  TEMPLATE_CATEGORIES,
+  TEMPLATE_CATEGORIES_EN,
+} from "@shared/template-categories";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
-import { useT } from "@/i18n";
-
-const CUSTOM_TEMPLATE = TEMPLATES[TEMPLATES.length - 1]; // カスタム（空白）— 常に最後
+import { useT, useLocale } from "@/i18n";
 
 const TEMPLATE_SECTIONS = [
-  { label: "🏢 事務室・オフィス", from: 0, to: 2, defaultOpen: false },
-  { label: "🌷 幼稚園・保育園", from: 2, to: 7, defaultOpen: false },
-  { label: "🏫 小中学校（クラス用）", from: 7, to: 13, defaultOpen: false },
-  { label: "🔑 職員室（先生用）", from: 13, to: 14, defaultOpen: false },
-  { label: "🚩 PTA・保護者会", from: 14, to: 18, defaultOpen: false },
-  { label: "🏥 介護施設", from: 18, to: 21, defaultOpen: false },
-  { label: "🏘️ 自治会・マンション", from: 21, to: 23, defaultOpen: false },
-  { label: "🍴 飲食店・店舗", from: 23, to: 24, defaultOpen: false },
-  { label: "🏠 家庭・暮らし", from: 24, to: 26, defaultOpen: false },
-  { label: "🤝 その他の団体", from: 26, to: 28, defaultOpen: false },
-  { label: "✅ チェックリスト・TODO", from: 28, to: 31, defaultOpen: false },
+  { id: "office", from: 0, to: 2, defaultOpen: false },
+  { id: "kindergarten", from: 2, to: 7, defaultOpen: false },
+  { id: "school", from: 7, to: 13, defaultOpen: false },
+  { id: "faculty", from: 13, to: 14, defaultOpen: false },
+  { id: "pta", from: 14, to: 18, defaultOpen: false },
+  { id: "care", from: 18, to: 21, defaultOpen: false },
+  { id: "community", from: 21, to: 23, defaultOpen: false },
+  { id: "restaurant", from: 23, to: 24, defaultOpen: false },
+  { id: "home", from: 24, to: 26, defaultOpen: false },
+  { id: "other", from: 26, to: 28, defaultOpen: false },
+  { id: "checklist", from: 28, to: 31, defaultOpen: false },
 ];
 
 interface Props {
@@ -30,10 +32,12 @@ interface Props {
 
 export function NewScheduleModal({ onSelect, onClose }: Props) {
   const t = useT();
+  const { locale } = useLocale();
+  const localizedTemplates = getTemplates(locale);
+  const customTemplate = localizedTemplates[localizedTemplates.length - 1];
   const modalRef = useRef<HTMLDivElement>(null);
   const [openSections, setOpenSections] = useState<Set<string>>(
-    () =>
-      new Set(TEMPLATE_SECTIONS.flatMap(s => (s.defaultOpen ? [s.label] : [])))
+    () => new Set(TEMPLATE_SECTIONS.flatMap(s => (s.defaultOpen ? [s.id] : [])))
   );
 
   const handleEscape = useCallback(() => onClose(), [onClose]);
@@ -118,7 +122,7 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
           {/* 新しくつくる（カスタム） */}
           <button
             type="button"
-            onClick={() => onSelect(CUSTOM_TEMPLATE)}
+            onClick={() => onSelect(customTemplate)}
             className="theme-border theme-shadow-sm p-3 sm:p-4 w-full text-left transition-all duration-150 theme-hover-lift mb-2"
             style={{
               borderRadius: "var(--dt-border-radius)",
@@ -150,20 +154,30 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
 
           {/* テンプレートセクション */}
           {TEMPLATE_SECTIONS.map(section => {
-            const isOpen = openSections.has(section.label);
-            const templates = TEMPLATES.slice(section.from, section.to);
+            const isOpen = openSections.has(section.id);
+            const templates = localizedTemplates.slice(
+              section.from,
+              section.to
+            );
+            const category = TEMPLATE_CATEGORIES.find(
+              cat => cat.id === section.id
+            )!;
+            const label =
+              locale === "en"
+                ? TEMPLATE_CATEGORIES_EN[section.id].label
+                : category.label;
             return (
-              <div key={section.label}>
+              <div key={section.id}>
                 <button
                   type="button"
-                  onClick={() => toggleSection(section.label)}
+                  onClick={() => toggleSection(section.id)}
                   className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <span
                     className="text-sm font-extrabold tracking-wider"
                     style={{ color: "var(--dt-text-secondary)" }}
                   >
-                    {section.label}
+                    {category.emoji} {label}
                   </span>
                   <ChevronDown
                     className="size-4 transition-transform duration-200"
@@ -210,17 +224,24 @@ export function NewScheduleModal({ onSelect, onClose }: Props) {
                                   className="text-xs font-medium mt-0.5 truncate"
                                   style={{ color: "var(--dt-text-muted)" }}
                                 >
-                                  {template.groups.length}
-                                  {template.assignmentMode === "task"
-                                    ? "タスク"
-                                    : "グループ"}{" "}
-                                  ・ {template.members.length}人
+                                  {t(
+                                    `templateSummary.${template.assignmentMode === "task" ? "task" : "group"}.${template.groups.length === 1 ? "one" : "other"}`,
+                                    { count: template.groups.length }
+                                  )}
+                                  {locale === "en" ? " · " : " ・ "}
+                                  {t(
+                                    `templateSummary.member.${template.members.length === 1 ? "one" : "other"}`,
+                                    { count: template.members.length }
+                                  )}
                                   {template.groups.length > 0 && (
                                     <span>
-                                      {" "}
-                                      ・{" "}
+                                      {locale === "en" ? " · " : " ・ "}
                                       {template.groups
-                                        .map(g => g.tasks.join("、"))
+                                        .map(g =>
+                                          g.tasks.join(
+                                            locale === "en" ? ", " : "、"
+                                          )
+                                        )
                                         .join(" / ")}
                                     </span>
                                   )}

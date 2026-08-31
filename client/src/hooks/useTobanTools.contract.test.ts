@@ -467,6 +467,27 @@ describe("creation and retry", () => {
     expect(h.state().schedules).toHaveLength(2);
   });
 
+  it.each(["Office cleaning", "事務室の掃除当番"])(
+    "accepts template name %s in English and preserves existing roster text",
+    async templateName => {
+      document.documentElement.lang = "en";
+      const original = sched();
+      const h = harness([original]);
+      const response = await h.run("create_schedule", {
+        template: templateName,
+      });
+
+      expect(response).toMatchObject({ ok: true, applied: true });
+      expect(h.active()).toMatchObject({
+        name: "Office cleaning",
+        groups: [{ id: "g1", tasks: ["Vacuuming & mopping"] }, {}, {}, {}],
+        members: [{ id: "m1", name: "Alex" }, {}, {}, {}],
+      });
+      expect(h.state().schedules[0]).toEqual(original);
+      expect(TEMPLATES[0].name).toBe("事務室の掃除当番");
+    }
+  );
+
   it("supplies English defaults and explains unequal group/member counts", async () => {
     document.documentElement.lang = "en";
     const h = harness();
