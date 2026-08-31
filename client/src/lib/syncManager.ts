@@ -1,11 +1,60 @@
 import { updateSchedule, toScheduleData, ApiError } from "./api";
 import type { Schedule } from "@shared/types";
+import { safeGetItem, safeSetItem } from "./storage";
 
 const DEBOUNCE_MS = 3000;
 const timers = new Map<string, number>();
 const pendingSchedules = new Map<string, Schedule>();
 const inFlightSyncs = new Map<string, Promise<void>>();
 const pausedScheduleIds = new Set<string>();
+
+// AppState already persists the latest body and credentials. Only remember which
+// IDs must not be replaced by an older server response after a page is destroyed.
+const RECOVERY_KEY = "toban-sync-recovery-v1";
+type RecoveryState = "pending" | "blocked";
+function readRecovery(): Map<string, RecoveryState> {
+  try {
+    const entries: unknown = JSON.parse(safeGetItem(RECOVERY_KEY) ?? "[]");
+    if (!Array.isArray(entries)) return new Map();
+    return new Map(
+      entries.filter(
+        (entry): entry is [string, RecoveryState] =>
+          Array.isArray(entry) &&
+          entry.length === 2 &&
+          typeof entry[0] === "string" &&
+          entry[0].length > 0 &&
+          entry[0].length <= 200 &&
+          (entry[1] === "pending" || entry[1] === "blocked")
+      )
+    );
+  } catch {
+    return new Map();
+  }
+}
+const recovery = readRecovery();
+
+function rememberRecovery(scheduleId: string, state?: RecoveryState): void {
+  if (state) recovery.set(scheduleId, state);
+  else recovery.delete(scheduleId);
+  // Preserve markers written for other IDs by another tab.
+  const stored = readRecovery();
+  if (state) stored.set(scheduleId, state);
+  else stored.delete(scheduleId);
+  safeSetItem(RECOVERY_KEY, JSON.stringify([...stored]));
+}
+
+/** Rehydrate only from the existing local roster, never a second stored body. */
+export function restorePendingScheduleSync(schedule: Schedule): boolean {
+  if (!schedule.slug || !schedule.editToken) return false;
+  const state = recovery.get(schedule.id);
+  if (state === "blocked") {
+    statusCallback?.(schedule.id, "error");
+    return false;
+  }
+  if (state !== "pending" || pendingSchedules.has(schedule.id)) return false;
+  scheduleSyncDebounced(schedule);
+  return true;
+}
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "error";
 
@@ -34,6 +83,7 @@ export function isScheduleSyncPaused(scheduleId: string): boolean {
  */
 export function hasPendingSync(scheduleId: string): boolean {
   return (
+    recovery.has(scheduleId) ||
     pendingSchedules.has(scheduleId) ||
     timers.has(scheduleId) ||
     inFlightSyncs.has(scheduleId)
@@ -74,6 +124,7 @@ export function clearPendingSync(
     timers.delete(scheduleId);
   }
   pendingSchedules.delete(scheduleId);
+  rememberRecovery(scheduleId);
 }
 
 async function doSync(
@@ -103,6 +154,7 @@ async function doSync(
         );
         if (pendingSchedules.get(schedule.id) === schedule) {
           pendingSchedules.delete(schedule.id);
+          rememberRecovery(schedule.id, "blocked");
         }
       } else if (error.status === 400 || error.status === 413) {
         // Validation error / payload too large — 同じ内容を送り直しても必ず失敗する。
@@ -113,6 +165,7 @@ async function doSync(
         );
         if (pendingSchedules.get(schedule.id) === schedule) {
           pendingSchedules.delete(schedule.id);
+          rememberRecovery(schedule.id, "blocked");
         }
       } else {
         // 5xx server errors — retriable, keep pending for retry on reconnect
@@ -159,6 +212,7 @@ async function syncPendingSchedule(
   const request = doSync(pending, options).then(synced => {
     if (synced && pendingSchedules.get(scheduleId) === pending) {
       pendingSchedules.delete(scheduleId);
+      rememberRecovery(scheduleId);
     }
   });
   inFlightSyncs.set(scheduleId, request);
@@ -192,6 +246,7 @@ export function scheduleSyncDebounced(schedule: Schedule): void {
   if (!schedule.slug || !schedule.editToken) return;
 
   pendingSchedules.set(schedule.id, structuredClone(schedule));
+  rememberRecovery(schedule.id, "pending");
   schedulePendingSync(schedule.id);
 }
 

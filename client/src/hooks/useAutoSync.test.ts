@@ -16,6 +16,7 @@ vi.mock("@/lib/syncManager", () => ({
   flushPendingSync: vi.fn(),
   isScheduleSyncPaused: vi.fn(() => false),
   hasPendingSync: vi.fn(() => false),
+  restorePendingScheduleSync: vi.fn(() => false),
 }));
 
 function makeSchedule(overrides: Partial<Schedule> = {}): Schedule {
@@ -619,5 +620,26 @@ describe("useAutoSync の取得中の競合", () => {
     unmount();
     await act(async () => request.resolve(server));
     expect(onUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("未同期変更があるページの再起動", () => {
+  it("初回pullより先に耐久マーカーを確認し、現在のローカル本文を再送へ戻す", async () => {
+    const { getScheduleForEdit } = await import("@/lib/api");
+    const { hasPendingSync, restorePendingScheduleSync } =
+      await import("@/lib/syncManager");
+    vi.mocked(getScheduleForEdit).mockClear();
+    vi.mocked(hasPendingSync).mockReturnValue(true);
+    vi.mocked(restorePendingScheduleSync).mockReturnValue(true);
+    const local = makeSchedule({
+      slug: "saved-slug",
+      editToken: "saved-token",
+      name: "離脱直前の変更",
+    });
+    renderHook(() => useAutoSync(local, vi.fn()));
+    expect(getScheduleForEdit).not.toHaveBeenCalled();
+    expect(restorePendingScheduleSync).toHaveBeenCalledWith(local);
+    vi.mocked(hasPendingSync).mockReturnValue(false);
+    vi.mocked(restorePendingScheduleSync).mockReturnValue(false);
   });
 });

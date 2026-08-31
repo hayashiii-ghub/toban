@@ -347,6 +347,15 @@ describe("read tools", () => {
     ]);
   });
 
+  it("reports cloud failure even while unsent local edits remain protected", async () => {
+    const h = harness();
+    h.home.syncStatus = "error";
+    vi.mocked(hasPendingSync).mockReturnValue(true);
+    expect(await h.run("get_schedule_details")).toMatchObject({
+      persistence: { local: "saved", cloud: "error" },
+    });
+  });
+
   it("computes assignments from current state and marks pre-start placements", async () => {
     const h = harness([sched({ rotation: 1 })]);
     expect(await allRows(h, "get_current_assignments")).toEqual([

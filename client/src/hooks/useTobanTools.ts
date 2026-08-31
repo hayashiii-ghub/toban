@@ -158,11 +158,13 @@ export function buildTobanTools(
     return {
       local: home.localSaveStatus,
       cloud:
-        s && hasPendingSync(s.id)
-          ? "pending"
-          : active && home.syncStatus !== "idle"
-            ? home.syncStatus
-            : "unknown",
+        active && home.syncStatus === "error"
+          ? "error"
+          : s && hasPendingSync(s.id)
+            ? "pending"
+            : active && home.syncStatus !== "idle"
+              ? home.syncStatus
+              : "unknown",
     };
   }
   function published(s: Schedule): string {

@@ -18,6 +18,7 @@ import {
 } from "@/rotation/utils";
 import { loadState, saveState } from "@/lib/appState";
 import { deleteSchedule } from "@/lib/api";
+import { clearPendingSync } from "@/lib/syncManager";
 import { useT } from "@/i18n";
 import { toast } from "sonner";
 
@@ -228,6 +229,8 @@ export function useScheduleManager() {
       const current = getToolState();
       const schedule = current.schedules.find(s => s.id === scheduleId);
       if (!schedule || current.schedules.length <= 1) return;
+      // Deleted rosters must not retain retry timers or durable recovery markers.
+      clearPendingSync(scheduleId);
 
       if (schedule?.slug && schedule?.editToken) {
         deleteSchedule(schedule.slug, schedule.editToken).catch(error => {

@@ -216,3 +216,35 @@ describe("WebMCP state commits", () => {
     expect(loadState()).toEqual(result.current.state);
   });
 });
+
+it("削除した当番表の未同期データと耐久マーカーを取り除く", async () => {
+  const { scheduleSyncDebounced, hasPendingSync, flushPendingSync } =
+    await import("@/lib/syncManager");
+  const { result } = renderHook(() => useScheduleManager());
+  const source = result.current.activeSchedule!;
+  const doomed = {
+    ...source,
+    id: "delete-pending",
+    slug: "delete-slug",
+    editToken: "delete-token",
+  };
+  act(() => {
+    result.current.setState(current => ({
+      ...current,
+      schedules: [...current.schedules, doomed],
+    }));
+  });
+  scheduleSyncDebounced(doomed);
+  expect(hasPendingSync(doomed.id)).toBe(true);
+  act(() => {
+    result.current.handleDeleteSchedule(doomed.id);
+  });
+  expect(hasPendingSync(doomed.id)).toBe(false);
+  expect(localStorage.getItem("toban-sync-recovery-v1")).not.toContain(
+    doomed.id
+  );
+  await expect(flushPendingSync(doomed.id)).resolves.toBeUndefined();
+  expect(
+    result.current.state.schedules.some(item => item.id === doomed.id)
+  ).toBe(false);
+});

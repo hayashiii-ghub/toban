@@ -13,6 +13,7 @@ import {
   flushPendingSync,
   isScheduleSyncPaused,
   hasPendingSync,
+  restorePendingScheduleSync,
   type SyncStatus,
 } from "@/lib/syncManager";
 
@@ -330,6 +331,9 @@ function useSyncOnChange(
     }
 
     const sameSchedule = previous?.id === schedule.id;
+    // The marker was loaded before usePullFromServer's first effect, so the
+    // initial GET cannot overwrite edits whose previous page never sent them.
+    if (!sameSchedule && restorePendingScheduleSync(schedule)) return;
     const changed = sameSchedule && previous.json !== json;
     const gainedIdentity =
       sameSchedule && previous.cloudIdentity !== cloudIdentity;
