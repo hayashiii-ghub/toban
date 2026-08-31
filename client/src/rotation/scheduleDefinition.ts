@@ -31,7 +31,15 @@ const startDateSchema = z.string().superRefine((value, context) => {
 export const rotationInputSchema = z.strictObject({
   mode: z.enum(["manual", "date"]).optional(),
   start_date: startDateSchema.optional(),
-  cycle_days: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER).optional(),
+  cycle_days: z
+    .number()
+    .int()
+    .min(1)
+    .max(365)
+    .describe(
+      "Eligible days between consecutive changes of assignee, not the length of a full round or the number of members/tasks. Daily, every weekday, 毎日 or 平日ごと means 1, even with 4 members and 4 tasks. Every 4 eligible days means 4. Weekend/holiday exclusions are separate skip_* settings."
+    )
+    .optional(),
   skip_saturday: z.boolean().optional(),
   skip_sunday: z.boolean().optional(),
   skip_holidays: z.boolean().optional(),

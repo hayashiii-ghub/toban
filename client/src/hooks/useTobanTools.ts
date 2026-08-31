@@ -668,7 +668,7 @@ export function buildTobanTools(
     ),
     tool(
       "create_schedule",
-      "Create and select a complete duty roster in one operation. Use definition for custom names, members, task_groups and rotation; use template only for an exact built-in template name (one of the two). One task group goes to one person; multiple tasks in it stay together. Defaults: localized name, colors, manual rotation, assignment_mode task. Date mode requires start_date and cycle_days; skipped days pause rotation (cards/table keep the turn; calendar cells are blank). Supported: cyclic duties, manual/date rotation and Japanese holiday skipping. Date-scoped absence, individual weekday restrictions, simultaneous multi-person duties and fairness optimization are unsupported: clarify these with the user before creating an approximation. New rosters remain private; existing private backup may follow. request_id deduplicates retries only within this page lifetime.",
+      "Create and select a complete duty roster in one operation. Use definition for custom names, members, task_groups and rotation; use template only for an exact built-in template name (one of the two). One task group goes to one person; multiple tasks in it stay together. Defaults: localized name, colors, manual rotation, assignment_mode task. Date mode requires start_date and cycle_days. cycle_days is the eligible-day interval between changes of assignee: daily/every weekday/平日ごと = 1, regardless of member/task count; it is not a full round. Skipped days pause rotation (cards/table keep the turn; calendar cells are blank). Supported: cyclic duties, manual/date rotation and Japanese holiday skipping. Date-scoped absence, individual weekday restrictions, simultaneous multi-person duties and fairness optimization are unsupported: clarify these with the user before creating an approximation. New rosters remain private; existing private backup may follow. request_id deduplicates retries only within this page lifetime.",
       z.strictObject({
         template: name.optional(),
         definition: scheduleDefinitionSchema.optional(),
@@ -940,7 +940,7 @@ export function buildTobanTools(
     ),
     tool(
       "configure_rotation",
-      "Change only supplied rotation settings. mode date requires a real start_date (1980..2099) and positive integer cycle_days after merging. cycle_days counts eligible days: five eligible days is not necessarily every Monday. Skipped Saturdays, Sundays and Japanese holidays pause rotation. Cards/table keep the turn; calendar cells are blank.",
+      "Change only supplied rotation settings. mode date requires a real start_date (1980..2099) and positive integer cycle_days after merging. cycle_days counts eligible days between changes of assignee, not a full round or member/task count. Daily/every weekday/平日ごと = 1; five eligible days is not necessarily every Monday. Skipped Saturdays, Sundays and Japanese holidays pause rotation. Cards/table keep the turn; calendar cells are blank.",
       rotationInputSchema.extend(targetShape),
       false,
       input => {

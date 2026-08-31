@@ -882,6 +882,16 @@ describe("strict rejection", () => {
     ["configure_rotation", { start_date: "2026-04-31" }],
     ["configure_rotation", { cycle_days: 1.5 }],
     ["configure_rotation", { cycle_days: 0 }],
+    ["configure_rotation", { cycle_days: 366 }],
+    [
+      "create_schedule",
+      {
+        definition: {
+          ...officeDefinition,
+          rotation: { ...officeDefinition.rotation, cycle_days: 366 },
+        },
+      },
+    ],
     ["configure_rotation", {}],
     ["set_rotation", { rotation: -1 }],
     ["set_rotation", { rotation: "1" }],
