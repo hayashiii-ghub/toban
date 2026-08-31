@@ -85,7 +85,7 @@ pnpm format:check && pnpm check && pnpm lint && pnpm test && pnpm build
 
 ## デプロイと D1
 
-- 本番デプロイは `pnpm run deploy:cf` が正規ルート
+- 本番デプロイは `pnpm run deploy:cf` が正規ルート（`--remote` で本番 D1 に migration を適用）
 - `wrangler deploy` 単体では D1 migration が適用されず、**保存や共有が 500 になる**
 - `GET /api/health/schema` でスキーマの状態を確認できる（200: 正常 / 503: カラム不足）
 - サーバーは安全網として不足カラムを自動補完するが、migration を先に適用する運用が前提
