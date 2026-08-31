@@ -352,9 +352,39 @@ for (const locale of ["ja", "en"] as const) {
       ).toBe(true);
     }
     await call(page, "change_view", { view: "cards" });
+    // Detailed conditions remain available in the existing editor, without
+    // repeating the roster content below its title.
+    await page
+      .getByRole("button", {
+        name: locale === "ja" ? "当番表を編集する" : "Edit schedule",
+      })
+      .click();
+    const editor = page.getByRole("dialog");
+    await editor
+      .getByRole("button", { name: /基本設定|Basic settings/ })
+      .click();
     await expect(
-      page.getByLabel(locale === "ja" ? "当番表の条件" : "Roster conditions")
-    ).toContainText("2026-09-01");
+      editor.getByLabel(locale === "ja" ? "開始日" : "Start date")
+    ).toHaveValue("2026-09-01");
+    await expect(
+      editor.getByLabel(
+        locale === "ja"
+          ? "何日ごとに交代するか"
+          : "How many days between rotations"
+      )
+    ).toHaveValue("1");
+    for (const label of locale === "ja"
+      ? ["土曜はお休み", "日曜はお休み", "祝日はお休み"]
+      : ["Skip Saturdays", "Skip Sundays", "Skip holidays"]) {
+      await expect(editor.getByLabel(label)).toBeChecked();
+    }
+    await editor
+      .getByRole("button", {
+        name: locale === "ja" ? "閉じる" : "Close",
+        exact: true,
+      })
+      .click();
+    await expect(editor).not.toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath(`${locale}-mobile.png`),
       fullPage: true,

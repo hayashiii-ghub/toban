@@ -409,17 +409,7 @@ export const en: Record<string, string> = {
   "templatesDetail.related": "Related templates",
   "templatesDetail.createFromThis": "Create with this template",
 
-  // Roster creation conditions and local save status
-  "summary.label": "Roster conditions",
-  "summary.counts": "{members} members · {groups} task groups",
-  "summary.dateRotation":
-    "Starts {date} · rotates every {days} eligible day(s)",
-  "summary.manual": "Manual rotation",
-  "summary.saturday": "Saturdays",
-  "summary.sunday": "Sundays",
-  "summary.holidays": "Japanese holidays",
-  "summary.separator": ", ",
-  "summary.skip": "Rotation pauses on {days}.",
+  // Roster notices
   "summary.sharedEdits":
     "Edits to an already published roster also sync to its public link.",
   "summary.saveFailed":

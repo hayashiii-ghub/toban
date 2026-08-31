@@ -18,14 +18,6 @@ export function ScheduleHeader({
 }: ScheduleHeaderProps) {
   const t = useT();
   const printDate = usePrintDateString();
-  const config = schedule?.rotationConfig;
-  const skipDays = [
-    config?.skipSaturday ? t("summary.saturday") : null,
-    config?.skipSunday ? t("summary.sunday") : null,
-    config?.skipHolidays ? t("summary.holidays") : null,
-  ]
-    .filter(Boolean)
-    .join(t("summary.separator"));
   return (
     <header className="rotation-print-header pt-6 sm:pt-8 pb-6 sm:pb-8 px-3 sm:px-4">
       <div className="max-w-4xl mx-auto text-center">
@@ -43,29 +35,12 @@ export function ScheduleHeader({
           >
             {scheduleName}
           </h1>
-          {schedule && (
+          {(schedule?.slug || localSaveStatus === "failed") && (
             <div
               className="rotation-no-print mt-3 space-y-1 text-xs sm:text-sm [overflow-wrap:anywhere]"
               style={{ color: "var(--dt-text-secondary)" }}
-              aria-label={t("summary.label")}
             >
-              <p>
-                {t("summary.counts", {
-                  members: schedule.members.length,
-                  groups: schedule.groups.length,
-                })}{" "}
-                ·{" "}
-                {config?.mode === "date"
-                  ? t("summary.dateRotation", {
-                      date: config.startDate ?? "",
-                      days: config.cycleDays ?? 1,
-                    })
-                  : t("summary.manual")}
-              </p>
-              {config?.mode === "date" && skipDays && (
-                <p>{t("summary.skip", { days: skipDays })}</p>
-              )}
-              {schedule.slug && (
+              {schedule?.slug && (
                 <p className="text-xs">{t("summary.sharedEdits")}</p>
               )}
               {localSaveStatus === "failed" && (

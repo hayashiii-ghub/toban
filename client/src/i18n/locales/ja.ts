@@ -405,16 +405,7 @@ export const ja: Record<string, string> = {
   "templatesDetail.related": "関連するテンプレート",
   "templatesDetail.createFromThis": "このテンプレートで作る",
 
-  // Roster creation conditions and local save status
-  "summary.label": "当番表の条件",
-  "summary.counts": "{members}人・{groups}組の仕事",
-  "summary.dateRotation": "{date}開始・有効日{days}日ごとに交代",
-  "summary.manual": "手動で交代",
-  "summary.saturday": "土曜",
-  "summary.sunday": "日曜",
-  "summary.holidays": "日本の祝日",
-  "summary.separator": "・",
-  "summary.skip": "{days}は交代を進めません",
+  // Roster notices
   "summary.sharedEdits": "共有済みの表への変更は、共有先にも同期されます。",
   "summary.saveFailed":
     "端末に保存できませんでした。内容を失わないよう、この画面を閉じずに保存先の空き容量・設定を確認してください。",
