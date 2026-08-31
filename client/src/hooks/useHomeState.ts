@@ -114,6 +114,11 @@ export function useHomeState() {
   const {
     isSharing,
     showShare,
+    shareConfirmation,
+    showShareConfirmation,
+    requestShareConfirmation: requestConfirmation,
+    confirmShare: confirmSharing,
+    cancelShareConfirmation,
     setShowShare: setShareVisible,
     handleShare: shareSchedule,
   } = useShareFlow({
@@ -123,9 +128,10 @@ export function useHomeState() {
   });
 
   useLayoutEffect(() => {
-    toolEditingRef.current = modal.type !== null || showShare || isSharing;
+    toolEditingRef.current =
+      modal.type !== null || showShare || showShareConfirmation || isSharing;
     shareVisibleRef.current = showShare;
-  }, [modal.type, showShare, isSharing]);
+  }, [modal.type, showShare, showShareConfirmation, isSharing]);
 
   // Set the guard at invocation too: opening an editor and receiving a tool
   // call can happen before React commits the editor's state.
@@ -165,6 +171,22 @@ export function useHomeState() {
     });
     return pending;
   }, [activeSchedule, shareSchedule]);
+  const requestShareConfirmation = useCallback(() => {
+    let response!: ReturnType<typeof requestConfirmation>;
+    flushSync(() => {
+      response = requestConfirmation();
+      if (response.status === "confirmation_required")
+        toolEditingRef.current = true;
+    });
+    return response;
+  }, [requestConfirmation]);
+  const confirmShare = useCallback(() => {
+    let pending = Promise.resolve();
+    flushSync(() => {
+      pending = confirmSharing();
+    });
+    return pending;
+  }, [confirmSharing]);
   const isToolEditing = useCallback(() => toolEditingRef.current, []);
   const commitToolState = useCallback(
     async (updater: (state: AppState) => AppState) => {
@@ -191,11 +213,17 @@ export function useHomeState() {
     onDragEnd,
   } = useTabDragDrop(handleTabDrop);
   const { handlePrint } = usePrintMode();
-  const { viewTab, changeTab, changeTabForTool } = useViewTab();
+  const {
+    viewTab,
+    changeTab,
+    changeTabForTool,
+    calendarMonth,
+    setCalendarMonth,
+  } = useViewTab();
   const { showOnboarding, handleOnboardingComplete } = useOnboarding({
     hasSchedule: !!activeSchedule,
     isModalOpen: modal.type !== null,
-    isShareOpen: showShare,
+    isShareOpen: showShare || showShareConfirmation,
   });
 
   const mountedRef = useRef(false);
@@ -223,7 +251,7 @@ export function useHomeState() {
     [groups, members, effectiveRotation, activeSchedule]
   );
 
-  useBodyScrollLock(modal.type !== null || showShare);
+  useBodyScrollLock(modal.type !== null || showShare || showShareConfirmation);
 
   // /templates からの ?template=N 着地だけをここで処理する。
   // 保存データが無い初回訪問は loadState が defaultState（「はじめてガイド」）を
@@ -311,6 +339,11 @@ export function useHomeState() {
     showShare,
     setShowShare,
     handleShare,
+    shareConfirmation,
+    showShareConfirmation,
+    requestShareConfirmation,
+    confirmShare,
+    cancelShareConfirmation,
     // Modal
     modal,
     openSettings,
@@ -334,6 +367,8 @@ export function useHomeState() {
     viewTab,
     changeTab,
     changeTabForTool,
+    calendarMonth,
+    setCalendarMonth,
     // Onboarding
     showOnboarding,
     handleOnboardingComplete,

@@ -13,6 +13,7 @@ import { findTemplate, getTemplates } from "@shared/template-localization";
 import {
   addMemberToSchedule,
   computeAssignments,
+  computeDateRotationForDate,
   createScheduleFromTemplate,
   deepClone,
   generateId,
@@ -27,10 +28,16 @@ import {
   scheduleDefinitionSchema,
   toRotationConfig,
 } from "@/rotation/scheduleDefinition";
+import {
+  applyScheduleEdits,
+  scheduleEditsSchema,
+  ScheduleEditError,
+} from "@/rotation/scheduleEdits";
 import { VIEW_VALUES } from "@/features/home/viewTabsConfig";
 import { ApiError, getSchedule, toScheduleData } from "@/lib/api";
 import { hasPendingSync, scheduleSyncDebounced } from "@/lib/syncManager";
 import { parseIsoDateLocal, startOfLocalDay } from "@/rotation/dateUtils";
+import { isSkippedDate } from "@/rotation/holidays";
 
 type HomeState = ReturnType<typeof useHomeState>;
 type Data = Record<string, unknown>;
@@ -39,16 +46,29 @@ const id = z.string().trim().min(1).max(200);
 const name = z.string().trim().min(1).max(LIMITS.memberName);
 const targetShape = { schedule_id: id.optional() };
 const targetSchema = z.strictObject(targetShape);
+const supportedDate = (value: string) => {
+  const date = parseIsoDateLocal(value);
+  return (
+    date !== null && date.getFullYear() >= 1980 && date.getFullYear() <= 2099
+  );
+};
+const isoDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine(supportedDate, "Use a valid YYYY-MM-DD date between 1980 and 2099.");
+const isoMonth = z
+  .string()
+  .regex(/^\d{4}-\d{2}$/)
+  .refine(
+    value => supportedDate(`${value}-01`),
+    "Use a valid YYYY-MM month between 1980 and 2099."
+  );
 const pageShape = { cursor: z.number().int().nonnegative().optional() };
 const memberShape = {
   ...targetShape,
   member_id: id.optional(),
   name: name.optional(),
 };
-const taskList = z
-  .array(z.string().trim().min(1).max(LIMITS.task))
-  .min(1)
-  .max(LIMITS.tasksPerGroup);
 
 function english(): boolean {
   return document.documentElement.lang === "en";
@@ -134,6 +154,10 @@ export function buildTobanTools(
 ): WebMCPTool[] {
   let queue: Promise<unknown> = Promise.resolve();
   const requests = new Map<string, { fingerprint: string; response: Data }>();
+  const updateRequests = new Map<
+    string,
+    { fingerprint: string; response: Data }
+  >();
   const publication = new Map<
     string,
     { slug: string; status: "public" | "not_published" }
@@ -184,6 +208,7 @@ export function buildTobanTools(
       h.isToolEditing?.() ||
       h.modal.type !== null ||
       h.showShare ||
+      h.showShareConfirmation ||
       h.isSharing
     )
       throw new ToolError(
@@ -419,22 +444,47 @@ export function buildTobanTools(
     ),
     tool(
       "get_current_assignments",
-      "Read the selected roster's current group/member IDs and names. Before the start date these are initial placements, not active duties. Task text is in get_schedule_details section groups. Follow next_cursor.",
-      z.strictObject({ ...targetShape, ...pageShape }),
+      "Read group/member IDs and names for today or an optional date (YYYY-MM-DD), without changing the roster. Date mode is calculated by the app: phase before_start means initial placements, paused means no duties, scheduled means a requested active date. Manual mode does not predict future changes. Task text is in get_schedule_details section groups. Follow next_cursor.",
+      z.strictObject({
+        ...targetShape,
+        ...pageShape,
+        date: isoDate.optional(),
+      }),
       true,
       input => {
         const s = selected(input);
-        const rotation = getEffectiveRotation(s);
-        const rows = computeAssignments(
-          s.groups,
-          s.members,
-          rotation,
-          s.assignmentMode
-        ).map(({ group, member }) => ({
-          group_id: group.id,
-          member_id: member.id,
-          member_name: member.name,
-        }));
+        const targetDate = input.date
+          ? parseIsoDateLocal(input.date)!
+          : startOfLocalDay(new Date());
+        const config = s.rotationConfig;
+        const dateMode = config?.mode === "date";
+        const start = config?.startDate
+          ? parseIsoDateLocal(config.startDate)
+          : null;
+        const beforeStart = dateMode && start && targetDate < start;
+        const paused =
+          dateMode && !beforeStart && isSkippedDate(targetDate, config);
+        const rotation =
+          input.date && dateMode
+            ? computeDateRotationForDate(
+                config,
+                s.members.filter(m => !m.skipped).length,
+                targetDate
+              )
+            : getEffectiveRotation(s);
+        const rows =
+          input.date && paused
+            ? []
+            : computeAssignments(
+                s.groups,
+                s.members,
+                rotation,
+                s.assignmentMode
+              ).map(({ group, member }) => ({
+                group_id: group.id,
+                member_id: member.id,
+                member_name: member.name,
+              }));
         return page(
           {
             ok: true,
@@ -442,12 +492,15 @@ export function buildTobanTools(
             applied: false,
             schedule_id: s.id,
             rotation,
-            phase:
-              s.rotationConfig?.mode === "date" &&
-              s.rotationConfig.startDate &&
-              (parseIsoDateLocal(s.rotationConfig.startDate)?.getTime() ?? 0) >
-                startOfLocalDay(new Date()).getTime()
-                ? "before_start"
+            ...(input.date ? { date: input.date } : {}),
+            phase: beforeStart
+              ? "before_start"
+              : input.date
+                ? paused
+                  ? "paused"
+                  : dateMode
+                    ? "scheduled"
+                    : "manual"
                 : "current",
           },
           rows,
@@ -533,8 +586,38 @@ export function buildTobanTools(
       }
     ),
     tool(
+      "prepare_share",
+      "Open a confirmation dialog for sharing the active roster. This does not save or publish it. The user must confirm in the page; do not claim a public link exists until get_share_link verifies it. Other tool writes are blocked while confirmation is open.",
+      z.strictObject({}),
+      false,
+      () => {
+        selected({});
+        const confirmation = get().requestShareConfirmation();
+        if (confirmation.status !== "confirmation_required")
+          throw new ToolError(
+            confirmation.status === "busy" ? "EDIT_IN_PROGRESS" : "NOT_FOUND",
+            say(
+              "共有確認を開けませんでした。画面を確認してください。",
+              "Could not open sharing confirmation. Inspect the page."
+            )
+          );
+        return {
+          ok: true,
+          code: "CONFIRMATION_REQUIRED",
+          applied: false,
+          schedule_id: confirmation.scheduleId,
+          awaiting_user_confirmation: true,
+          publication: "unchanged",
+          summary: say(
+            "共有前の確認を開きました。公開するには画面で確定してください。この操作では保存・公開していません。",
+            "Sharing confirmation is open. Confirm in the page to publish. This request did not save or publish the roster."
+          ),
+        };
+      }
+    ),
+    tool(
       "get_share_link",
-      "Verify a roster's public URL with a public GET. A backup slug is not proof of publication. This tool never publishes; use the site's share button to publish intentionally.",
+      "Verify a roster's public URL with a public GET. A backup slug is not proof of publication. This tool never publishes. To request publication, use prepare_share and let the user confirm in the page, or let them use Share.",
       targetSchema,
       true,
       async input => {
@@ -654,16 +737,27 @@ export function buildTobanTools(
     ),
     tool(
       "change_view",
-      "Show the active roster as cards, table, calendar or disc. Returns after the requested view is committed, so it can then be printed.",
-      z.strictObject({ view: z.enum(VIEW_VALUES) }),
+      "Show the active roster as cards, table, calendar or disc. For calendar, month (YYYY-MM) selects the month to display and print. Omitting month keeps the selected month. This never changes rotation or the start date. Returns after the view and month are committed, so they can then be printed.",
+      z.strictObject({ view: z.enum(VIEW_VALUES), month: isoMonth.optional() }),
       false,
       input => {
-        const saved = get().changeTabForTool(input.view);
+        if (input.month !== undefined && input.view !== "calendar")
+          invalid(
+            "month はカレンダー表示でのみ指定できます。",
+            "month is only supported for the calendar view."
+          );
+        const saved =
+          input.month === undefined
+            ? get().changeTabForTool(input.view)
+            : get().changeTabForTool(input.view, input.month);
         return {
           ok: saved,
           code: saved ? "OK" : "PERSISTENCE_FAILED",
           applied: true,
           view: input.view,
+          ...(input.view === "calendar"
+            ? { month: input.month ?? get().calendarMonth }
+            : {}),
           summary: saved
             ? say("表示を切り替えました。", "Changed the view.")
             : say(
@@ -744,60 +838,116 @@ export function buildTobanTools(
     ),
     tool(
       "update_schedule",
-      "Update only supplied roster fields. task_changes replaces the task strings of specific group IDs from get_schedule_details; other groups, members, rotation and appearance are preserved. One call applies all requested changes or none.",
+      "Update supplied fields atomically. Use IDs from get_schedule_details. task_changes replaces tasks; add_task_groups/remove_group_ids add/remove independent duties in task mode without changing people. group_member_changes sets ordered eligible member_ids; null restores everyone. Other data stays unchanged. request_id deduplicates retries within this page; reuse it for the same operation only.",
       z.strictObject({
         ...targetShape,
         name: name.optional(),
         pinned: z.boolean().optional(),
-        assignment_mode: z.enum(["member", "task"]).optional(),
-        task_changes: z
-          .array(z.strictObject({ group_id: id, tasks: taskList }))
-          .min(1)
-          .max(LIMITS.groups)
-          .optional(),
+        request_id: id.optional(),
+        ...scheduleEditsSchema.shape,
       }),
       false,
-      input => {
+      async input => {
+        const {
+          schedule_id,
+          request_id,
+          name: nextName,
+          pinned,
+          ...edits
+        } = input;
         if (
-          input.name === undefined &&
-          input.pinned === undefined &&
-          input.assignment_mode === undefined &&
-          !input.task_changes
+          nextName === undefined &&
+          pinned === undefined &&
+          Object.values(edits).every(value => value === undefined)
         )
           invalid(
             "変更する項目を指定してください。",
             "Supply at least one field to update."
           );
-        return edit(input, s => {
-          const changes = input.task_changes ?? [];
-          if (new Set(changes.map(c => c.group_id)).size !== changes.length)
-            invalid(
-              "同じgroup_idを複数回指定できません。",
-              "Each group_id must appear once."
-            );
-          if (changes.some(c => !s.groups.some(g => g.id === c.group_id)))
-            throw new ToolError(
-              "NOT_FOUND",
-              say(
-                "指定した仕事グループが見つかりません。",
-                "A task group was not found."
-              )
-            );
-          return {
-            ...s,
-            ...(input.name !== undefined ? { name: input.name } : {}),
-            ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
-            ...(input.assignment_mode !== undefined
-              ? { assignmentMode: input.assignment_mode }
-              : {}),
-            groups: changes.length
-              ? s.groups.map(g => {
-                  const change = changes.find(c => c.group_id === g.id);
-                  return change ? { ...g, tasks: change.tasks } : g;
-                })
-              : s.groups,
-          };
+        const target = selected({ schedule_id });
+        const fingerprint = JSON.stringify({
+          schedule_id: target.id,
+          name: nextName,
+          pinned,
+          ...edits,
         });
+        const previous = request_id
+          ? updateRequests.get(request_id)
+          : undefined;
+        if (previous) {
+          if (previous.fingerprint !== fingerprint)
+            invalid(
+              "同じrequest_idで内容を変更できません。",
+              "A request_id cannot be reused with different content."
+            );
+          return { ...previous.response, replayed: true };
+        }
+        const response = await edit({ schedule_id: target.id }, s => {
+          try {
+            return {
+              ...applyScheduleEdits(s, edits),
+              ...(nextName !== undefined ? { name: nextName } : {}),
+              ...(pinned !== undefined ? { pinned } : {}),
+            };
+          } catch (error) {
+            if (!(error instanceof ScheduleEditError)) throw error;
+            const messages: Record<string, [string, string]> = {
+              INVALID_EDIT_SHAPE: [
+                "変更内容を確認してください。",
+                "Check the requested changes.",
+              ],
+              DUPLICATE_GROUP_ID: [
+                "担当枠のIDが重複していて、対象を一意に特定できません。",
+                "Group IDs must identify a single group and cannot be repeated.",
+              ],
+              GROUP_NOT_FOUND: [
+                "指定した担当枠が見つかりません。",
+                "A task group was not found.",
+              ],
+              CONFLICTING_GROUP_EDITS: [
+                "削除する担当枠は同時に編集できません。",
+                "A group cannot be edited and removed in the same operation.",
+              ],
+              TASK_MODE_REQUIRED: [
+                "担当枠の追加・削除は仕事ごとの割当で行えます。assignment_modeにtaskを指定してください。",
+                "Adding or removing duties requires task mode. Set assignment_mode to task.",
+              ],
+              GROUP_LIMIT_EXCEEDED: [
+                "担当枠の上限を超えています。",
+                "The task group limit would be exceeded.",
+              ],
+              LAST_GROUP: [
+                "最後の担当枠は削除できません。",
+                "At least one task group must remain.",
+              ],
+              MEMBER_MODE_COUNT_MISMATCH: [
+                "メンバーごとの割当では人数と担当枠の数を揃えてください。",
+                "Member mode requires one task group per member.",
+              ],
+              DUPLICATE_MEMBER_ID: [
+                "メンバーのIDが重複していて、担当候補を一意に特定できません。",
+                "Member IDs must identify a single candidate and cannot be repeated.",
+              ],
+              MEMBER_NOT_FOUND: [
+                "指定したメンバーが見つかりません。",
+                "A member was not found.",
+              ],
+              MEMBER_NOT_ELIGIBLE: [
+                "お休み中のメンバーは担当候補にできません。",
+                "Skipped members cannot be selected as candidates.",
+              ],
+            };
+            const [ja, en] =
+              messages[error.reason] ?? messages.INVALID_EDIT_SHAPE;
+            throw new ToolError(error.code, say(ja, en), {
+              reason: error.reason,
+            });
+          }
+        });
+        if (request_id && response.applied) {
+          updateRequests.set(request_id, { fingerprint, response });
+        }
+        return response;
       }
     ),
     tool(

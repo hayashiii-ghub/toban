@@ -32,6 +32,16 @@ export const ja: Record<string, string> = {
   "shared.printHeader": "順番: {label} ／ 印刷日: {date}",
 
   // 共有モーダル
+  "shareConfirm.title": "この当番表を共有しますか？",
+  "shareConfirm.message":
+    "「{name}」をリンクから閲覧できるようにします。メンバー名と当番の内容も共有されます。",
+  "shareConfirm.confirm": "共有する",
+  "shareConfirm.sharing": "共有しています…",
+  "shareConfirm.publishedChanged":
+    "「{name}」を共有しました。現在の表示は共有した内容から変わっています。",
+  "shareConfirm.changed":
+    "当番表が変更されました。もう一度共有内容を確認してください。",
+
   "share.title": "共有",
   "share.tabView": "👀 見るだけ",
   "share.tabEdit": "✏️ 編集もできる",

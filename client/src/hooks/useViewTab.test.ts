@@ -55,3 +55,16 @@ describe("useViewTab", () => {
     expect(safeSetItem).toHaveBeenCalledWith("toban-view-tab", "calendar");
   });
 });
+
+it("keeps manual and tool month navigation in one committed display state", () => {
+  vi.mocked(safeGetItem).mockReturnValue(null);
+  vi.mocked(safeSetItem).mockReturnValue(true);
+  const { result } = renderHook(() => useViewTab());
+  act(() => result.current.changeTabForTool("calendar", "2026-09"));
+  expect(result.current.viewTab).toBe("calendar");
+  expect(result.current.calendarMonth).toBe("2026-09");
+  act(() => result.current.setCalendarMonth("2026-10"));
+  act(() => result.current.changeTabForTool("table"));
+  act(() => result.current.changeTabForTool("calendar"));
+  expect(result.current.calendarMonth).toBe("2026-10");
+});

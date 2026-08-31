@@ -15,6 +15,12 @@ export function useViewTab() {
     return "cards";
   });
 
+  // Display state only: never stored in a roster or synced to its public link.
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  });
+
   const changeTab = useCallback((tab: ViewTabValue) => {
     startTransition(() => setViewTab(tab));
     safeSetItem(VIEW_TAB_KEY, tab);
@@ -22,10 +28,22 @@ export function useViewTab() {
 
   // Native browser tools can request print immediately after this operation.
   // Commit the view before returning to that imperative caller.
-  const changeTabForTool = useCallback((tab: ViewTabValue): boolean => {
-    flushSync(() => setViewTab(tab));
-    return safeSetItem(VIEW_TAB_KEY, tab);
-  }, []);
+  const changeTabForTool = useCallback(
+    (tab: ViewTabValue, month?: string): boolean => {
+      flushSync(() => {
+        setViewTab(tab);
+        if (tab === "calendar" && month) setCalendarMonth(month);
+      });
+      return safeSetItem(VIEW_TAB_KEY, tab);
+    },
+    []
+  );
 
-  return { viewTab, changeTab, changeTabForTool };
+  return {
+    viewTab,
+    changeTab,
+    changeTabForTool,
+    calendarMonth,
+    setCalendarMonth,
+  };
 }

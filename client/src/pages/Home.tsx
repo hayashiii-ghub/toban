@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
 import { NewScheduleModal } from "@/components/NewScheduleModal";
+import { ShareConfirmationDialog } from "@/components/ShareConfirmationDialog";
 import { ModalHost } from "@/components/ModalHost";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
 import { DesignThemeProvider } from "@/contexts/DesignThemeContext";
@@ -146,10 +147,25 @@ export default function Home() {
           rotationConfig={s.activeSchedule.rotationConfig}
           assignmentMode={s.activeSchedule.assignmentMode}
           scheduleId={s.activeSchedule.id}
+          calendarMonth={s.calendarMonth}
+          onCalendarMonthChange={s.setCalendarMonth}
           direction={s.direction}
           stagger={s.isAnimating}
         />
 
+        {createPortal(
+          <AnimatePresence>
+            {s.shareConfirmation && (
+              <ShareConfirmationDialog
+                scheduleName={s.shareConfirmation.scheduleName}
+                isSharing={s.isSharing}
+                onConfirm={s.confirmShare}
+                onCancel={s.cancelShareConfirmation}
+              />
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
         <ModalHost
           modalType={s.modal.type}
           deleteTargetId={s.modal.deleteTargetId}

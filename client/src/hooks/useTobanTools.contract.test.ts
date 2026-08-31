@@ -110,7 +110,18 @@ function harness(schedules: Schedule[] = [sched()], signal?: AbortSignal) {
     syncStatus: "idle" as "idle" | "syncing" | "synced" | "error",
     modal: { type: null as string | null },
     showShare: false,
+    showShareConfirmation: false,
     isSharing: false,
+    requestShareConfirmation: vi.fn(() => {
+      home.showShareConfirmation = true;
+      return {
+        status: "confirmation_required" as const,
+        scheduleId: current.activeScheduleId,
+        scheduleName: current.schedules.find(
+          s => s.id === current.activeScheduleId
+        )!.name,
+      };
+    }),
     viewTab: "cards" as ViewTabValue,
     commitToolState: vi.fn(
       async (
@@ -205,7 +216,7 @@ afterEach(() => {
 });
 
 describe("registered tool contracts", () => {
-  it("exposes all sixteen tools, untrusted data hints and only four read-only tools", () => {
+  it("exposes all seventeen tools, untrusted data hints and only four read-only tools", () => {
     const h = harness();
     expect(h.tools.map(tool => tool.name).sort()).toEqual([
       "add_member",
@@ -218,6 +229,7 @@ describe("registered tool contracts", () => {
       "get_schedule_details",
       "get_share_link",
       "list_schedules",
+      "prepare_share",
       "print_schedule",
       "remove_member",
       "set_rotation",
@@ -1175,13 +1187,14 @@ describe("queue and lifecycle safety", () => {
     expect(h.active().name).toBe("Other");
   });
 
-  it.each(["modal", "share", "sharing"])(
+  it.each(["modal", "share", "sharing", "confirmation"])(
     "blocks every write while %s is open, leaving reads available",
     async dialog => {
       const h = harness();
       if (dialog === "modal") h.home.modal.type = "settings";
       if (dialog === "share") h.home.showShare = true;
       if (dialog === "sharing") h.home.isSharing = true;
+      if (dialog === "confirmation") h.home.showShareConfirmation = true;
       const before = structuredClone(h.state());
       for (const [toolName, input] of [
         ["create_schedule", { definition: officeDefinition }],
@@ -1450,7 +1463,7 @@ describe("useTobanTools registration", () => {
         ({ home }) => useTobanTools(home),
         { initialProps: { home: first.get() } }
       );
-      expect(registerTool).toHaveBeenCalledTimes(16);
+      expect(registerTool).toHaveBeenCalledTimes(17);
       expect(documentRegister).not.toHaveBeenCalled();
       const registered = registerTool.mock.calls.map(
         ([tool]) => tool as WebMCPTool
@@ -1460,7 +1473,7 @@ describe("useTobanTools registration", () => {
       );
       expect(signals.every(signal => !signal.aborted)).toBe(true);
       rerender({ home: second.get() });
-      expect(registerTool).toHaveBeenCalledTimes(16);
+      expect(registerTool).toHaveBeenCalledTimes(17);
       const read = registered.find(
         tool => tool.name === "get_schedule_details"
       )!;
@@ -1485,7 +1498,7 @@ describe("useTobanTools registration", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
       const { unmount } = renderHook(() => useTobanTools(harness().get()));
-      expect(registerTool).toHaveBeenCalledTimes(16);
+      expect(registerTool).toHaveBeenCalledTimes(17);
       expect(warn).toHaveBeenCalledOnce();
       unmount();
       expect(
@@ -1498,4 +1511,202 @@ describe("useTobanTools registration", () => {
       restore();
     }
   });
+});
+
+describe("dated assignment lookup and calendar targeting", () => {
+  it("previews a future weekday without changing or saving the roster", async () => {
+    const h = harness();
+    await h.run("create_schedule", { definition: officeDefinition });
+    const before = structuredClone(h.state());
+    h.home.commitToolState.mockClear();
+    const answer = await h.run("get_current_assignments", {
+      date: "2026-09-08",
+    });
+    expect(answer).toMatchObject({
+      ok: true,
+      applied: false,
+      date: "2026-09-08",
+      rotation: 1,
+      phase: "scheduled",
+    });
+    expect((answer.items as Row[])[0].member_name).toBe("蓮");
+    expect(h.state()).toEqual(before);
+    expect(h.home.commitToolState).not.toHaveBeenCalled();
+  });
+
+  it("distinguishes skipped dates and pre-start placements", async () => {
+    const h = harness();
+    await h.run("create_schedule", { definition: officeDefinition });
+    for (const date of ["2026-09-05", "2026-09-21"]) {
+      expect(await h.run("get_current_assignments", { date })).toMatchObject({
+        ok: true,
+        phase: "paused",
+        items: [],
+      });
+    }
+    expect(
+      await h.run("get_current_assignments", { date: "2026-08-31" })
+    ).toMatchObject({ ok: true, phase: "before_start", rotation: 0 });
+  });
+
+  it("labels manual placements rather than predicting a future rotation", async () => {
+    const h = harness();
+    expect(
+      await h.run("get_current_assignments", { date: "2026-09-08" })
+    ).toMatchObject({ ok: true, phase: "manual", rotation: 0 });
+  });
+
+  it("rejects invalid dates and month/view combinations without changing the UI", async () => {
+    const h = harness();
+    for (const date of ["2026-02-30", "not-a-date"]) {
+      expect(await h.run("get_current_assignments", { date })).toMatchObject({
+        code: "INVALID_INPUT",
+        applied: false,
+      });
+    }
+    for (const input of [
+      { view: "calendar", month: "2026-13" },
+      { view: "table", month: "2026-09" },
+    ]) {
+      expect(await h.run("change_view", input)).toMatchObject({
+        code: "INVALID_INPUT",
+        applied: false,
+      });
+    }
+    expect(h.home.changeTabForTool).not.toHaveBeenCalled();
+  });
+
+  it("commits a calendar month before a following print operation", async () => {
+    const h = harness();
+    expect(
+      await h.run("change_view", { view: "calendar", month: "2026-09" })
+    ).toMatchObject({ ok: true, view: "calendar", month: "2026-09" });
+    expect(h.home.changeTabForTool).toHaveBeenCalledWith("calendar", "2026-09");
+    await h.run("print_schedule");
+    expect(h.home.handlePrint).toHaveBeenCalledWith(
+      "calendar",
+      expect.any(String),
+      expect.any(String)
+    );
+  });
+});
+
+describe("atomic task edits and explicit sharing confirmation", () => {
+  it("adds and removes duties while preserving members and cloud identity", async () => {
+    const h = harness([
+      sched({ assignmentMode: "task", slug: "existing", editToken: "PRIVATE" }),
+    ]);
+    const before = structuredClone(h.active());
+    expect(
+      await h.run("update_schedule", {
+        add_task_groups: [{ tasks: ["Window cleaning"] }],
+        remove_group_ids: ["g2"],
+        task_changes: [{ group_id: "g1", tasks: ["Reception"] }],
+        group_member_changes: [{ group_id: "g1", member_ids: ["m2"] }],
+      })
+    ).toMatchObject({ ok: true, applied: true });
+    expect(h.active()).toMatchObject({
+      members: before.members,
+      slug: before.slug,
+      editToken: before.editToken,
+      rotation: before.rotation,
+    });
+    expect(h.active().groups).toHaveLength(2);
+    expect(h.active().groups[0]).toMatchObject({
+      id: "g1",
+      tasks: ["Reception"],
+      memberIds: ["m2"],
+    });
+    expect(h.active().groups[1].tasks).toEqual(["Window cleaning"]);
+    expect(
+      await h.run("update_schedule", {
+        group_member_changes: [{ group_id: "g1", member_ids: null }],
+      })
+    ).toMatchObject({ ok: true });
+    expect(h.active().groups[0].memberIds).toBeUndefined();
+  });
+
+  it("never partially renames or adds duties when a candidate is invalid", async () => {
+    const h = harness([sched({ assignmentMode: "task" })]);
+    const before = structuredClone(h.state());
+    expect(
+      await h.run("update_schedule", {
+        name: "Wrong",
+        add_task_groups: [{ tasks: ["Extra"] }],
+        group_member_changes: [{ group_id: "g1", member_ids: ["missing"] }],
+      })
+    ).toMatchObject({ code: "NOT_FOUND", applied: false });
+    expect(h.state()).toEqual(before);
+    expect(h.saved()).toEqual(before);
+  });
+
+  it("retries an applied but unsaved addition without adding it twice", async () => {
+    const h = harness([sched({ assignmentMode: "task" })]);
+    h.setOutcome({ local: "failed" });
+    const input = {
+      request_id: "extra-duty",
+      add_task_groups: [{ tasks: ["Extra"] }],
+    };
+    expect(await h.run("update_schedule", input)).toMatchObject({
+      code: "PERSISTENCE_FAILED",
+      applied: true,
+    });
+    expect(await h.run("update_schedule", input)).toMatchObject({
+      code: "PERSISTENCE_FAILED",
+      applied: true,
+      replayed: true,
+    });
+    expect(h.active().groups).toHaveLength(3);
+    expect(h.home.commitToolState).toHaveBeenCalledTimes(1);
+    expect(
+      await h.run("update_schedule", { ...input, name: "Different" })
+    ).toMatchObject({ code: "INVALID_INPUT", applied: false });
+  });
+
+  it("opens confirmation without saving or claiming publication and blocks subsequent writes", async () => {
+    const h = harness();
+    const before = structuredClone(h.state());
+    const [prepared, edited] = await Promise.all([
+      h.run("prepare_share"),
+      h.run("update_schedule", { name: "Must wait" }),
+    ]);
+    expect(prepared).toMatchObject({
+      ok: true,
+      code: "CONFIRMATION_REQUIRED",
+      applied: false,
+      awaiting_user_confirmation: true,
+      publication: "unchanged",
+    });
+    expect(edited).toMatchObject({ code: "EDIT_IN_PROGRESS", applied: false });
+    expect(h.home.requestShareConfirmation).toHaveBeenCalledTimes(1);
+    expect(h.home.commitToolState).not.toHaveBeenCalled();
+    expect(h.state()).toEqual(before);
+    expect(await h.run("get_schedule_details")).toMatchObject({ ok: true });
+    expect(await h.run("prepare_share", { confirm: true })).toMatchObject({
+      code: "INVALID_INPUT",
+      applied: false,
+    });
+  });
+});
+
+it("keeps addition retry IDs valid after many unrelated edits on the same page", async () => {
+  const h = harness([sched({ assignmentMode: "task" })]);
+  const input = {
+    request_id: "first-addition",
+    add_task_groups: [{ tasks: ["Extra"] }],
+  };
+  expect(await h.run("update_schedule", input)).toMatchObject({ ok: true });
+  for (let n = 0; n < 101; n++) {
+    expect(
+      await h.run("update_schedule", {
+        request_id: `rename-${n}`,
+        name: `Roster ${n}`,
+      })
+    ).toMatchObject({ ok: true });
+  }
+  expect(await h.run("update_schedule", input)).toMatchObject({
+    ok: true,
+    replayed: true,
+  });
+  expect(h.active().groups).toHaveLength(3);
 });

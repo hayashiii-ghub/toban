@@ -114,7 +114,7 @@ Cloudflare 側で設定する環境変数:
 
 AIエージェントがブラウザ上で当番表を操作できるよう [WebMCP](https://developer.chrome.com/docs/ai/webmcp) のツールを公開している。対応ブラウザでのみ有効化され、非対応環境では何も登録しない。実装は `client/src/hooks/useTobanTools.ts`、型は `client/src/types/webmcp.d.ts`。公開しているツールは `buildTobanTools()` を参照。
 
-**共有（外部公開）の実行は tool に含めていない。** 実名を含む当番表を公開 URL 化する操作は、誤発火による意図しない公開を避けるため、ユーザの明示操作（共有ボタン）に限定している。`get_share_link` は既存リンクの参照のみ。
+**共有（外部公開）の実行は tool に含めていない。** 実名を含む当番表を公開 URL 化する操作は、誤発火による意図しない公開を避けるため、ユーザの明示操作（共有ボタン）に限定している。`prepare_share` は公開前の確認画面を開くだけで、画面での確定後に公開する。`get_share_link` は公開済みリンクを読み取り確認する。
 
 [tool security](https://developer.chrome.com/docs/ai/webmcp/secure-tools) の指針に沿って以下を守る。テストで検査しているので、tool を足すときも自動的に効く。
 

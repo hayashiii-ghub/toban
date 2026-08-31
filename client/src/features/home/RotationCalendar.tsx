@@ -12,6 +12,7 @@ import {
 } from "@/rotation/utils";
 import { getHolidaysForMonth } from "@/rotation/holidays";
 import { useT, useDateLocale, useLocale } from "@/i18n";
+import { parseIsoDateLocal } from "@/rotation/dateUtils";
 import { TaskLegend } from "@/features/home/TaskLegend";
 
 interface RotationCalendarProps {
@@ -20,6 +21,8 @@ interface RotationCalendarProps {
   rotation: number;
   rotationConfig?: RotationConfig;
   assignmentMode?: AssignmentMode;
+  month?: string;
+  onMonthChange?: (month: string) => void;
 }
 
 function getCalendarDays(year: number, month: number) {
@@ -49,6 +52,8 @@ export function RotationCalendar({
   rotation,
   rotationConfig,
   assignmentMode,
+  month: controlledMonth,
+  onMonthChange,
 }: RotationCalendarProps) {
   const t = useT();
   const dateLocale = useDateLocale();
@@ -68,14 +73,28 @@ export function RotationCalendar({
     return d;
   }, []);
 
-  const [viewDate, setViewDate] = useState(
+  const [localViewDate, setLocalViewDate] = useState(
     () => new Date(today.getFullYear(), today.getMonth(), 1)
   );
-  const [selectedDayIdx, setSelectedDayIdx] = useState<number | null>(null);
+  const viewDate =
+    (controlledMonth && parseIsoDateLocal(`${controlledMonth}-01`)) ||
+    localViewDate;
+  const [selection, setSelection] = useState<{
+    month: string;
+    index: number;
+  } | null>(null);
+  const setViewDate = (date: Date) => {
+    setLocalViewDate(date);
+    onMonthChange?.(
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+    );
+  };
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
+  const monthKey = `${year}-${month}`;
+  const selectedDayIdx = selection?.month === monthKey ? selection.index : null;
   const monthLabel = new Date(year, month, 1).toLocaleDateString(dateLocale, {
     year: "numeric",
     month: "long",
@@ -121,20 +140,27 @@ export function RotationCalendar({
 
   const prevMonth = () => {
     setViewDate(new Date(year, month - 1, 1));
-    setSelectedDayIdx(null);
+    setSelection(null);
   };
   const nextMonth = () => {
     setViewDate(new Date(year, month + 1, 1));
-    setSelectedDayIdx(null);
+    setSelection(null);
   };
   const goToday = () => {
     setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
-    setSelectedDayIdx(null);
+    setSelection(null);
   };
 
-  const handleDayClick = useCallback((idx: number) => {
-    setSelectedDayIdx(prev => (prev === idx ? null : idx));
-  }, []);
+  const handleDayClick = useCallback(
+    (idx: number) => {
+      setSelection(prev =>
+        prev?.month === monthKey && prev.index === idx
+          ? null
+          : { month: monthKey, index: idx }
+      );
+    },
+    [monthKey]
+  );
 
   useEffect(() => {
     if (selectedDayIdx === null) return;
@@ -143,7 +169,7 @@ export function RotationCalendar({
         popoverRef.current &&
         !popoverRef.current.contains(e.target as Node)
       ) {
-        setSelectedDayIdx(null);
+        setSelection(null);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);

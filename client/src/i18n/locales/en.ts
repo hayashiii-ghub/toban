@@ -32,6 +32,16 @@ export const en: Record<string, string> = {
   "shared.printHeader": "{label} · Printed: {date}",
 
   // Share modal
+  "shareConfirm.title": "Share this schedule?",
+  "shareConfirm.message":
+    'Anyone with the link will be able to view "{name}", including member names and assignments.',
+  "shareConfirm.confirm": "Share schedule",
+  "shareConfirm.sharing": "Sharing…",
+  "shareConfirm.publishedChanged":
+    '"{name}" was shared. Your current view has changed.',
+  "shareConfirm.changed":
+    "The schedule changed. Review it before sharing again.",
+
   "share.title": "Share schedule",
   "share.tabView": "👀 View only",
   "share.tabEdit": "✏️ Can edit",
@@ -313,7 +323,7 @@ export const en: Record<string, string> = {
     "Enter names (one per line or comma-separated)\ne.g. Alex, Sam, Riley\n(groups are created at the same time)",
   "bulk.ariaTask": "Bulk add members",
   "bulk.ariaMember": "Bulk add members and groups",
-  "bulk.willAdd": "Adding {n} people",
+  "bulk.willAdd": "Names to add: {n}",
   "bulk.add": "Add",
 
   // Add-assignee (group add button)

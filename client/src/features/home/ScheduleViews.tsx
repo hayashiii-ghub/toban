@@ -23,6 +23,8 @@ interface ScheduleViewsProps {
   rotationConfig?: RotationConfig;
   assignmentMode?: AssignmentMode;
   scheduleId: string;
+  calendarMonth?: string;
+  onCalendarMonthChange?: (month: string) => void;
   /** cards のアニメ方向（Home はローテーション連動、共有閲覧は固定 forward）。 */
   direction: "forward" | "backward";
   /** cards の stagger（Home はアニメ中のみ、共有閲覧は false）。 */
@@ -42,6 +44,8 @@ export function ScheduleViews({
   rotationConfig,
   assignmentMode,
   scheduleId,
+  calendarMonth,
+  onCalendarMonthChange,
   direction,
   stagger,
 }: ScheduleViewsProps) {
@@ -67,6 +71,8 @@ export function ScheduleViews({
       )}
       {viewTab === "calendar" && (
         <RotationCalendar
+          month={calendarMonth}
+          onMonthChange={onCalendarMonthChange}
           groups={groups}
           members={members}
           rotation={rotation}

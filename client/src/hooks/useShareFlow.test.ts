@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, act, cleanup } from "@testing-library/react";
 import { useShareFlow } from "./useShareFlow";
 import type { Schedule } from "@/rotation/types";
@@ -21,7 +21,7 @@ vi.mock("@/lib/syncManager", () => ({
 }));
 
 vi.mock("sonner", () => ({
-  toast: { error: vi.fn() },
+  toast: { error: vi.fn(), success: vi.fn() },
 }));
 
 function makeSchedule(overrides: Partial<Schedule> = {}): Schedule {
@@ -299,4 +299,332 @@ describe("useShareFlow の同期競合", () => {
     expect(publishSchedule).not.toHaveBeenCalled();
     expect(result.current.showShare).toBe(false);
   });
+});
+
+describe("useShareFlow の共有確認", () => {
+  beforeEach(async () => {
+    const { createSchedule, updateSchedule, publishSchedule } =
+      await import("@/lib/api");
+    const { waitForScheduleSync } = await import("@/lib/syncManager");
+    vi.mocked(createSchedule).mockReset();
+    vi.mocked(updateSchedule).mockReset();
+    vi.mocked(publishSchedule).mockReset();
+    vi.mocked(waitForScheduleSync).mockReset().mockResolvedValue();
+  });
+  it("確認を開く・キャンセルするだけでは保存準備もAPI操作も行わない", async () => {
+    const { createSchedule, updateSchedule, publishSchedule } =
+      await import("@/lib/api");
+    const { pauseScheduleSync } = await import("@/lib/syncManager");
+    const prepare = vi.fn(async () => makeSchedule());
+    const { result } = renderHook(() =>
+      useShareFlow({
+        activeSchedule: makeSchedule(),
+        prepareForManualSave: prepare,
+        updateActiveSchedule: vi.fn(),
+      })
+    );
+
+    act(() => {
+      expect(result.current.requestShareConfirmation()).toEqual({
+        status: "confirmation_required",
+        scheduleId: "s1",
+        scheduleName: "テスト当番表",
+      });
+    });
+    expect(result.current.showShareConfirmation).toBe(true);
+    expect(result.current.shareConfirmation?.scheduleName).toBe("テスト当番表");
+    act(() => result.current.cancelShareConfirmation());
+    await act(async () => result.current.confirmShare());
+
+    expect(result.current.showShareConfirmation).toBe(false);
+    expect(prepare).not.toHaveBeenCalled();
+    expect(pauseScheduleSync).not.toHaveBeenCalled();
+    expect(createSchedule).not.toHaveBeenCalled();
+    expect(updateSchedule).not.toHaveBeenCalled();
+    expect(publishSchedule).not.toHaveBeenCalled();
+  });
+
+  it("人が確認したスナップショットだけを保存・公開し二重確定を無視する", async () => {
+    const { updateSchedule, publishSchedule } = await import("@/lib/api");
+    const { waitForScheduleSync } = await import("@/lib/syncManager");
+    const waiting = deferred<void>();
+    vi.mocked(waitForScheduleSync).mockReturnValueOnce(waiting.promise);
+    vi.mocked(updateSchedule).mockResolvedValue();
+    vi.mocked(publishSchedule).mockResolvedValue();
+    const schedule = makeSchedule({ slug: "abc", editToken: "token" });
+    const prepare = vi.fn(async () => schedule);
+    const { result } = renderHook(() =>
+      useShareFlow({
+        activeSchedule: schedule,
+        prepareForManualSave: prepare,
+        updateActiveSchedule: vi.fn(),
+      })
+    );
+    act(() => {
+      result.current.requestShareConfirmation();
+    });
+    let first!: Promise<void>;
+    let second!: Promise<void>;
+    act(() => {
+      first = result.current.confirmShare();
+      second = result.current.confirmShare();
+    });
+    expect(result.current.isSharing).toBe(true);
+    expect(updateSchedule).not.toHaveBeenCalled();
+    await act(async () => {
+      waiting.resolve();
+      await Promise.all([first, second]);
+    });
+    expect(prepare).toHaveBeenCalledTimes(1);
+    expect(updateSchedule).toHaveBeenCalledTimes(1);
+    expect(publishSchedule).toHaveBeenCalledTimes(1);
+    expect(result.current.showShare).toBe(true);
+    expect(result.current.showShareConfirmation).toBe(false);
+  });
+
+  it.each([
+    { id: "other" },
+    { name: "確認後に変更された名前" },
+    { groups: [{ id: "g1", emoji: "🧹", tasks: ["非公開にしたい別の仕事"] }] },
+  ])("確定前にIDまたは内容が変わったら保存・公開しない %j", async patch => {
+    const { createSchedule, updateSchedule, publishSchedule } =
+      await import("@/lib/api");
+    const { toast } = await import("sonner");
+    const schedule = makeSchedule();
+    const prepare = vi.fn(async () => schedule);
+    const { result, rerender } = renderHook(
+      ({ activeSchedule }) =>
+        useShareFlow({
+          activeSchedule,
+          prepareForManualSave: prepare,
+          updateActiveSchedule: vi.fn(),
+        }),
+      { initialProps: { activeSchedule: schedule } }
+    );
+    act(() => {
+      result.current.requestShareConfirmation();
+    });
+    rerender({ activeSchedule: { ...schedule, ...patch } });
+    await act(async () => result.current.confirmShare());
+    expect(prepare).not.toHaveBeenCalled();
+    expect(createSchedule).not.toHaveBeenCalled();
+    expect(updateSchedule).not.toHaveBeenCalled();
+    expect(publishSchedule).not.toHaveBeenCalled();
+    expect(result.current.showShareConfirmation).toBe(false);
+    expect(toast.error).toHaveBeenCalled();
+  });
+
+  it("同期待ち中に内容が変わったらその後の保存・公開を止める", async () => {
+    const { updateSchedule, publishSchedule } = await import("@/lib/api");
+    const { waitForScheduleSync } = await import("@/lib/syncManager");
+    const waiting = deferred<void>();
+    vi.mocked(waitForScheduleSync).mockReturnValueOnce(waiting.promise);
+    const schedule = makeSchedule({ slug: "abc", editToken: "token" });
+    const prepare = vi.fn(async () => schedule);
+    const { result, rerender } = renderHook(
+      ({ activeSchedule }) =>
+        useShareFlow({
+          activeSchedule,
+          prepareForManualSave: prepare,
+          updateActiveSchedule: vi.fn(),
+        }),
+      { initialProps: { activeSchedule: schedule } }
+    );
+    act(() => {
+      result.current.requestShareConfirmation();
+    });
+    let sharing!: Promise<void>;
+    act(() => {
+      sharing = result.current.confirmShare();
+    });
+    rerender({ activeSchedule: { ...schedule, name: "待機中の別内容" } });
+    await act(async () => {
+      waiting.resolve();
+      await sharing;
+    });
+    expect(prepare).not.toHaveBeenCalled();
+    expect(updateSchedule).not.toHaveBeenCalled();
+    expect(publishSchedule).not.toHaveBeenCalled();
+    expect(result.current.showShare).toBe(false);
+  });
+
+  it("保存準備から別の内容が返ったら公開しない", async () => {
+    const { updateSchedule, publishSchedule } = await import("@/lib/api");
+    const schedule = makeSchedule({ slug: "abc", editToken: "token" });
+    const { result } = renderHook(() =>
+      useShareFlow({
+        activeSchedule: schedule,
+        prepareForManualSave: async () => ({
+          ...schedule,
+          name: "準備中に変更",
+        }),
+        updateActiveSchedule: vi.fn(),
+      })
+    );
+    act(() => {
+      result.current.requestShareConfirmation();
+    });
+    await act(async () => result.current.confirmShare());
+    expect(updateSchedule).not.toHaveBeenCalled();
+    expect(publishSchedule).not.toHaveBeenCalled();
+  });
+
+  it("保存レスポンス待ち中に内容が変わっても未確認のまま公開しない", async () => {
+    const { updateSchedule, publishSchedule } = await import("@/lib/api");
+    const save = deferred<void>();
+    vi.mocked(updateSchedule).mockReturnValueOnce(save.promise);
+    const schedule = makeSchedule({ slug: "abc", editToken: "token" });
+    const { result, rerender } = renderHook(
+      ({ activeSchedule }) =>
+        useShareFlow({
+          activeSchedule,
+          prepareForManualSave: async () => schedule,
+          updateActiveSchedule: vi.fn(),
+        }),
+      { initialProps: { activeSchedule: schedule } }
+    );
+    act(() => {
+      result.current.requestShareConfirmation();
+    });
+    let sharing!: Promise<void>;
+    act(() => {
+      sharing = result.current.confirmShare();
+    });
+    await act(async () => {});
+    expect(updateSchedule).toHaveBeenCalledTimes(1);
+    rerender({ activeSchedule: { ...schedule, name: "別内容" } });
+    await act(async () => {
+      save.resolve();
+      await sharing;
+    });
+    expect(publishSchedule).not.toHaveBeenCalled();
+    expect(result.current.showShare).toBe(false);
+  });
+
+  it("バックアップの資格情報だけが増えても確認した内容を公開できる", async () => {
+    const { createSchedule, updateSchedule, publishSchedule } =
+      await import("@/lib/api");
+    vi.mocked(updateSchedule).mockResolvedValue();
+    vi.mocked(publishSchedule).mockResolvedValue();
+    const schedule = makeSchedule();
+    const backedUp = { ...schedule, slug: "abc", editToken: "token" };
+    const { result, rerender } = renderHook(
+      ({ activeSchedule }) =>
+        useShareFlow({
+          activeSchedule,
+          prepareForManualSave: async () => backedUp,
+          updateActiveSchedule: vi.fn(),
+        }),
+      { initialProps: { activeSchedule: schedule } }
+    );
+    act(() => {
+      result.current.requestShareConfirmation();
+    });
+    rerender({ activeSchedule: backedUp });
+    await act(async () => result.current.confirmShare());
+    expect(createSchedule).not.toHaveBeenCalled();
+    expect(updateSchedule).toHaveBeenCalledTimes(1);
+    expect(publishSchedule).toHaveBeenCalledWith("abc", "token");
+  });
+
+  it("従来の共有ボタンも同期的な二重クリックで二回公開しない", async () => {
+    const { updateSchedule, publishSchedule } = await import("@/lib/api");
+    const { waitForScheduleSync } = await import("@/lib/syncManager");
+    const waiting = deferred<void>();
+    vi.mocked(waitForScheduleSync).mockReturnValueOnce(waiting.promise);
+    vi.mocked(updateSchedule).mockResolvedValue();
+    vi.mocked(publishSchedule).mockResolvedValue();
+    const schedule = makeSchedule({ slug: "abc", editToken: "token" });
+    const { result } = renderHook(() =>
+      useShareFlow({
+        activeSchedule: schedule,
+        prepareForManualSave: async () => schedule,
+        updateActiveSchedule: vi.fn(),
+      })
+    );
+    let first!: Promise<void>;
+    let second!: Promise<void>;
+    act(() => {
+      first = result.current.handleShare();
+      second = result.current.handleShare();
+    });
+    await act(async () => {
+      waiting.resolve();
+      await Promise.all([first, second]);
+    });
+    expect(updateSchedule).toHaveBeenCalledTimes(1);
+    expect(publishSchedule).toHaveBeenCalledTimes(1);
+  });
+  it("キャンセル前の確定ハンドラを再利用して新しい確認を確定できない", async () => {
+    const { createSchedule, publishSchedule } = await import("@/lib/api");
+    vi.mocked(createSchedule).mockResolvedValue({
+      slug: "fresh",
+      editToken: "token",
+    });
+    vi.mocked(publishSchedule).mockResolvedValue();
+    const schedule = makeSchedule();
+    const { result } = renderHook(() =>
+      useShareFlow({
+        activeSchedule: schedule,
+        prepareForManualSave: async () => schedule,
+        updateActiveSchedule: vi.fn(),
+      })
+    );
+    act(() => {
+      result.current.requestShareConfirmation();
+    });
+    const oldConfirm = result.current.confirmShare;
+    act(() => result.current.cancelShareConfirmation());
+    act(() => {
+      result.current.requestShareConfirmation();
+    });
+    await act(async () => oldConfirm());
+    expect(createSchedule).not.toHaveBeenCalled();
+    expect(publishSchedule).not.toHaveBeenCalled();
+    expect(result.current.showShareConfirmation).toBe(true);
+    await act(async () => result.current.confirmShare());
+    expect(createSchedule).toHaveBeenCalledTimes(1);
+    expect(publishSchedule).toHaveBeenCalledWith("fresh", "token");
+  });
+
+  it.each([{ id: "other" }, { name: "公開中に変わった名前" }])(
+    "公開リクエスト成功後の表示変更は公開成功として伝え別内容の共有画面を開かない %j",
+    async patch => {
+      const { updateSchedule, publishSchedule } = await import("@/lib/api");
+      const { toast } = await import("sonner");
+      vi.mocked(updateSchedule).mockResolvedValue();
+      const publishing = deferred<void>();
+      vi.mocked(publishSchedule).mockReturnValueOnce(publishing.promise);
+      const schedule = makeSchedule({ slug: "abc", editToken: "token" });
+      const { result, rerender } = renderHook(
+        ({ activeSchedule }) =>
+          useShareFlow({
+            activeSchedule,
+            prepareForManualSave: async () => schedule,
+            updateActiveSchedule: vi.fn(),
+          }),
+        { initialProps: { activeSchedule: schedule } }
+      );
+      act(() => {
+        result.current.requestShareConfirmation();
+      });
+      let sharing!: Promise<void>;
+      act(() => {
+        sharing = result.current.confirmShare();
+      });
+      await act(async () => {});
+      expect(publishSchedule).toHaveBeenCalledWith("abc", "token");
+      rerender({ activeSchedule: { ...schedule, ...patch } });
+      await act(async () => {
+        publishing.resolve();
+        await sharing;
+      });
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(toast.success).toHaveBeenCalledWith(
+        expect.stringContaining(schedule.name)
+      );
+      expect(result.current.showShare).toBe(false);
+      expect(result.current.showShareConfirmation).toBe(false);
+    }
+  );
 });
