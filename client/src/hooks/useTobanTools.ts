@@ -217,7 +217,12 @@ export function buildTobanTools(
       JSON.stringify(toScheduleData(before)) !==
         JSON.stringify(toScheduleData(s))
     ) {
-      scheduleSyncDebounced(s);
+      // Help text may be translated for this browser. Sync the committed
+      // stored body, not a display-only guide translation.
+      const stored = (outcome.storedState ?? outcome.state).schedules.find(
+        item => item.id === scheduleId
+      );
+      if (stored) scheduleSyncDebounced(stored);
     }
     const failed = outcome.local === "failed";
     return {

@@ -6,7 +6,7 @@ Toban turns a chat request into an editable, printable duty roster on the page. 
 
 ## Try the experience
 
-English browsers start in English. You can also use the language button at the bottom of the app. Switching languages changes the interface, not the contents of existing rosters.
+English browsers start in English. You can also use the language button at the bottom of the app. Existing rosters keep their content when you switch languages. The unedited Getting started guide also follows the selected language, without changing its saved or shared text.
 
 With a connected WebMCP client, open Toban's home page and ask:
 
@@ -157,13 +157,16 @@ The Codex in-app client returned `PRINT_REQUESTED`, but its interface did not ex
 
 ## English UI follow-up (2026-08-31)
 
+These English UI changes are verified locally and have not been deployed.
+
 - Localized all 32 built-in templates, including the blank starter: names, tasks and sample members are English when created in English. The picker, gallery, detail pages and template links use the same data. Saved rosters, IDs, assignments, colors and themes are preserved.
 - Template-based WebMCP creation accepts both the displayed English name and the original Japanese name; the created content follows the active interface language.
 - Shortened and aligned control labels, added singular/plural forms, localized theme names and the browser page title, and formatted future start dates in English. No new explanatory banners were added.
 - The holiday option explicitly says Japanese public holidays. English holiday names wrap inside calendar cells, including on narrow screens; holiday dates and rotation calculations are unchanged.
-- The final local checks passed 749 unit tests in 53 files and all 21 Playwright E2E tests, along with type checking, lint, formatting and the production build. English blank/template creation, switching languages without translating saved data, one/four-day settings, calendar labels, print output and sharing were exercised. Desktop, 390px mobile and print screenshots were reviewed independently.
+- The built-in Getting started guide now follows language switching, including guides already saved in Japanese or the older English version. Its title, steps, descriptions, editor and print view agree; custom rosters and edited guides are not translated. Explicit edits, copies and sharing use the displayed language, while a language switch alone never writes a translation to the shared roster.
+- The final local checks passed 788 unit tests in 55 files and all 22 Playwright E2E tests, along with type checking, lint, formatting and the production build. English blank/template creation, switching languages without translating saved data, one/four-day settings, calendar labels, print output and sharing were exercised. Desktop, 390px mobile and print screenshots were reviewed independently.
 - The English sharing E2E uses an isolated in-memory API fixture, and printing records the dialog request plus print CSS. Those checks do not publish real schedules or prove a physical print/PDF save.
-- Template categories are shared through a small module so opening the app does not load the SEO template descriptions. The main bundle remains about 629 kB; the existing 500 kB chunk warning remains.
+- Template categories are shared through a small module so opening the app does not load the SEO template descriptions. The main bundle is about 631 kB; the existing 500 kB chunk warning remains.
 
 ## What is new for the challenge
 

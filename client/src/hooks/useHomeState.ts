@@ -21,15 +21,20 @@ import { getTemplates } from "@shared/template-localization";
 import { useLocale } from "@/i18n";
 import { computeAssignments, getEffectiveRotation } from "@/rotation/utils";
 import type { AppState, Schedule } from "@/rotation/types";
+import {
+  applyLocalizedGuideUpdate,
+  localizeGuide,
+  localizeGuideState,
+} from "@/rotation/guide-localization";
 
 export function useHomeState() {
   const { locale } = useLocale();
   const toolEditingRef = useRef(false);
   const shareVisibleRef = useRef(false);
   const {
-    state,
+    state: storedState,
     setState,
-    activeSchedule,
+    activeSchedule: storedSchedule,
     updateActiveSchedule,
     updateScheduleById,
     handleAddSchedule,
@@ -39,10 +44,22 @@ export function useHomeState() {
     selectSchedule,
     handleTabDrop,
     addScheduleFromTemplateIndex,
-    getToolState,
+    getToolState: getStoredState,
     commitToolState: commitManagerState,
     localSaveStatus,
   } = useScheduleManager();
+
+  // The untouched guide is help content. Translate its presentation without
+  // turning a language switch into a saved edit to an existing shared roster.
+  const state = useMemo(
+    () => localizeGuideState(storedState, locale),
+    [storedState, locale]
+  );
+  const activeSchedule = state.schedules.find(s => s.id === storedSchedule?.id);
+  const getToolState = useCallback(
+    () => localizeGuideState(getStoredState(), locale),
+    [getStoredState, locale]
+  );
 
   const {
     modal,
@@ -63,16 +80,37 @@ export function useHomeState() {
   );
   const getScheduleById = useCallback(
     (id: string) =>
-      getToolState().schedules.find(schedule => schedule.id === id),
-    [getToolState]
+      getStoredState().schedules.find(schedule => schedule.id === id),
+    [getStoredState]
   );
 
-  const { syncStatus, prepareForManualSave } = useAutoSync(
-    activeSchedule,
-    updateCurrentSchedule,
-    // モーダルが開いている間は下書きを持っているので、引き直しで土台を入れ替えない
-    { isEditing: modal.type !== null, getScheduleById }
-  );
+  const { syncStatus, prepareForManualSave: prepareStoredForManualSave } =
+    useAutoSync(
+      storedSchedule,
+      updateCurrentSchedule,
+      // モーダルが開いている間は下書きを持っているので、引き直しで土台を入れ替えない
+      { isEditing: modal.type !== null, getScheduleById }
+    );
+  const prepareForManualSave = useCallback(async () => {
+    const prepared = await prepareStoredForManualSave();
+    if (!prepared) return prepared;
+    const localized = localizeGuide(prepared, locale);
+    if (localized !== prepared) {
+      // Sharing is an explicit save: publish the language the user sees, and
+      // keep that same content in storage so a later sync cannot undo it.
+      flushSync(() => {
+        setState(current => ({
+          ...current,
+          schedules: current.schedules.map(schedule =>
+            schedule.id === prepared.id
+              ? localizeGuide(schedule, locale)
+              : schedule
+          ),
+        }));
+      });
+    }
+    return localized;
+  }, [prepareStoredForManualSave, locale, setState]);
   const {
     isSharing,
     showShare,
@@ -129,9 +167,18 @@ export function useHomeState() {
   }, [activeSchedule, shareSchedule]);
   const isToolEditing = useCallback(() => toolEditingRef.current, []);
   const commitToolState = useCallback(
-    (updater: (state: AppState) => AppState) =>
-      commitManagerState(updater, () => toolEditingRef.current),
-    [commitManagerState]
+    async (updater: (state: AppState) => AppState) => {
+      const outcome = await commitManagerState(
+        current => applyLocalizedGuideUpdate(current, locale, updater),
+        () => toolEditingRef.current
+      );
+      return {
+        ...outcome,
+        state: localizeGuideState(outcome.state, locale),
+        storedState: outcome.state,
+      };
+    },
+    [commitManagerState, locale]
   );
   const { isAnimating, direction, handleRotate } =
     useRotationAnimation(setState);
@@ -213,9 +260,9 @@ export function useHomeState() {
   );
 
   const onDuplicateSchedule = useCallback(() => {
-    handleDuplicateSchedule();
+    handleDuplicateSchedule(locale);
     closeModal();
-  }, [handleDuplicateSchedule, closeModal]);
+  }, [handleDuplicateSchedule, closeModal, locale]);
 
   const onSaveSettings = useCallback(
     (...args: Parameters<typeof handleSaveSettings>) => {

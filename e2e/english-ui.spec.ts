@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { DEFAULT_APP_STATE } from "../client/src/rotation/defaultState";
 
 test.use({ locale: "en-US" });
 
@@ -250,4 +251,123 @@ test("English template, date settings, calendar, print and shared view", async (
     fullPage: true,
     animations: "disabled",
   });
+});
+
+test("saved Japanese guide follows the UI language until its text is edited", async ({
+  page,
+}, testInfo) => {
+  await page.route("**/api/schedules**", route =>
+    route.fulfill({ status: 400, body: "{}" })
+  );
+  await page.addInitScript(state => {
+    localStorage.setItem("toban-lang", "ja");
+    localStorage.setItem("rotation-schedule-app-state", JSON.stringify(state));
+  }, DEFAULT_APP_STATE);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "はじめてガイド"
+  );
+  const savedBefore = await page.evaluate(() =>
+    localStorage.getItem("rotation-schedule-app-state")
+  );
+  await page.getByRole("button", { name: /^(Language|言語)$/ }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Getting started"
+  );
+  await expect(
+    page.getByText("Select + to choose a template or start from scratch", {
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByText("Print your schedule, save a PDF, or share a link", {
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(page.locator("main")).not.toContainText(
+    /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u
+  );
+  await page.screenshot({
+    path: testInfo.outputPath("english-guide-desktop.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+
+  await page
+    .getByRole("button", { name: "Edit schedule", exact: true })
+    .click();
+  const editor = page.getByRole("dialog");
+  await expect(editor.getByLabel("Task 1 name", { exact: true })).toHaveValue(
+    "Pick a template"
+  );
+  await expect(editor.getByLabel("Task 4 name", { exact: true })).toHaveValue(
+    "Print or share"
+  );
+  await editor.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(editor).not.toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    page.getByText("Edit members & tasks", { exact: true })
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth
+    )
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("english-guide-mobile.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { printedTitles: string[] }).printedTitles.at(
+            -1
+          ) ?? ""
+      )
+    )
+    .toContain("Getting started_Start_");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.emulateMedia({ media: "print" });
+  await page.screenshot({
+    path: testInfo.outputPath("english-guide-print.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.emulateMedia({ media: "screen" });
+
+  await page.getByRole("button", { name: /^(Language|言語)$/ }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "はじめてガイド"
+  );
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("rotation-schedule-app-state")
+    )
+  ).toBe(savedBefore);
+
+  await page.getByRole("button", { name: /^(Language|言語)$/ }).click();
+  await page
+    .getByRole("button", { name: "Edit schedule", exact: true })
+    .click();
+  await editor
+    .getByLabel("Task 1 name", { exact: true })
+    .fill("Our onboarding");
+  await editor.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(editor).not.toBeVisible();
+  await page.getByRole("button", { name: /^(Language|言語)$/ }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Getting started"
+  );
+  await expect(page.getByText("Our onboarding", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Print your schedule, save a PDF, or share a link", {
+      exact: true,
+    })
+  ).toBeVisible();
 });

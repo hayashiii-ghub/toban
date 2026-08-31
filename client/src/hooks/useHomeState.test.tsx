@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { useHomeState } from "./useHomeState";
 import { STORAGE_KEY, TEMPLATES } from "@/rotation/constants";
-import { DEFAULT_APP_STATE } from "@/rotation/defaultState";
+import {
+  DEFAULT_APP_STATE,
+  DEFAULT_APP_STATE_EN,
+} from "@/rotation/defaultState";
 import { LanguageProvider } from "@/i18n";
 
 afterEach(cleanup);
@@ -78,6 +81,9 @@ describe("?template=N での着地", () => {
     ]);
     expect(result.current.activeSchedule?.members[0].name).toBe("Alex");
     expect(result.current.state.schedules[0]).toEqual(
+      DEFAULT_APP_STATE_EN.schedules[0]
+    );
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).schedules[0]).toEqual(
       DEFAULT_APP_STATE.schedules[0]
     );
     expect(window.location.search).toBe("");

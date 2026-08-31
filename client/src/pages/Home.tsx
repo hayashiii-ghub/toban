@@ -78,6 +78,7 @@ export default function Home() {
     );
   }
 
+  const scheduleName = s.activeSchedule.name;
   const rotationLabel =
     s.effectiveRotation === 0
       ? t("rotation.initial")
@@ -101,9 +102,7 @@ export default function Home() {
           isSharing={s.isSharing}
           isDateMode={s.isDateMode}
           isAnimating={s.isAnimating}
-          onPrint={() =>
-            s.handlePrint(s.viewTab, s.activeSchedule.name, rotationLabel)
-          }
+          onPrint={() => s.handlePrint(s.viewTab, scheduleName, rotationLabel)}
           onOpenSettings={s.openSettings}
           onShare={s.handleShare}
           onRotateForward={() => s.handleRotate("forward")}

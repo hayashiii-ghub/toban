@@ -20,6 +20,8 @@ import { loadState, saveState } from "@/lib/appState";
 import { deleteSchedule } from "@/lib/api";
 import { clearPendingSync } from "@/lib/syncManager";
 import { useT } from "@/i18n";
+import type { Locale } from "@/i18n/core";
+import { localizeGuide } from "@/rotation/guide-localization";
 import { toast } from "sonner";
 
 /**
@@ -258,31 +260,35 @@ export function useScheduleManager() {
     [getToolState, setState, t]
   );
 
-  const handleDuplicateSchedule = useCallback(() => {
-    const current = getToolState();
-    const source = current.schedules.find(
-      s => s.id === current.activeScheduleId
-    );
-    if (!source) return;
-    const clone: Schedule = {
-      id: generateId("s"),
-      name: t("schedule.copyName", { name: source.name }),
-      rotation: 0,
-      groups: deepClone(source.groups),
-      members: deepClone(source.members),
-      rotationConfig: source.rotationConfig
-        ? deepClone(source.rotationConfig)
-        : undefined,
-      assignmentMode: source.assignmentMode,
-      designThemeId: source.designThemeId,
-    };
-    startTransition(() => {
-      setState(prev => ({
-        schedules: [...prev.schedules, clone],
-        activeScheduleId: clone.id,
-      }));
-    });
-  }, [getToolState, setState, t]);
+  const handleDuplicateSchedule = useCallback(
+    (locale?: Locale) => {
+      const current = getToolState();
+      const savedSource = current.schedules.find(
+        s => s.id === current.activeScheduleId
+      );
+      if (!savedSource) return;
+      const source = locale ? localizeGuide(savedSource, locale) : savedSource;
+      const clone: Schedule = {
+        id: generateId("s"),
+        name: t("schedule.copyName", { name: source.name }),
+        rotation: 0,
+        groups: deepClone(source.groups),
+        members: deepClone(source.members),
+        rotationConfig: source.rotationConfig
+          ? deepClone(source.rotationConfig)
+          : undefined,
+        assignmentMode: source.assignmentMode,
+        designThemeId: source.designThemeId,
+      };
+      startTransition(() => {
+        setState(prev => ({
+          schedules: [...prev.schedules, clone],
+          activeScheduleId: clone.id,
+        }));
+      });
+    },
+    [getToolState, setState, t]
+  );
 
   const handleSaveSettings = useCallback(
     (settings: ScheduleSettings) => {
