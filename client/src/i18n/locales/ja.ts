@@ -201,7 +201,7 @@ export const ja: Record<string, string> = {
   "rotation.autoByDate": "日付で自動切り替え",
   "rotation.shareAria": "共有する",
   "rotation.cloudSaved": "クラウド保存済み",
-  "rotation.cloudUnsaved": "未保存",
+  "rotation.cloudUnsaved": "クラウド未保存",
   "rotation.editAria": "当番表を編集する",
 
   // ローテーション設定
@@ -404,4 +404,19 @@ export const ja: Record<string, string> = {
   "templatesDetail.backToList": "テンプレート一覧に戻る",
   "templatesDetail.related": "関連するテンプレート",
   "templatesDetail.createFromThis": "このテンプレートで作る",
+
+  // Roster creation conditions and local save status
+  "summary.label": "当番表の条件",
+  "summary.counts": "{members}人・{groups}組の仕事",
+  "summary.dateRotation": "{date}開始・有効日{days}日ごとに交代",
+  "summary.manual": "手動で交代",
+  "summary.saturday": "土曜",
+  "summary.sunday": "日曜",
+  "summary.holidays": "日本の祝日",
+  "summary.separator": "・",
+  "summary.skip": "{days}は交代を進めません",
+  "summary.sharedEdits": "共有済みの表への変更は、共有先にも同期されます。",
+  "summary.saveFailed":
+    "端末に保存できませんでした。内容を失わないよう、この画面を閉じずに保存先の空き容量・設定を確認してください。",
+  "summary.beforeStart": "開始前の配置（{date}開始）",
 };

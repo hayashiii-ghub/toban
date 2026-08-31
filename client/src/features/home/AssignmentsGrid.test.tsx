@@ -111,6 +111,26 @@ describe("AssignmentsGrid", () => {
     expect(view.getByText("日直")).toBeInTheDocument();
   });
 
+  it("タスクモードでも同じグループの仕事を省略せず1枚の印刷カードに表示する", () => {
+    const { container } = render(
+      <AssignmentsGrid
+        {...baseProps}
+        assignmentMode="task"
+        assignments={sampleAssignments.slice(0, 1)}
+      />
+    );
+    const cards = container.querySelectorAll(".rotation-print-card");
+    expect(cards).toHaveLength(1);
+    const card = within(cards[0] as HTMLElement);
+    expect(card.getByText("掃除")).toBeVisible();
+    expect(card.getByText("ゴミ捨て")).toBeVisible();
+    expect(card.getByText("田中太郎")).toBeVisible();
+    expect(cards[0]).toHaveAccessibleName("掃除・ゴミ捨て: 田中太郎");
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent(
+      "掃除・ゴミ捨て: 田中太郎"
+    );
+  });
+
   it("空のassignments配列で空の状態が表示される", () => {
     const { container } = render(
       <AssignmentsGrid {...baseProps} assignments={[]} />

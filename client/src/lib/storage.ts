@@ -15,13 +15,15 @@ export function safeGetItem(key: string): string | null {
   }
 }
 
-export function safeSetItem(key: string, value: string): void {
+export function safeSetItem(key: string, value: string): boolean {
   try {
     localStorage.setItem(key, value);
+    return true;
   } catch (error) {
     console.warn(
       `[storage] localStorageの書き込みに失敗 (key: ${key}):`,
       error
     );
+    return false;
   }
 }

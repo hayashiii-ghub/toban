@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type SetStateAction,
+} from "react";
+import { flushSync } from "react-dom";
 import { useAutoSync } from "@/hooks/useAutoSync";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useModalManager } from "@/hooks/useModalManager";
@@ -11,13 +19,17 @@ import { useTabDragDrop } from "@/hooks/useTabDragDrop";
 import { useViewTab } from "@/hooks/useViewTab";
 import { TEMPLATES } from "@/rotation/constants";
 import { computeAssignments, getEffectiveRotation } from "@/rotation/utils";
+import type { AppState, Schedule } from "@/rotation/types";
 
 export function useHomeState() {
+  const toolEditingRef = useRef(false);
+  const shareVisibleRef = useRef(false);
   const {
     state,
     setState,
     activeSchedule,
     updateActiveSchedule,
+    updateScheduleById,
     handleAddSchedule,
     handleDeleteSchedule,
     handleDuplicateSchedule,
@@ -25,28 +37,100 @@ export function useHomeState() {
     selectSchedule,
     handleTabDrop,
     addScheduleFromTemplateIndex,
-    saveState,
+    getToolState,
+    commitToolState: commitManagerState,
+    localSaveStatus,
   } = useScheduleManager();
 
   const {
     modal,
-    openSettings,
-    openNewSchedule,
-    openConfirmDelete,
+    openSettings: openSettingsModal,
+    openNewSchedule: openNewScheduleModal,
+    openConfirmDelete: openConfirmDeleteModal,
     closeModal,
   } = useModalManager();
 
+  // Async sync/share work keeps the target that was active when it started.
+  // It must not attach a late response to whichever tab is active afterward.
+  const activeScheduleId = activeSchedule?.id;
+  const updateCurrentSchedule = useCallback(
+    (updater: (schedule: Schedule) => Schedule) => {
+      if (activeScheduleId) updateScheduleById(activeScheduleId, updater);
+    },
+    [activeScheduleId, updateScheduleById]
+  );
+  const getScheduleById = useCallback(
+    (id: string) =>
+      getToolState().schedules.find(schedule => schedule.id === id),
+    [getToolState]
+  );
+
   const { syncStatus, prepareForManualSave } = useAutoSync(
     activeSchedule,
-    updateActiveSchedule,
+    updateCurrentSchedule,
     // モーダルが開いている間は下書きを持っているので、引き直しで土台を入れ替えない
-    { isEditing: modal.type !== null }
+    { isEditing: modal.type !== null, getScheduleById }
   );
-  const { isSharing, showShare, setShowShare, handleShare } = useShareFlow({
+  const {
+    isSharing,
+    showShare,
+    setShowShare: setShareVisible,
+    handleShare: shareSchedule,
+  } = useShareFlow({
     activeSchedule,
     prepareForManualSave,
-    updateActiveSchedule,
+    updateActiveSchedule: updateCurrentSchedule,
   });
+
+  useLayoutEffect(() => {
+    toolEditingRef.current = modal.type !== null || showShare || isSharing;
+    shareVisibleRef.current = showShare;
+  }, [modal.type, showShare, isSharing]);
+
+  // Set the guard at invocation too: opening an editor and receiving a tool
+  // call can happen before React commits the editor's state.
+  const openSettings = useCallback(() => {
+    toolEditingRef.current = true;
+    openSettingsModal();
+  }, [openSettingsModal]);
+  const openNewSchedule = useCallback(() => {
+    toolEditingRef.current = true;
+    openNewScheduleModal();
+  }, [openNewScheduleModal]);
+  const openConfirmDelete = useCallback(
+    (scheduleId: string) => {
+      toolEditingRef.current = true;
+      openConfirmDeleteModal(scheduleId);
+    },
+    [openConfirmDeleteModal]
+  );
+  const setShowShare = useCallback(
+    (action: SetStateAction<boolean>) => {
+      const next =
+        typeof action === "function" ? action(shareVisibleRef.current) : action;
+      shareVisibleRef.current = next;
+      if (next) toolEditingRef.current = true;
+      setShareVisible(next);
+    },
+    [setShareVisible]
+  );
+  const handleShare = useCallback(() => {
+    if (!activeSchedule) return Promise.resolve();
+    let pending = Promise.resolve();
+    // Commit the busy state before an immediate API failure can clear it in
+    // the same batch, so the editing guard is also reset on completion.
+    flushSync(() => {
+      toolEditingRef.current = true;
+      pending = shareSchedule();
+    });
+    return pending;
+  }, [activeSchedule, shareSchedule]);
+  const isToolEditing = useCallback(() => toolEditingRef.current, []);
+  const commitToolState = useCallback(
+    (updater: (state: AppState) => AppState) =>
+      commitManagerState(updater, () => toolEditingRef.current),
+    [commitManagerState]
+  );
   const { isAnimating, direction, handleRotate } =
     useRotationAnimation(setState);
   const {
@@ -58,7 +142,7 @@ export function useHomeState() {
     onDragEnd,
   } = useTabDragDrop(handleTabDrop);
   const { handlePrint } = usePrintMode();
-  const { viewTab, changeTab } = useViewTab();
+  const { viewTab, changeTab, changeTabForTool } = useViewTab();
   const { showOnboarding, handleOnboardingComplete } = useOnboarding({
     hasSchedule: !!activeSchedule,
     isModalOpen: modal.type !== null,
@@ -91,10 +175,6 @@ export function useHomeState() {
   );
 
   useBodyScrollLock(modal.type !== null || showShare);
-
-  useEffect(() => {
-    saveState(state);
-  }, [state, saveState]);
 
   // /templates からの ?template=N 着地だけをここで処理する。
   // 保存データが無い初回訪問は loadState が defaultState（「はじめてガイド」）を
@@ -168,6 +248,10 @@ export function useHomeState() {
 
   return {
     state,
+    getToolState,
+    commitToolState,
+    isToolEditing,
+    localSaveStatus,
     activeSchedule,
     updateActiveSchedule,
     selectSchedule,
@@ -200,6 +284,7 @@ export function useHomeState() {
     // View
     viewTab,
     changeTab,
+    changeTabForTool,
     // Onboarding
     showOnboarding,
     handleOnboardingComplete,

@@ -17,6 +17,8 @@ import {
   clearPendingSync,
   isScheduleSyncPaused,
   setSyncStatusCallback,
+  hasPendingSync,
+  waitForScheduleSync,
 } from "./syncManager";
 import { updateSchedule } from "./api";
 import type { Schedule } from "@shared/types";
@@ -48,6 +50,7 @@ beforeEach(() => {
   });
   vi.mocked(updateSchedule).mockClear();
   clearPendingSync(mockSchedule.id);
+  resumeScheduleSync(mockSchedule.id);
   setSyncStatusCallback(null);
 });
 
@@ -224,5 +227,140 @@ describe("setSyncStatusCallback", () => {
 
     expect(callback).toHaveBeenCalledWith(mockSchedule.id, "syncing");
     expect(callback).toHaveBeenCalledWith(mockSchedule.id, "error");
+  });
+});
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+describe("進行中PUTと新しい変更", () => {
+  it("同じ表のPUTは前の応答を待ち、最新本文だけを次に送る", async () => {
+    const first = deferred<void>();
+    const second = deferred<void>();
+    vi.mocked(updateSchedule)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    scheduleSyncDebounced(mockSchedule);
+    await vi.advanceTimersByTimeAsync(3000);
+    scheduleSyncDebounced({ ...mockSchedule, name: "新しい本文" });
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(updateSchedule).toHaveBeenCalledTimes(1);
+    first.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(updateSchedule).toHaveBeenCalledTimes(2);
+    expect(updateSchedule).toHaveBeenLastCalledWith(
+      mockSchedule.slug,
+      mockSchedule.editToken,
+      expect.objectContaining({ name: "新しい本文" }),
+      undefined
+    );
+    second.resolve();
+    await flushPendingSync(mockSchedule.id);
+    expect(hasPendingSync(mockSchedule.id)).toBe(false);
+  });
+
+  it("古い本文の400エラーで、その後に修正済みのpendingを消さない", async () => {
+    const { ApiError } = await import("./api");
+    const first = deferred<void>();
+    vi.mocked(updateSchedule).mockReturnValueOnce(first.promise);
+    scheduleSyncDebounced(mockSchedule);
+    const flushing = flushPendingSync(mockSchedule.id);
+    scheduleSyncDebounced({ ...mockSchedule, name: "修正済み" });
+    first.reject(new ApiError("Rejected", 400));
+    await flushing;
+    expect(hasPendingSync(mockSchedule.id)).toBe(true);
+    await flushPendingSync(mockSchedule.id);
+    expect(updateSchedule).toHaveBeenLastCalledWith(
+      mockSchedule.slug,
+      mockSchedule.editToken,
+      expect.objectContaining({ name: "修正済み" }),
+      undefined
+    );
+  });
+
+  it("古いPUT成功の後も新しいpendingを保持し、keepalive付きflushで送れる", async () => {
+    const first = deferred<void>();
+    vi.mocked(updateSchedule).mockReturnValueOnce(first.promise);
+    scheduleSyncDebounced(mockSchedule);
+    const firstFlush = flushPendingSync(mockSchedule.id);
+    scheduleSyncDebounced({ ...mockSchedule, name: "最新" });
+    const nextFlush = flushPendingSync(mockSchedule.id, { keepalive: true });
+    expect(updateSchedule).toHaveBeenCalledTimes(1);
+    first.resolve();
+    await Promise.all([firstFlush, nextFlush]);
+    expect(updateSchedule).toHaveBeenLastCalledWith(
+      mockSchedule.slug,
+      mockSchedule.editToken,
+      expect.objectContaining({ name: "最新" }),
+      { keepalive: true }
+    );
+    expect(hasPendingSync(mockSchedule.id)).toBe(false);
+  });
+
+  it("異なる表のPUTは互いの完了を待たない", async () => {
+    const first = deferred<void>();
+    const other = { ...mockSchedule, id: "other", slug: "other-slug" };
+    vi.mocked(updateSchedule).mockReturnValueOnce(first.promise);
+    scheduleSyncDebounced(mockSchedule);
+    const firstFlush = flushPendingSync(mockSchedule.id);
+    scheduleSyncDebounced(other);
+    await flushPendingSync(other.id);
+    expect(updateSchedule).toHaveBeenCalledTimes(2);
+    first.resolve();
+    await firstFlush;
+  });
+});
+
+describe("手動共有前の同期待機", () => {
+  it("pause後は既に送ったPUTだけを待ち、新しいpendingは送らない", async () => {
+    const first = deferred<void>();
+    vi.mocked(updateSchedule).mockReturnValueOnce(first.promise);
+    scheduleSyncDebounced(mockSchedule);
+    const firstFlush = flushPendingSync(mockSchedule.id);
+    scheduleSyncDebounced({ ...mockSchedule, name: "手動で保存する最新本文" });
+    const queuedFlush = flushPendingSync(mockSchedule.id);
+    pauseScheduleSync(mockSchedule.id);
+    const settled = vi.fn();
+    const waiting = waitForScheduleSync(mockSchedule.id).then(settled);
+    await Promise.resolve();
+    expect(settled).not.toHaveBeenCalled();
+    first.resolve();
+    await Promise.all([firstFlush, queuedFlush, waiting]);
+    expect(settled).toHaveBeenCalledOnce();
+    expect(updateSchedule).toHaveBeenCalledTimes(1);
+    expect(hasPendingSync(mockSchedule.id)).toBe(true);
+    await flushPendingSync(mockSchedule.id, { keepalive: true });
+    expect(updateSchedule).toHaveBeenCalledTimes(1);
+  });
+
+  it("手動保存開始後の新しいpendingを完了処理で消さず、再開後に送る", async () => {
+    pauseScheduleSync(mockSchedule.id);
+    const newer = { ...mockSchedule, name: "手動保存中の追加編集" };
+    scheduleSyncDebounced(newer);
+    clearPendingSync(mockSchedule.id, mockSchedule);
+    expect(hasPendingSync(mockSchedule.id)).toBe(true);
+    resumeScheduleSync(mockSchedule.id);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(updateSchedule).toHaveBeenCalledWith(
+      newer.slug,
+      newer.editToken,
+      expect.objectContaining({ name: newer.name }),
+      undefined
+    );
+    expect(hasPendingSync(mockSchedule.id)).toBe(false);
+  });
+
+  it("手動保存した内容と同じpendingだけを解除する", () => {
+    pauseScheduleSync(mockSchedule.id);
+    scheduleSyncDebounced(mockSchedule);
+    clearPendingSync(mockSchedule.id, { ...mockSchedule });
+    expect(hasPendingSync(mockSchedule.id)).toBe(false);
   });
 });

@@ -2,13 +2,17 @@ import { test, expect } from "@playwright/test";
 
 test.describe("メインフロー", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => {
       localStorage.clear();
       localStorage.setItem("toban-onboarding-complete", "true");
     });
-    await page.reload();
-    await page.waitForLoadState("networkidle");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    // Background backup/retries and remote assets need not become idle before
+    // the local editor is ready. Wait for the actual interaction instead.
+    await expect(
+      page.getByRole("button", { name: "当番表を編集する" })
+    ).toBeVisible();
   });
 
   test("初期表示: デフォルトスケジュールが表示される", async ({ page }) => {

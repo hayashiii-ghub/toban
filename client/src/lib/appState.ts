@@ -41,6 +41,11 @@ export function loadState(): AppState {
   return { schedules: [customSchedule], activeScheduleId: customSchedule.id };
 }
 
-export function saveState(state: AppState): void {
-  safeSetItem(STORAGE_KEY, JSON.stringify(state));
+export function saveState(state: AppState): boolean {
+  try {
+    return safeSetItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn("[storage] 当番表の保存データを作成できませんでした:", error);
+    return false;
+  }
 }

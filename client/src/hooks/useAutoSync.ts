@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import type { Schedule } from "@/rotation/types";
 import { createSchedule, getScheduleForEdit, toScheduleData } from "@/lib/api";
 import {
@@ -39,10 +45,13 @@ function useSyncStatusSubscription(scheduleId: string | undefined): {
   return { syncStatus, setSyncStatus };
 }
 
+type ScheduleLookup = (id: string) => Schedule | undefined;
+
 function useAutoBackup(
   schedule: Schedule | undefined,
   onScheduleUpdate: ((updater: (s: Schedule) => Schedule) => void) | undefined,
-  setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>
+  setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>,
+  getScheduleById: ScheduleLookup | undefined
 ): {
   cancelPendingBackup: () => void;
   prepareForManualSave: () => Promise<Schedule | undefined>;
@@ -51,64 +60,96 @@ function useAutoBackup(
   backupTimerRef: React.MutableRefObject<number | null>;
 } {
   const backupTimerRef = useRef<number | null>(null);
-  const backupInFlightRef = useRef(false);
-  const backupPromiseRef = useRef<Promise<Schedule | undefined> | null>(null);
+  const backupPromisesRef = useRef(
+    new Map<string, Promise<Schedule | undefined>>()
+  );
   const scheduleRef = useRef(schedule);
-  useEffect(() => {
+  const mountedRef = useRef(true);
+  useLayoutEffect(() => {
+    if (scheduleRef.current?.id !== schedule?.id && backupTimerRef.current) {
+      window.clearTimeout(backupTimerRef.current);
+      backupTimerRef.current = null;
+    }
     scheduleRef.current = schedule;
   }, [schedule]);
 
+  const lookup = useCallback(
+    (id: string) =>
+      getScheduleById
+        ? getScheduleById(id)
+        : scheduleRef.current?.id === id
+          ? scheduleRef.current
+          : undefined,
+    [getScheduleById]
+  );
+
   const attemptAutoBackup = useCallback(
     async (s: Schedule) => {
-      // 最新の状態を再チェック — 別の経路で既に slug が付与されていたらスキップ
-      const latest = scheduleRef.current;
-      if (latest && latest.id === s.id && latest.slug && latest.editToken)
-        return latest;
+      const latest = lookup(s.id);
+      if (!latest || !mountedRef.current) return undefined;
+      if (latest.slug && latest.editToken) return latest;
+      if (isScheduleSyncPaused(s.id)) return latest;
+      const pending = backupPromisesRef.current.get(s.id);
+      if (pending) return pending;
+      if (!latest.members.some(m => m.name.trim() !== "")) return latest;
 
-      if (isScheduleSyncPaused(s.id)) return s;
-      if (backupInFlightRef.current && backupPromiseRef.current) {
-        return backupPromiseRef.current;
-      }
-      // Only auto-backup if there are real members (at least 1 with a name)
-      const hasMembers = s.members.some(m => m.name.trim() !== "");
-      if (!hasMembers) return s;
-
+      // The request owns this ID and snapshot. Its response only adds identity.
+      const source = latest;
+      const sourceJson = JSON.stringify(toScheduleData(source));
       // eslint-disable-next-line prefer-const -- assigned after IIFE captures the closure
       let currentBackupPromise!: Promise<Schedule | undefined>;
       const backupPromise = (async () => {
-        backupInFlightRef.current = true;
-        setSyncStatus("syncing");
+        if (scheduleRef.current?.id === source.id) setSyncStatus("syncing");
         try {
-          const result = await createSchedule(toScheduleData(s));
-          const updatedSchedule = {
-            ...s,
-            slug: result.slug,
-            editToken: result.editToken,
+          const result = await createSchedule(toScheduleData(source));
+          if (!mountedRef.current) return undefined;
+          const attachIdentity = (current: Schedule): Schedule => {
+            if (current.id !== source.id || (current.slug && current.editToken))
+              return current;
+            return {
+              ...current,
+              slug: result.slug,
+              editToken: result.editToken,
+            };
           };
-          onScheduleUpdate?.(() => updatedSchedule);
-          setSyncStatus("synced");
-          return updatedSchedule;
+          onScheduleUpdate?.(attachIdentity);
+          const current = lookup(source.id);
+          const updated = current ? attachIdentity(current) : undefined;
+          const hasNewChanges =
+            updated && JSON.stringify(toScheduleData(updated)) !== sourceJson;
+          if (updated && hasNewChanges) {
+            // Edits made during POST must also reach the cloud, even after a tab switch.
+            // This runs outside the React updater, which may be replayed.
+            scheduleSyncDebounced(updated);
+          }
+          if (scheduleRef.current?.id === source.id) {
+            setSyncStatus(hasNewChanges ? "syncing" : "synced");
+          }
+          return updated;
         } catch {
-          setSyncStatus("error");
-          return s;
+          if (mountedRef.current && scheduleRef.current?.id === source.id) {
+            setSyncStatus("error");
+          }
+          return lookup(source.id);
         } finally {
-          backupInFlightRef.current = false;
-          if (backupPromiseRef.current === currentBackupPromise) {
-            backupPromiseRef.current = null;
+          if (
+            backupPromisesRef.current.get(source.id) === currentBackupPromise
+          ) {
+            backupPromisesRef.current.delete(source.id);
           }
         }
       })();
-
       currentBackupPromise = backupPromise;
-      backupPromiseRef.current = backupPromise;
+      backupPromisesRef.current.set(source.id, backupPromise);
       return backupPromise;
     },
-    [onScheduleUpdate, setSyncStatus]
+    [lookup, onScheduleUpdate, setSyncStatus]
   );
 
-  // Cleanup backup timer on unmount
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       if (backupTimerRef.current) {
         window.clearTimeout(backupTimerRef.current);
       }
@@ -123,12 +164,22 @@ function useAutoBackup(
   }, []);
 
   const prepareForManualSave = useCallback(async () => {
+    const before = scheduleRef.current;
     cancelPendingBackup();
-    if (backupPromiseRef.current) {
-      return backupPromiseRef.current;
+    if (!before) return undefined;
+    const backedUp = await backupPromisesRef.current.get(before.id);
+    const current = scheduleRef.current;
+    if (!mountedRef.current || current?.id !== before.id) {
+      throw new Error("The schedule changed while preparing to share.");
     }
-    return scheduleRef.current;
-  }, [cancelPendingBackup]);
+    // Waiting for POST must not restore its older content in a manual save.
+    const latest = lookup(before.id) ?? current;
+    return backedUp?.slug &&
+      backedUp.editToken &&
+      !(latest.slug && latest.editToken)
+      ? { ...latest, slug: backedUp.slug, editToken: backedUp.editToken }
+      : latest;
+  }, [cancelPendingBackup, lookup]);
 
   return {
     cancelPendingBackup,
@@ -157,12 +208,20 @@ function usePullFromServer(
   isEditing: boolean
 ): void {
   const isEditingRef = useRef(isEditing);
+  const mountedRef = useRef(true);
   useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  useLayoutEffect(() => {
     isEditingRef.current = isEditing;
   }, [isEditing]);
 
   const canPull = useCallback(
     (s: Schedule | undefined): s is CloudSchedule =>
+      mountedRef.current &&
       !!s?.slug &&
       !!s.editToken &&
       !isEditingRef.current &&
@@ -176,6 +235,7 @@ function usePullFromServer(
     const before = scheduleRef.current;
     if (!onScheduleUpdate || !canPull(before)) return;
 
+    const beforeJson = JSON.stringify(toScheduleData(before));
     let fetched;
     try {
       fetched = await getScheduleForEdit(before.slug, before.editToken);
@@ -185,13 +245,22 @@ function usePullFromServer(
       return;
     }
 
-    // 取得中に別のスケジュールへ切り替わった／編集が始まっていたら捨てる
+    // Recheck both after the network wait and inside the eventual state update.
+    // A pending local write can finish while GET is in flight, so its flag alone
+    // cannot prove that the original snapshot is still current.
+    const unchanged = (
+      current: Schedule | undefined
+    ): current is CloudSchedule =>
+      canPull(current) &&
+      scheduleRef.current?.id === before.id &&
+      current.id === before.id &&
+      current.slug === before.slug &&
+      current.editToken === before.editToken &&
+      JSON.stringify(toScheduleData(current)) === beforeJson;
     const after = scheduleRef.current;
-    if (!canPull(after) || after.id !== before.id || after.slug !== before.slug)
-      return;
+    if (!unchanged(after)) return;
 
-    const merged: Schedule = {
-      ...after,
+    const serverData = {
       name: fetched.name,
       rotation: fetched.rotation,
       groups: fetched.groups,
@@ -200,22 +269,25 @@ function usePullFromServer(
       assignmentMode: fetched.assignmentMode,
       designThemeId: fetched.designThemeId,
     };
-    const mergedJson = JSON.stringify(toScheduleData(merged));
-    if (mergedJson === JSON.stringify(toScheduleData(after))) return;
+    const mergedJson = JSON.stringify(serverData);
+    if (mergedJson === beforeJson) return;
 
-    // 取り込んだ内容をそのまま送り返さないよう useSyncOnChange へ知らせる
-    adoptedJsonRef.current = mergedJson;
-    onScheduleUpdate(() => merged);
+    // A rejected updater has no effects. The marker only suppresses an actual
+    // render of this server payload; IDs prevent cross-schedule suppression.
+    adoptedJsonRef.current = `${before.id}:${mergedJson}`;
+    onScheduleUpdate(current =>
+      unchanged(current) ? { ...current, ...serverData } : current
+    );
   }, [onScheduleUpdate, scheduleRef, adoptedJsonRef, canPull]);
 
   // 起動時とスケジュール切り替え時。同じ対象で二重に引かないよう鍵で覚える
   const pulledKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    const key = `${schedule?.id ?? ""}:${schedule?.slug ?? ""}`;
+    const key = `${schedule?.id ?? ""}:${schedule?.slug ?? ""}:${schedule?.editToken ?? ""}`;
     if (pulledKeyRef.current === key) return;
     pulledKeyRef.current = key;
     void pull();
-  }, [schedule?.id, schedule?.slug, pull]);
+  }, [schedule?.id, schedule?.slug, schedule?.editToken, pull]);
 
   // タブに戻ってきたとき。開きっぱなしの端末には効かないが、
   // 端末を持ち替える使い方はこれで拾える
@@ -237,31 +309,42 @@ function useSyncOnChange(
   backupTimerRef: React.MutableRefObject<number | null>,
   adoptedJsonRef: React.MutableRefObject<string | null>
 ): void {
-  const prevJsonRef = useRef<string>("");
-
-  useEffect(() => {
-    prevJsonRef.current = "";
-  }, [schedule?.id]);
+  const previousRef = useRef<{
+    id: string;
+    json: string;
+    cloudIdentity: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!schedule) return;
 
     const json = JSON.stringify(toScheduleData(schedule));
+    const cloudIdentity = `${schedule.slug ?? ""}:${schedule.editToken ?? ""}`;
+    const previous = previousRef.current;
+    previousRef.current = { id: schedule.id, json, cloudIdentity };
 
     // 引き直しで取り込んだ内容は、サーバと同じなので送り返さない
-    if (adoptedJsonRef.current === json) {
+    if (adoptedJsonRef.current === `${schedule.id}:${json}`) {
       adoptedJsonRef.current = null;
-      prevJsonRef.current = json;
       return;
     }
 
-    const changed = prevJsonRef.current && prevJsonRef.current !== json;
-    prevJsonRef.current = json;
-
-    if (!changed) return;
+    const sameSchedule = previous?.id === schedule.id;
+    const changed = sameSchedule && previous.json !== json;
+    const gainedIdentity =
+      sameSchedule && previous.cloudIdentity !== cloudIdentity;
+    // Preserve the initial seed behavior, while backing up a newly selected
+    // complete roster without requiring an extra edit to trigger change detection.
+    const newlySelectedLocal =
+      previous && !sameSchedule && !(schedule.slug && schedule.editToken);
+    if (!changed && !gainedIdentity && !newlySelectedLocal) return;
 
     if (schedule.slug && schedule.editToken) {
       // Already has cloud identity — sync update
+      if (backupTimerRef.current) {
+        window.clearTimeout(backupTimerRef.current);
+        backupTimerRef.current = null;
+      }
       scheduleSyncDebounced(schedule);
     } else if (onScheduleUpdate) {
       // No cloud identity yet — schedule auto-backup with debounce
@@ -270,8 +353,13 @@ function useSyncOnChange(
         backupTimerRef.current = null;
         // Use ref to get latest schedule — avoids stale closure creating orphan rows
         const current = scheduleRef.current;
-        if (!current || (current.slug && current.editToken)) return;
-        attemptAutoBackup(current);
+        if (
+          !current ||
+          current.id !== schedule.id ||
+          (current.slug && current.editToken)
+        )
+          return;
+        void attemptAutoBackup(current);
       }, BACKUP_DEBOUNCE_MS);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleRef and backupTimerRef are stable refs
@@ -327,7 +415,7 @@ export function useAutoSync(
   schedule: Schedule | undefined,
   onScheduleUpdate?: (updater: (s: Schedule) => Schedule) => void,
   /** 設定モーダル等で下書きを編集中。裏で土台が入れ替わらないよう引き直しを止める */
-  options?: { isEditing?: boolean }
+  options?: { isEditing?: boolean; getScheduleById?: ScheduleLookup }
 ): {
   syncStatus: SyncStatus;
   cancelPendingBackup: () => void;
@@ -340,7 +428,12 @@ export function useAutoSync(
     attemptAutoBackup,
     scheduleRef,
     backupTimerRef,
-  } = useAutoBackup(schedule, onScheduleUpdate, setSyncStatus);
+  } = useAutoBackup(
+    schedule,
+    onScheduleUpdate,
+    setSyncStatus,
+    options?.getScheduleById
+  );
   const adoptedJsonRef = useRef<string | null>(null);
   usePullFromServer(
     schedule,

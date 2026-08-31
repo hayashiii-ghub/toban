@@ -38,6 +38,17 @@
     display: block !important;
   }
 
+  /* A browser tool can print in the same turn as a view mounts. Ignore entrance
+     animation opacity/translation on printable HTML without altering SVG geometry. */
+  .rotation-print-header [style*="opacity"],
+  .rotation-print-card,
+  .rotation-print-card [style*="opacity"] {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
   .rotation-print-card {
     break-inside: avoid;
     page-break-inside: avoid;

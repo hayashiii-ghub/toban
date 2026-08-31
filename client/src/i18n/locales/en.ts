@@ -207,7 +207,7 @@ export const en: Record<string, string> = {
   "rotation.autoByDate": "Switches automatically by date",
   "rotation.shareAria": "Share",
   "rotation.cloudSaved": "Saved to cloud",
-  "rotation.cloudUnsaved": "Not saved",
+  "rotation.cloudUnsaved": "Not saved to cloud",
   "rotation.editAria": "Edit schedule",
 
   // Rotation settings
@@ -408,4 +408,21 @@ export const en: Record<string, string> = {
   "templatesDetail.backToList": "Back to templates",
   "templatesDetail.related": "Related templates",
   "templatesDetail.createFromThis": "Create with this template",
+
+  // Roster creation conditions and local save status
+  "summary.label": "Roster conditions",
+  "summary.counts": "{members} members · {groups} task groups",
+  "summary.dateRotation":
+    "Starts {date} · rotates every {days} eligible day(s)",
+  "summary.manual": "Manual rotation",
+  "summary.saturday": "Saturdays",
+  "summary.sunday": "Sundays",
+  "summary.holidays": "Japanese holidays",
+  "summary.separator": ", ",
+  "summary.skip": "Rotation pauses on {days}.",
+  "summary.sharedEdits":
+    "Edits to an already published roster also sync to its public link.",
+  "summary.saveFailed":
+    "Could not save on this device. Keep this page open and check storage space and settings to avoid losing your changes.",
+  "summary.beforeStart": "Initial placement (starts {date})",
 };

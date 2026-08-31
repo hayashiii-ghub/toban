@@ -87,6 +87,8 @@ export default function Home() {
       >
         <ScheduleHeader
           scheduleName={s.activeSchedule.name}
+          schedule={s.activeSchedule}
+          localSaveStatus={s.localSaveStatus}
           rotationLabel={rotationLabel}
         />
 
@@ -108,6 +110,7 @@ export default function Home() {
         />
 
         <TodayBanner
+          startDate={s.activeSchedule.rotationConfig?.startDate}
           groups={s.groups}
           members={s.members}
           rotation={s.effectiveRotation}

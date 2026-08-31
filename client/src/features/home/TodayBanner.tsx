@@ -1,6 +1,7 @@
 import type { TaskGroup, Member, AssignmentMode } from "@/rotation/types";
 import { computeAssignments } from "@/rotation/utils";
 import { useT, useDateLocale } from "@/i18n";
+import { parseIsoDateLocal, startOfLocalDay } from "@/rotation/dateUtils";
 
 interface TodayBannerProps {
   groups: TaskGroup[];
@@ -11,6 +12,7 @@ interface TodayBannerProps {
   /** 手動モードで表示する周回ラベル（例: 「初期」「2回目」） */
   rotationLabel: string;
   assignmentMode?: AssignmentMode;
+  startDate?: string;
 }
 
 export function TodayBanner({
@@ -20,6 +22,7 @@ export function TodayBanner({
   isDateMode,
   rotationLabel,
   assignmentMode,
+  startDate,
 }: TodayBannerProps) {
   const t = useT();
   const dateLocale = useDateLocale();
@@ -38,9 +41,16 @@ export function TodayBanner({
     day: "numeric",
     weekday: "short",
   });
-  const label = isDateMode
-    ? t("today.label", { date: today })
-    : t("current.label", { turn: rotationLabel });
+  const beforeStart =
+    isDateMode &&
+    startDate &&
+    (parseIsoDateLocal(startDate)?.getTime() ?? 0) >
+      startOfLocalDay(new Date()).getTime();
+  const label = beforeStart
+    ? t("summary.beforeStart", { date: startDate })
+    : isDateMode
+      ? t("today.label", { date: today })
+      : t("current.label", { turn: rotationLabel });
 
   return (
     <div className="px-3 sm:px-4 pb-2 rotation-no-print">

@@ -4,6 +4,7 @@ import type { Schedule } from "@shared/types";
 const DEBOUNCE_MS = 3000;
 const timers = new Map<string, number>();
 const pendingSchedules = new Map<string, Schedule>();
+const inFlightSyncs = new Map<string, Promise<void>>();
 const pausedScheduleIds = new Set<string>();
 
 export type SyncStatus = "idle" | "syncing" | "synced" | "error";
@@ -32,7 +33,11 @@ export function isScheduleSyncPaused(scheduleId: string): boolean {
  * 上書きしないためのガードとして参照される。
  */
 export function hasPendingSync(scheduleId: string): boolean {
-  return pendingSchedules.has(scheduleId) || timers.has(scheduleId);
+  return (
+    pendingSchedules.has(scheduleId) ||
+    timers.has(scheduleId) ||
+    inFlightSyncs.has(scheduleId)
+  );
 }
 
 export function pauseScheduleSync(scheduleId: string): void {
@@ -49,7 +54,20 @@ export function resumeScheduleSync(scheduleId: string): void {
   schedulePendingSync(scheduleId);
 }
 
-export function clearPendingSync(scheduleId: string): void {
+export function clearPendingSync(
+  scheduleId: string,
+  savedSchedule?: Schedule
+): void {
+  const pending = pendingSchedules.get(scheduleId);
+  if (
+    savedSchedule &&
+    pending &&
+    (pending.slug !== savedSchedule.slug ||
+      pending.editToken !== savedSchedule.editToken ||
+      JSON.stringify(toScheduleData(pending)) !==
+        JSON.stringify(toScheduleData(savedSchedule)))
+  )
+    return;
   const timer = timers.get(scheduleId);
   if (timer) {
     window.clearTimeout(timer);
@@ -83,7 +101,9 @@ async function doSync(
         console.warn(
           `[syncManager] 認証エラー (${error.status}): スケジュール ${schedule.id} の同期をスキップ`
         );
-        pendingSchedules.delete(schedule.id);
+        if (pendingSchedules.get(schedule.id) === schedule) {
+          pendingSchedules.delete(schedule.id);
+        }
       } else if (error.status === 400 || error.status === 413) {
         // Validation error / payload too large — 同じ内容を送り直しても必ず失敗する。
         // 保持し続けると復帰イベントのたびに無駄な再送が走るので破棄する。
@@ -91,7 +111,9 @@ async function doSync(
           `[syncManager] 送信内容が不正 (${error.status}): スケジュール ${schedule.id} の同期をスキップ`,
           error.message
         );
-        pendingSchedules.delete(schedule.id);
+        if (pendingSchedules.get(schedule.id) === schedule) {
+          pendingSchedules.delete(schedule.id);
+        }
       } else {
         // 5xx server errors — retriable, keep pending for retry on reconnect
         console.error(
@@ -111,6 +133,44 @@ async function doSync(
   }
 }
 
+/** Wait for already-dispatched PUTs without sending paused pending edits. */
+export async function waitForScheduleSync(scheduleId: string): Promise<void> {
+  let inFlight = inFlightSyncs.get(scheduleId);
+  while (inFlight) {
+    await inFlight;
+    inFlight = inFlightSyncs.get(scheduleId);
+  }
+}
+
+async function syncPendingSchedule(
+  scheduleId: string,
+  options?: { keepalive?: boolean }
+): Promise<void> {
+  // Check again after each await: another caller may have started the next PUT.
+  let inFlight = inFlightSyncs.get(scheduleId);
+  while (inFlight) {
+    await inFlight;
+    inFlight = inFlightSyncs.get(scheduleId);
+  }
+  if (isScheduleSyncPaused(scheduleId)) return;
+  const pending = pendingSchedules.get(scheduleId);
+  if (!pending) return;
+
+  const request = doSync(pending, options).then(synced => {
+    if (synced && pendingSchedules.get(scheduleId) === pending) {
+      pendingSchedules.delete(scheduleId);
+    }
+  });
+  inFlightSyncs.set(scheduleId, request);
+  try {
+    await request;
+  } finally {
+    if (inFlightSyncs.get(scheduleId) === request) {
+      inFlightSyncs.delete(scheduleId);
+    }
+  }
+}
+
 function schedulePendingSync(scheduleId: string): void {
   if (isScheduleSyncPaused(scheduleId)) return;
 
@@ -122,14 +182,7 @@ function schedulePendingSync(scheduleId: string): void {
 
   const timer = window.setTimeout(() => {
     timers.delete(scheduleId);
-    const latestPending = pendingSchedules.get(scheduleId);
-    if (latestPending) {
-      void doSync(latestPending).then(synced => {
-        if (synced && pendingSchedules.get(scheduleId) === latestPending) {
-          pendingSchedules.delete(scheduleId);
-        }
-      });
-    }
+    void syncPendingSchedule(scheduleId);
   }, DEBOUNCE_MS);
 
   timers.set(scheduleId, timer);
@@ -151,11 +204,5 @@ export async function flushPendingSync(
     window.clearTimeout(timer);
     timers.delete(scheduleId);
   }
-  const pending = pendingSchedules.get(scheduleId);
-  if (pending) {
-    const synced = await doSync(pending, options);
-    if (synced && pendingSchedules.get(scheduleId) === pending) {
-      pendingSchedules.delete(scheduleId);
-    }
-  }
+  await syncPendingSchedule(scheduleId, options);
 }

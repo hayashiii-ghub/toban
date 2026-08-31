@@ -2,10 +2,21 @@ import { describe, expect, it, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { buildTobanTools, useTobanTools } from "./useTobanTools";
 import type { useHomeState } from "@/hooks/useHomeState";
-import type { ScheduleSettings } from "@/hooks/useScheduleManager";
 import { LIMITS } from "@shared/limits";
-import type { Assignment, Member, Schedule, TaskGroup } from "@/rotation/types";
+import type {
+  AppState,
+  Assignment,
+  Member,
+  Schedule,
+  TaskGroup,
+} from "@/rotation/types";
 import type { ViewTabValue } from "@/features/home/viewTabsConfig";
+import { getSchedule } from "@/lib/api";
+
+vi.mock("@/lib/api", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/lib/api")>()),
+  getSchedule: vi.fn(),
+}));
 
 type HomeState = ReturnType<typeof useHomeState>;
 
@@ -32,19 +43,48 @@ const sched = (over: Partial<Schedule> = {}): Schedule => ({
   ...over,
 });
 
-function makeGet(over: Partial<HomeState> = {}): () => HomeState {
+type GetState = (() => HomeState) & { getSaved: () => Schedule | null };
+
+function makeGet(over: Partial<HomeState> = {}): GetState {
   const schedules = over.state?.schedules ?? [sched()];
   const active = "activeSchedule" in over ? over.activeSchedule : schedules[0];
+  let current: AppState = over.state ?? {
+    schedules,
+    activeScheduleId: active?.id ?? "",
+  };
+  let saved: Schedule | null = null;
   const base = {
-    state: { schedules, activeScheduleId: active?.id ?? "" },
+    state: current,
     activeSchedule: active,
     assignments: [] as Assignment[],
     effectiveRotation: 0,
     groups: active?.groups ?? [],
     members: active?.members ?? [],
+    modal: { type: null },
+    showShare: false,
+    isSharing: false,
+    localSaveStatus: "saved",
+    syncStatus: "idle",
+    viewTab: "cards",
+    changeTabForTool: (view: ViewTabValue) => {
+      base.viewTab = view;
+      return true;
+    },
+    handlePrint: vi.fn(),
     ...over,
+    getToolState: () => current,
+    commitToolState: async (updater: (state: AppState) => AppState) => {
+      current = updater(current);
+      saved =
+        current.schedules.find(
+          schedule => schedule.id === current.activeScheduleId
+        ) ?? null;
+      base.state = current;
+      if (saved) base.activeSchedule = saved;
+      return { state: current, local: "saved", applied: true };
+    },
   } as unknown as HomeState;
-  return () => base;
+  return Object.assign(() => base, { getSaved: () => saved });
 }
 
 const toolNamed = (name: string, get: () => HomeState): WebMCPTool => {
@@ -78,10 +118,24 @@ describe("list_schedules", () => {
     const text = (await toolNamed("list_schedules", get).execute({})).content[0]
       .text;
 
-    expect(text).toContain("掃除当番");
-    expect(text).toContain("給食当番（表示中）");
-    expect(text).toContain("メンバー3人");
-    expect(text).toContain("グループ2組");
+    expect(JSON.parse(text)).toMatchObject({
+      items: [
+        {
+          schedule_id: "s1",
+          name: "掃除当番",
+          active: false,
+          member_count: 1,
+          task_group_count: 1,
+        },
+        {
+          schedule_id: "s2",
+          name: "給食当番",
+          active: true,
+          member_count: 3,
+          task_group_count: 2,
+        },
+      ],
+    });
   });
 
   it("read-only であることを annotations で宣言する", () => {
@@ -95,6 +149,7 @@ describe("get_current_assignments", () => {
   it("グループと担当メンバーの対応と回転ラベルを返す", async () => {
     const a = sched({
       name: "掃除当番",
+      rotation: 2,
       groups: [
         group("g1", "🧹", ["床そうじ"]),
         group("g2", "🚮", ["ゴミ出し"]),
@@ -115,10 +170,14 @@ describe("get_current_assignments", () => {
     const text = (await toolNamed("get_current_assignments", get).execute({}))
       .content[0].text;
 
-    expect(text).toContain("掃除当番");
-    expect(text).toContain("2回目");
-    expect(text).toContain("床そうじ → 佐藤");
-    expect(text).toContain("ゴミ出し → 鈴木");
+    expect(JSON.parse(text)).toMatchObject({
+      schedule_id: "s1",
+      rotation: 2,
+      items: [
+        { group_id: "g1", member_id: "m1", member_name: "佐藤" },
+        { group_id: "g2", member_id: "m2", member_name: "鈴木" },
+      ],
+    });
   });
 
   it("回転 0 は初期と表示する", async () => {
@@ -131,7 +190,10 @@ describe("get_current_assignments", () => {
     });
     const text = (await toolNamed("get_current_assignments", get).execute({}))
       .content[0].text;
-    expect(text).toContain("初期");
+    expect(JSON.parse(text)).toMatchObject({
+      rotation: 0,
+      items: [{ group_id: "g1", member_id: "m1" }],
+    });
   });
 
   it("当番表が無いときはその旨を返す", async () => {
@@ -141,7 +203,11 @@ describe("get_current_assignments", () => {
     });
     const text = (await toolNamed("get_current_assignments", get).execute({}))
       .content[0].text;
-    expect(text).toContain("ありません");
+    expect(JSON.parse(text)).toMatchObject({
+      ok: false,
+      code: "NOT_FOUND",
+      applied: false,
+    });
   });
 });
 
@@ -161,11 +227,21 @@ describe("get_schedule_details", () => {
     const text = (await toolNamed("get_schedule_details", get).execute({}))
       .content[0].text;
 
-    expect(text).toContain("佐藤");
-    expect(text).toContain("鈴木");
-    expect(text).toContain("床");
-    expect(text).toContain("窓");
-    expect(text).toContain("日付");
+    expect(JSON.parse(text)).toMatchObject({
+      rotation: { mode: "date", start_date: "2026-01-01", cycle_days: 7 },
+    });
+    const members = await toolNamed("get_schedule_details", get).execute({
+      section: "members",
+    });
+    expect(JSON.parse(members.content[0].text)).toMatchObject({
+      items: [{ name: "佐藤" }, { name: "鈴木" }],
+    });
+    const groups = await toolNamed("get_schedule_details", get).execute({
+      section: "groups",
+    });
+    expect(JSON.parse(groups.content[0].text)).toMatchObject({
+      items: [{ task: "床" }, { task: "窓" }],
+    });
   });
 
   it("manual モードは手動と表示する", async () => {
@@ -176,7 +252,7 @@ describe("get_schedule_details", () => {
     });
     const text = (await toolNamed("get_schedule_details", get).execute({}))
       .content[0].text;
-    expect(text).toContain("手動");
+    expect(JSON.parse(text)).toMatchObject({ rotation: { mode: "manual" } });
   });
 });
 
@@ -184,93 +260,87 @@ describe("switch_schedule", () => {
   it("名前が一致する当番表に切り替える", async () => {
     const a = sched({ id: "s1", name: "掃除当番" });
     const b = sched({ id: "s2", name: "給食当番" });
-    let switched: string | null = null;
     const get = makeGet({
       state: { schedules: [a, b], activeScheduleId: "s1" },
       activeSchedule: a,
-      selectSchedule: (id: string) => {
-        switched = id;
-      },
     });
 
     const text = (
       await toolNamed("switch_schedule", get).execute({ name: "給食当番" })
     ).content[0].text;
 
-    expect(switched).toBe("s2");
-    expect(text).toContain("給食当番");
+    expect(get().state.activeScheduleId).toBe("s2");
+    expect(JSON.parse(text)).toMatchObject({
+      ok: true,
+      schedule_id: "s2",
+      applied: true,
+    });
   });
 
   it("一致しない名前は切り替えず候補を添えて返す", async () => {
     const a = sched({ id: "s1", name: "掃除当番" });
-    let switched: string | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: "s1" },
       activeSchedule: a,
-      selectSchedule: (id: string) => {
-        switched = id;
-      },
     });
 
     const text = (
       await toolNamed("switch_schedule", get).execute({ name: "存在しない表" })
     ).content[0].text;
 
-    expect(switched).toBeNull();
-    expect(text).toContain("掃除当番");
+    expect(get().state.activeScheduleId).toBe("s1");
+    expect(JSON.parse(text)).toMatchObject({
+      code: "NOT_FOUND",
+      applied: false,
+    });
+    const candidates = await toolNamed("list_schedules", get).execute({});
+    expect(JSON.parse(candidates.content[0].text)).toMatchObject({
+      items: [{ name: "掃除当番" }],
+    });
   });
 });
 
 describe("advance_rotation", () => {
   it("manual モードでは指定方向に回転する", async () => {
-    const a = sched({ rotationConfig: { mode: "manual" } });
-    let dir: string | null = null;
+    const a = sched({
+      rotationConfig: { mode: "manual" },
+      members: [member("m1", "佐藤"), member("m2", "鈴木")],
+    });
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      handleRotate: (d: "forward" | "backward") => {
-        dir = d;
-      },
     });
 
     const text = (
       await toolNamed("advance_rotation", get).execute({ direction: "forward" })
     ).content[0].text;
 
-    expect(dir).toBe("forward");
-    expect(text).toContain("進め");
+    expect(get.getSaved()!.rotation).toBe(1);
+    expect(JSON.parse(text)).toMatchObject({ ok: true, applied: true });
   });
 
   it("date モードでは回転せず日付管理であることを伝える", async () => {
     const a = sched({
       rotationConfig: { mode: "date", startDate: "2026-01-01", cycleDays: 7 },
     });
-    let dir: string | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      handleRotate: (d: "forward" | "backward") => {
-        dir = d;
-      },
     });
 
     const text = (
       await toolNamed("advance_rotation", get).execute({ direction: "forward" })
     ).content[0].text;
 
-    expect(dir).toBeNull();
+    expect(get.getSaved()).toBeNull();
     expect(text).toContain("日付");
   });
 
   it("不正な direction はエラーを返す", async () => {
     const a = sched({ rotationConfig: { mode: "manual" } });
-    let dir: string | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      handleRotate: (d: "forward" | "backward") => {
-        dir = d;
-      },
     });
 
     const text = (
@@ -279,7 +349,7 @@ describe("advance_rotation", () => {
       })
     ).content[0].text;
 
-    expect(dir).toBeNull();
+    expect(get.getSaved()).toBeNull();
     expect(text).toMatch(/forward|backward/);
   });
 });
@@ -288,8 +358,9 @@ describe("change_view", () => {
   it("有効なビューに切り替える", async () => {
     let view: string | null = null;
     const get = makeGet({
-      changeTab: (t: ViewTabValue) => {
+      changeTabForTool: (t: ViewTabValue) => {
         view = t;
+        return true;
       },
     });
 
@@ -298,14 +369,15 @@ describe("change_view", () => {
     ).content[0].text;
 
     expect(view).toBe("calendar");
-    expect(text).toContain("カレンダー");
+    expect(JSON.parse(text)).toMatchObject({ ok: true, view: "calendar" });
   });
 
   it("disc（円盤）に切り替えられる", async () => {
     let view: string | null = null;
     const get = makeGet({
-      changeTab: (t: "cards" | "table" | "calendar" | "disc") => {
+      changeTabForTool: (t: "cards" | "table" | "calendar" | "disc") => {
         view = t;
+        return true;
       },
     });
 
@@ -313,14 +385,15 @@ describe("change_view", () => {
       .content[0].text;
 
     expect(view).toBe("disc");
-    expect(text).toContain("円盤");
+    expect(JSON.parse(text)).toMatchObject({ ok: true, view: "disc" });
   });
 
   it("無効なビューは切り替えずエラーを返す", async () => {
     let view: string | null = null;
     const get = makeGet({
-      changeTab: (t: ViewTabValue) => {
+      changeTabForTool: (t: ViewTabValue) => {
         view = t;
+        return true;
       },
     });
 
@@ -335,30 +408,19 @@ describe("change_view", () => {
 
 describe("create_schedule", () => {
   it("テンプレート名から新しい当番表を作る", async () => {
-    let created: { name: string } | null = null;
-    const get = makeGet({
-      onAddSchedule: (t: { name: string }) => {
-        created = t;
-      },
-    });
+    const get = makeGet({});
 
     const text = (
       await toolNamed("create_schedule", get).execute({ template: "給食当番" })
     ).content[0].text;
 
-    // created はコールバック内で代入されるが、TS の制御フロー解析はそれを追えず
-    // null に絞り込む。宣言時の型へ戻して読む
-    expect((created as { name: string } | null)?.name).toBe("給食当番");
-    expect(text).toContain("給食当番");
+    expect(get.getSaved()!.name).toBe("給食当番");
+    expect(get().state.schedules).toHaveLength(2);
+    expect(JSON.parse(text)).toMatchObject({ ok: true, applied: true });
   });
 
   it("未知のテンプレートは作らず候補を添えて返す", async () => {
-    let created: { name: string } | null = null;
-    const get = makeGet({
-      onAddSchedule: (t: { name: string }) => {
-        created = t;
-      },
-    });
+    const get = makeGet({});
 
     const text = (
       await toolNamed("create_schedule", get).execute({
@@ -366,7 +428,7 @@ describe("create_schedule", () => {
       })
     ).content[0].text;
 
-    expect(created).toBeNull();
+    expect(get.getSaved()).toBeNull();
     expect(text).toContain("給食当番");
   });
 });
@@ -377,26 +439,22 @@ describe("add_member", () => {
       name: "掃除当番",
       members: [member("m1", "佐藤"), member("m2", "鈴木")],
     });
-    let saved: ScheduleSettings | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      onSaveSettings: ((settings: ScheduleSettings) => {
-        saved = settings;
-      }) as HomeState["onSaveSettings"],
     });
 
     const text = (await toolNamed("add_member", get).execute({ name: "田中" }))
       .content[0].text;
 
-    expect(text).toContain("田中");
-    const members = saved!.members;
+    expect(JSON.parse(text)).toMatchObject({ ok: true, applied: true });
+    const members = get.getSaved()!.members;
     expect(members.map(m => m.name)).toEqual(["佐藤", "鈴木", "田中"]);
     const added = members[2];
     expect(added.color).toBeTruthy();
     expect(added.bgColor).toBeTruthy();
     expect(added.textColor).toBeTruthy();
-    expect(saved!.name).toBe("掃除当番");
+    expect(get.getSaved()!.name).toBe("掃除当番");
   });
 
   it("member モード（担当者ごと）では対応するグループも同時に追加する", async () => {
@@ -405,19 +463,15 @@ describe("add_member", () => {
       members: [member("m1", "佐藤")],
       groups: [group("g1", "🧹", ["床そうじ"])],
     });
-    let saved: ScheduleSettings | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      onSaveSettings: ((settings: ScheduleSettings) => {
-        saved = settings;
-      }) as HomeState["onSaveSettings"],
     });
 
     await toolNamed("add_member", get).execute({ name: "田中" });
 
-    expect(saved!.members.map(m => m.name)).toEqual(["佐藤", "田中"]);
-    expect(saved!.groups).toHaveLength(2);
+    expect(get.getSaved()!.members.map(m => m.name)).toEqual(["佐藤", "田中"]);
+    expect(get.getSaved()!.groups).toHaveLength(2);
   });
 });
 
@@ -427,20 +481,20 @@ describe("add_member のメンバー数上限", () => {
       member(`m${i}`, `名前${i}`)
     );
     const a = sched({ members: full });
-    let saved: ScheduleSettings | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      onSaveSettings: ((settings: ScheduleSettings) => {
-        saved = settings;
-      }) as HomeState["onSaveSettings"],
     });
 
     const text = (await toolNamed("add_member", get).execute({ name: "田中" }))
       .content[0].text;
 
-    expect(saved).toBeNull();
-    expect(text).toContain(`${LIMITS.members}人`);
+    expect(get.getSaved()).toBeNull();
+    expect(JSON.parse(text)).toMatchObject({
+      code: "INVALID_INPUT",
+      applied: false,
+    });
+    expect(get().state.schedules[0].members).toHaveLength(LIMITS.members);
   });
 });
 
@@ -450,15 +504,11 @@ describe("保存系 name フィールドの文字数上限", () => {
       name: "掃除当番",
       members: [member("m1", "佐藤"), member("m2", "鈴木")],
     });
-    let saved: ScheduleSettings | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      onSaveSettings: ((settings: ScheduleSettings) => {
-        saved = settings;
-      }) as HomeState["onSaveSettings"],
     });
-    return { get, getSaved: () => saved };
+    return { get, getSaved: get.getSaved };
   };
 
   it("上限文字数超の名前は保存せず上限を伝えるエラーを返し、上限ちょうどは通る", async () => {
@@ -471,7 +521,10 @@ describe("保存系 name フィールドの文字数上限", () => {
       const text = (await toolNamed("add_member", get).execute({ name: over }))
         .content[0].text;
       expect(getSaved()).toBeNull();
-      expect(text).toContain(`文字以内`);
+      expect(JSON.parse(text)).toMatchObject({
+        code: "INVALID_INPUT",
+        issues: [{ code: "too_big" }],
+      });
     }
     // add_member: 50文字ちょうど → 通る
     {
@@ -489,7 +542,10 @@ describe("保存系 name フィールドの文字数上限", () => {
         })
       ).content[0].text;
       expect(getSaved()).toBeNull();
-      expect(text).toContain(`文字以内`);
+      expect(JSON.parse(text)).toMatchObject({
+        code: "INVALID_INPUT",
+        issues: [{ code: "too_big" }],
+      });
     }
     // update_schedule: name 51文字 → 保存されず上限エラー
     {
@@ -498,7 +554,10 @@ describe("保存系 name フィールドの文字数上限", () => {
         await toolNamed("update_schedule", get).execute({ name: over })
       ).content[0].text;
       expect(getSaved()).toBeNull();
-      expect(text).toContain(`文字以内`);
+      expect(JSON.parse(text)).toMatchObject({
+        code: "INVALID_INPUT",
+        issues: [{ code: "too_big" }],
+      });
     }
   });
 });
@@ -512,60 +571,57 @@ describe("remove_member", () => {
         { id: "g1", emoji: "🧹", tasks: ["床"], memberIds: ["m1", "m2"] },
       ],
     });
-    let saved: ScheduleSettings | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      onSaveSettings: ((settings: ScheduleSettings) => {
-        saved = settings;
-      }) as HomeState["onSaveSettings"],
     });
 
     const text = (
       await toolNamed("remove_member", get).execute({ name: "鈴木" })
     ).content[0].text;
 
-    expect(text).toContain("鈴木");
-    expect(saved!.members.map(m => m.name)).toEqual(["佐藤"]);
-    expect(saved!.groups[0].memberIds).toEqual(["m1"]);
+    expect(JSON.parse(text)).toMatchObject({ ok: true, applied: true });
+    expect(get.getSaved()!.members.map(m => m.name)).toEqual(["佐藤"]);
+    expect(get.getSaved()!.groups[0].memberIds).toEqual(["m1"]);
   });
 
   it("最後の1人は削除できない", async () => {
     const a = sched({ members: [member("m1", "佐藤")] });
-    let saved: ScheduleSettings | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      onSaveSettings: ((settings: ScheduleSettings) => {
-        saved = settings;
-      }) as HomeState["onSaveSettings"],
     });
 
     const text = (
       await toolNamed("remove_member", get).execute({ name: "佐藤" })
     ).content[0].text;
 
-    expect(saved).toBeNull();
+    expect(get.getSaved()).toBeNull();
     expect(text).toMatch(/最後|削除できません/);
   });
 
   it("該当しない名前は候補付きで知らせる", async () => {
     const a = sched({ members: [member("m1", "佐藤"), member("m2", "鈴木")] });
-    let saved: ScheduleSettings | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      onSaveSettings: ((settings: ScheduleSettings) => {
-        saved = settings;
-      }) as HomeState["onSaveSettings"],
     });
 
     const text = (
       await toolNamed("remove_member", get).execute({ name: "田中" })
     ).content[0].text;
 
-    expect(saved).toBeNull();
-    expect(text).toContain("佐藤");
+    expect(get.getSaved()).toBeNull();
+    expect(JSON.parse(text)).toMatchObject({
+      code: "NOT_FOUND",
+      applied: false,
+    });
+    const candidates = await toolNamed("get_schedule_details", get).execute({
+      section: "members",
+    });
+    expect(JSON.parse(candidates.content[0].text)).toMatchObject({
+      items: [{ name: "佐藤" }, { name: "鈴木" }],
+    });
   });
 
   it("member モード（担当者ごと）では対応するグループも同時に削除する", async () => {
@@ -574,19 +630,15 @@ describe("remove_member", () => {
       members: [member("m1", "佐藤"), member("m2", "鈴木")],
       groups: [group("g1", "🧹", ["床そうじ"]), group("g2", "🍚", ["配膳"])],
     });
-    let saved: ScheduleSettings | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      onSaveSettings: ((settings: ScheduleSettings) => {
-        saved = settings;
-      }) as HomeState["onSaveSettings"],
     });
 
     await toolNamed("remove_member", get).execute({ name: "佐藤" });
 
-    expect(saved!.members.map(m => m.name)).toEqual(["鈴木"]);
-    expect(saved!.groups.map(g => g.id)).toEqual(["g2"]);
+    expect(get.getSaved()!.members.map(m => m.name)).toEqual(["鈴木"]);
+    expect(get.getSaved()!.groups.map(g => g.id)).toEqual(["g2"]);
   });
 });
 
@@ -600,21 +652,16 @@ describe("set_rotation", () => {
         member("m3", "高橋"),
       ],
     });
-    let updater: ((s: Schedule) => Schedule) | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      updateActiveSchedule: (fn: (s: Schedule) => Schedule) => {
-        updater = fn;
-      },
     });
 
     const text = (await toolNamed("set_rotation", get).execute({ rotation: 2 }))
       .content[0].text;
 
-    expect(updater).not.toBeNull();
-    expect(updater!(a).rotation).toBe(2);
-    expect(text).toContain("2回目");
+    expect(get.getSaved()!.rotation).toBe(2);
+    expect(JSON.parse(text)).toMatchObject({ ok: true, applied: true });
   });
 
   it("メンバー数で正規化する", async () => {
@@ -622,57 +669,48 @@ describe("set_rotation", () => {
       rotationConfig: { mode: "manual" },
       members: [member("m1", "佐藤"), member("m2", "鈴木")],
     });
-    let updater: ((s: Schedule) => Schedule) | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      updateActiveSchedule: (fn: (s: Schedule) => Schedule) => {
-        updater = fn;
-      },
     });
 
     await toolNamed("set_rotation", get).execute({ rotation: 5 });
 
-    expect(updater!(a).rotation).toBe(1);
+    expect(get.getSaved()!.rotation).toBe(1);
   });
 
   it("date モードでは設定せず日付管理を伝える", async () => {
     const a = sched({
       rotationConfig: { mode: "date", startDate: "2026-01-01", cycleDays: 7 },
     });
-    let updater: ((s: Schedule) => Schedule) | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      updateActiveSchedule: (fn: (s: Schedule) => Schedule) => {
-        updater = fn;
-      },
     });
 
     const text = (await toolNamed("set_rotation", get).execute({ rotation: 2 }))
       .content[0].text;
 
-    expect(updater).toBeNull();
+    expect(get.getSaved()).toBeNull();
     expect(text).toContain("日付");
   });
 
   it("負の数や非整数は拒否する", async () => {
     const a = sched({ rotationConfig: { mode: "manual" } });
-    let updater: ((s: Schedule) => Schedule) | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      updateActiveSchedule: (fn: (s: Schedule) => Schedule) => {
-        updater = fn;
-      },
     });
 
     const text = (
       await toolNamed("set_rotation", get).execute({ rotation: -1 })
     ).content[0].text;
 
-    expect(updater).toBeNull();
-    expect(text).toMatch(/0以上|整数/);
+    expect(get.getSaved()).toBeNull();
+    expect(JSON.parse(text)).toMatchObject({
+      code: "INVALID_INPUT",
+      issues: [{ path: "rotation" }],
+    });
   });
 });
 
@@ -697,6 +735,12 @@ describe("print_schedule", () => {
 describe("get_share_link", () => {
   it("共有済みなら共有 URL を返す", async () => {
     const a = sched({ slug: "abc123" });
+    vi.mocked(getSchedule).mockResolvedValueOnce({
+      ...a,
+      slug: "abc123",
+      createdAt: "2026-09-01",
+      updatedAt: "2026-09-01",
+    });
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
@@ -736,15 +780,11 @@ describe("update_schedule", () => {
       assignmentMode: "member",
       pinned: false,
     });
-    let saved: ScheduleSettings | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      onSaveSettings: ((settings: ScheduleSettings) => {
-        saved = settings;
-      }) as HomeState["onSaveSettings"],
     });
-    return { a, get, getSaved: () => saved };
+    return { a, get, getSaved: get.getSaved };
   };
 
   it("名前を変更し他は保持する", async () => {
@@ -754,7 +794,7 @@ describe("update_schedule", () => {
     ).content[0].text;
     expect(getSaved()!.name).toBe("新・掃除当番");
     expect(getSaved()!.assignmentMode).toBe("member");
-    expect(text).toContain("新・掃除当番");
+    expect(JSON.parse(text)).toMatchObject({ ok: true, applied: true });
   });
 
   it("担当者⇄タスクモードを切り替える", async () => {
@@ -793,15 +833,11 @@ describe("update_schedule", () => {
 describe("update_member", () => {
   const setup = () => {
     const a = sched({ members: [member("m1", "佐藤"), member("m2", "鈴木")] });
-    let saved: ScheduleSettings | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      onSaveSettings: ((settings: ScheduleSettings) => {
-        saved = settings;
-      }) as HomeState["onSaveSettings"],
     });
-    return { a, get, getSaved: () => saved };
+    return { a, get, getSaved: get.getSaved };
   };
 
   it("メンバーを休みにする", async () => {
@@ -831,7 +867,16 @@ describe("update_member", () => {
       })
     ).content[0].text;
     expect(getSaved()).toBeNull();
-    expect(text).toContain("佐藤");
+    expect(JSON.parse(text)).toMatchObject({
+      code: "NOT_FOUND",
+      applied: false,
+    });
+    const candidates = await toolNamed("get_schedule_details", get).execute({
+      section: "members",
+    });
+    expect(JSON.parse(candidates.content[0].text)).toMatchObject({
+      items: [{ name: "佐藤" }, { name: "鈴木" }],
+    });
   });
 
   it("変更内容がなければエラー", async () => {
@@ -849,15 +894,11 @@ describe("configure_rotation", () => {
     rotationConfig?: import("@/rotation/types").RotationConfig
   ) => {
     const a = sched(rotationConfig ? { rotationConfig } : {});
-    let saved: ScheduleSettings | null = null;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      onSaveSettings: ((settings: ScheduleSettings) => {
-        saved = settings;
-      }) as HomeState["onSaveSettings"],
     });
-    return { a, get, getSaved: () => saved };
+    return { a, get, getSaved: get.getSaved };
   };
 
   it("日付モードに設定する", async () => {
@@ -944,17 +985,15 @@ describe("configure_rotation", () => {
 describe("duplicate_schedule", () => {
   it("表示中の当番表を複製する", async () => {
     const a = sched({ name: "掃除当番" });
-    let dup = false;
     const get = makeGet({
       state: { schedules: [a], activeScheduleId: a.id },
       activeSchedule: a,
-      onDuplicateSchedule: () => {
-        dup = true;
-      },
     });
     const text = (await toolNamed("duplicate_schedule", get).execute({}))
       .content[0].text;
-    expect(dup).toBe(true);
+    expect(get().state.schedules).toHaveLength(2);
+    expect(get.getSaved()!.id).not.toBe(a.id);
+    expect(get.getSaved()!.groups).toEqual(a.groups);
     expect(text).toContain("複製");
   });
 });
@@ -1003,12 +1042,16 @@ describe("出力の文字数予算", () => {
     }
   });
 
-  it("切り詰めたときは省略した旨を末尾に付ける", async () => {
+  it("収まらない詳細は有効なJSONの次ページで続きを知らせる", async () => {
     const { content } = await toolNamed(
       "get_schedule_details",
       bigGet()
-    ).execute({}, undefined);
-    expect(content[0].text).toContain("以降を省略しました");
+    ).execute({ section: "groups" }, undefined);
+    expect(content[0].text.length).toBeLessThanOrEqual(1500);
+    expect(JSON.parse(content[0].text)).toMatchObject({
+      total: LIMITS.groups * LIMITS.tasksPerGroup,
+      next_cursor: expect.any(Number),
+    });
   });
 
   it("収まる出力には省略の注記を付けない", async () => {

@@ -30,7 +30,7 @@ export function AssignmentsGrid({
           {assignments
             .map(({ group, member }) =>
               isTaskMode
-                ? `${group.tasks[0] ?? ""}: ${member.name}`
+                ? `${group.tasks.join("・")}: ${member.name}`
                 : `${member.name}: ${group.tasks.join("・")}`
             )
             .join("、")}
@@ -45,10 +45,10 @@ export function AssignmentsGrid({
                 key={`${scheduleId}-${member.id}-${group.id}-${rotation}`}
                 aria-label={
                   isTaskMode
-                    ? `${group.tasks[0] ?? ""}: ${member.name}`
+                    ? `${group.tasks.join("・")}: ${member.name}`
                     : `${member.name}: ${group.tasks.join("・")}`
                 }
-                className="theme-border theme-shadow theme-surface rotation-print-card overflow-hidden flex flex-col"
+                className="theme-border theme-shadow theme-surface rotation-print-card overflow-hidden min-w-0 flex flex-col [overflow-wrap:anywhere]"
                 style={{
                   borderRadius: "var(--dt-border-radius)",
                 }}
@@ -100,6 +100,15 @@ export function AssignmentsGrid({
                       >
                         {group.tasks[0] ?? ""}
                       </div>
+                      {group.tasks.slice(1).map((task, taskIndex) => (
+                        <p
+                          key={`${group.id}-task-${taskIndex + 1}`}
+                          className="mt-1.5 text-sm font-medium"
+                          style={{ color: "var(--dt-text-secondary)" }}
+                        >
+                          {task}
+                        </p>
+                      ))}
                     </div>
                     <div className="p-2.5 sm:p-3 flex flex-col gap-1.5 sm:gap-2">
                       <m.div
@@ -130,7 +139,7 @@ export function AssignmentsGrid({
                         >
                           {member.name.charAt(0)}
                         </span>
-                        <span>{member.name}</span>
+                        <span className="min-w-0">{member.name}</span>
                       </m.div>
                     </div>
                   </>

@@ -11,6 +11,7 @@ import {
   clearPendingSync,
   pauseScheduleSync,
   resumeScheduleSync,
+  waitForScheduleSync,
 } from "@/lib/syncManager";
 import type { Schedule } from "@/rotation/types";
 
@@ -36,8 +37,14 @@ export function useShareFlow({
     setIsSharing(true);
     let stage: ShareStage = "save";
     try {
+      // Pausing cancels future automatic PUTs; an already-dispatched one must
+      // finish before the explicit save or it could overwrite that newer save.
+      await waitForScheduleSync(initialSchedule.id);
       const preparedSchedule =
         (await prepareForManualSave()) ?? initialSchedule;
+      if (preparedSchedule.id !== initialSchedule.id) {
+        throw new Error("The schedule changed while preparing to share.");
+      }
       const data = toScheduleData(preparedSchedule);
 
       let shareTarget = preparedSchedule;
@@ -49,11 +56,11 @@ export function useShareFlow({
         );
       } else {
         const result = await createSchedule(data);
-        updateActiveSchedule(s => ({
-          ...s,
-          slug: result.slug,
-          editToken: result.editToken,
-        }));
+        updateActiveSchedule(s =>
+          s.id === initialSchedule.id && !(s.slug && s.editToken)
+            ? { ...s, slug: result.slug, editToken: result.editToken }
+            : s
+        );
         shareTarget = {
           ...preparedSchedule,
           slug: result.slug,
@@ -67,7 +74,7 @@ export function useShareFlow({
 
       stage = "publish";
       await publishSchedule(shareTarget.slug, shareTarget.editToken);
-      clearPendingSync(shareTarget.id);
+      clearPendingSync(shareTarget.id, shareTarget);
       setShowShare(true);
     } catch (error) {
       console.error("Share failed", { stage, error });

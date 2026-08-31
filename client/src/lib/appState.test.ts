@@ -4,7 +4,7 @@ import {
   DEFAULT_APP_STATE_EN,
 } from "@/rotation/defaultState";
 import { STORAGE_KEY } from "@/rotation/constants";
-import { loadState } from "./appState";
+import { loadState, saveState } from "./appState";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -93,5 +93,29 @@ describe("loadState", () => {
     const state = loadState();
 
     expect(state.schedules[0].pinned).toBe(true);
+  });
+});
+
+describe("saveState", () => {
+  it("returns true only when localStorage accepted the serialized state", () => {
+    expect(saveState(DEFAULT_APP_STATE)).toBe(true);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(
+      DEFAULT_APP_STATE
+    );
+  });
+
+  it("returns false instead of claiming success when storage is unavailable", () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(() => {
+        throw new Error("Storage blocked");
+      }),
+    });
+    try {
+      expect(saveState(DEFAULT_APP_STATE)).toBe(false);
+    } finally {
+      warning.mockRestore();
+    }
   });
 });

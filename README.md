@@ -108,18 +108,22 @@ Cloudflare 側で設定する環境変数:
 
 ## WebMCP 対応（実験的）
 
+チャットでメンバー・仕事・交代条件を伝えると、独自の当番表を一度に作成し、一言で部分修正して印刷へ進める。Toban内にチャットやLLM接続は追加せず、WebMCP対応クライアントを使う。
+
+[英語の実行手順・対応範囲・応募用差分](docs/webmcp-challenge.md)を参照。実装ブランチの検証と、本番公開・応募の完了は区別する。
+
 AIエージェントがブラウザ上で当番表を操作できるよう [WebMCP](https://developer.chrome.com/docs/ai/webmcp) のツールを公開している。対応ブラウザでのみ有効化され、非対応環境では何も登録しない。実装は `client/src/hooks/useTobanTools.ts`、型は `client/src/types/webmcp.d.ts`。公開しているツールは `buildTobanTools()` を参照。
 
 **共有（外部公開）の実行は tool に含めていない。** 実名を含む当番表を公開 URL 化する操作は、誤発火による意図しない公開を避けるため、ユーザの明示操作（共有ボタン）に限定している。`get_share_link` は既存リンクの参照のみ。
 
 [tool security](https://developer.chrome.com/docs/ai/webmcp/secure-tools) の指針に沿って以下を守る。テストで検査しているので、tool を足すときも自動的に効く。
 
-- **出力は 1 件あたり 1,500 字以内。** `result()` が一律に切り詰めるので、個別に数える必要はない
+- **詳細一覧は1,500字以内の有効なJSONへ分割。** `next_cursor`で続きを取得し、JSONを文字列の途中で切らない。更新結果も短いJSONで、反映と保存の結果を分けて返す
 - **ユーザ入力（当番表名・メンバー名）を返す tool には `untrustedContentHint`。** 共有リンク経由で他人が作った表を開けるため、間接プロンプトインジェクションの持ち込み口になりうる
 - **状態を変えない tool には `readOnlyHint`。** エージェントが確認を挟むかの判断に使う
 - **`exposedTo` は使わない。** 既定ではクロスオリジンから観測・実行されない
 
-Chrome の WebMCP には Imperative API（JS から `registerTool` する）と Declarative API（`<script type="application/json">` でツールを宣言する）の2系統がある。toban は状態を持つ操作を公開するため Imperative API を使っている。
+Chrome の WebMCP には Imperative API（JS から `registerTool` する）と Declarative API（フォームに`toolname`等の属性を付ける）の2系統がある。toban は状態を持つ操作を公開するため Imperative API を使っている。
 
 **Cloudflare が提供する同名の WebMCP 機能とは別物。** あちらはダッシュボードのトグルでエッジから `/.webmcp/bridge.js` を注入し、汎用ツール（画像の Content Credentials、`/mcp` エンドポイントの中継）を登録する代行サービス。toban はドメイン固有のツールを公開するため `useTobanTools` で自前に `registerTool` している。Cloudflare 側のトグルは有効にしていない（toban に `/mcp` も対象画像も無く、有効にしても何も登録されない）。
 
@@ -129,8 +133,9 @@ Chrome の WebMCP には Imperative API（JS から `registerTool` する）と 
 
 1. `chrome://flags/#enable-webmcp-testing` を Enabled にして Chrome を再起動
 2. `pnpm dev` で Home 画面を開き、`navigator.modelContext` を確認
+3. 実際にWebMCPを呼べるクライアントから操作を確認。ページを読めるだけのチャットではツール呼び出しは保証されない
 
-**本番（toban.app）では flag は使えないため、Origin Trial のトークンが要る。** `client/index.html` の `<head>` に `<meta http-equiv="origin-trial">` として登録済み。これが無いと `navigator.modelContext` 自体が生えず、`useTobanTools` は no-op になる。
+**通常の対応Chromeで利用するため、toban.appにはOrigin Trialのトークンを設定している。** `client/index.html` の `<head>` に `<meta http-equiv="origin-trial">` として登録済み。これが無いと `navigator.modelContext` 自体が生えず、`useTobanTools` は no-op になる。
 
 |          |                                             |
 | -------- | ------------------------------------------- |
