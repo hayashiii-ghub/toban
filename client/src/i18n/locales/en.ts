@@ -410,8 +410,6 @@ export const en: Record<string, string> = {
   "templatesDetail.createFromThis": "Create with this template",
 
   // Roster notices
-  "summary.sharedEdits":
-    "Edits to an already published roster also sync to its public link.",
   "summary.saveFailed":
     "Could not save on this device. Keep this page open and check storage space and settings to avoid losing your changes.",
   "summary.beforeStart": "Initial placement (starts {date})",

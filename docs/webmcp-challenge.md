@@ -2,7 +2,7 @@
 
 Toban turns a chat request into an editable, printable duty roster on the page. A WebMCP-capable client interprets the request and calls Toban's domain tools. Toban does not embed a chatbot or require an LLM API key.
 
-**Status: published at [toban.app](https://toban.app/) on 2026-08-31; not submitted to the challenge.** Local WebMCP conversations and production UI saving/sharing were verified separately. Production Chrome/nekuda WebMCP execution still needs a client confirmation: the Codex in-app connection did not discover production tools, and its Chrome connection did not expose a WebMCP capability. A public demo video and submission remain outstanding.
+**Status: published at [toban.app](https://toban.app/) on 2026-08-31; not submitted to the challenge.** Local WebMCP conversations and production UI saving/sharing were verified separately. The user also confirmed WebMCP works on production in Chrome/nekuda on 2026-08-31. The Codex in-app connection itself did not discover production tools, and its Chrome connection did not expose a WebMCP capability. A public demo video and submission remain outstanding.
 
 ## Try the experience
 
@@ -136,7 +136,7 @@ The Codex in-app client returned `PRINT_REQUESTED`, but its interface did not ex
 
 ## Release follow-up (2026-08-31)
 
-- Removed redundant member/group/rotation conditions below the title; the existing editor retains the settings. Local-save failure and shared-roster notices remain.
+- Removed redundant member/group/rotation conditions below the title; the existing editor retains the settings. Local-save failure notices remain; the shared-roster sync explanation was subsequently removed at the user's request.
 - Aligned guide/task-card descriptions across neighboring cards with different title wrapping; desktop and mobile visual checks passed.
 - The user's first nekuda run used a four-day interval; the later correction to one eligible day succeeded. The original raw request/tool arguments are unavailable, so this does not establish a calculation bug. The shared tool schema and descriptions now distinguish the interval between assignments from roster size/full-round duration. No automatic rewriting of a legitimate four-day interval was added.
 - Added runtime rejection of intervals over 365 before mutation, matching the existing cloud API. Both create/configure regressions failed before the fix and passed afterward.
@@ -151,7 +151,7 @@ The Codex in-app client returned `PRINT_REQUESTED`, but its interface did not ex
 - The live `is_public INTEGER NOT NULL DEFAULT 0` column already existed via the runtime schema safety net, while migration 0005 was missing from history. After checking the exact column definition and recording a D1 Time Travel bookmark, a conditional insertion reconciled only that completed migration record. Normal deployment then applied 0006's index. No existing roster contents or publication flags were changed. The remote migration list is empty and `/api/health/schema` returns 200 with `ok: true`.
 - A synthetic two-person roster was created through the production editor, saved to cloud, reloaded, changed from plant watering to supplies and intentionally shared. Its separate public page and public API showed the saved content. A subsequent edit also reached the public URL while preserving the other task and daily rotation settings. A fresh 390px-wide shared page had no horizontal overflow. The visible Print button was invoked without page errors; the native dialog is not observable through this connection.
 - The synthetic roster was deleted through the UI after verification. Its public API then returned 404. No user roster was edited or deleted.
-- A previously open browser initially retained the old service-worker page; a further normal reload loaded the current asset. No cache or browser storage was cleared. Production WebMCP client confirmation remains separate from these UI/API checks.
+- A previously open browser initially retained the old service-worker page; a further normal reload loaded the current asset. No cache or browser storage was cleared. The user subsequently confirmed production WebMCP operation in Chrome/nekuda; this is user-observed evidence, distinct from the agent UI/API checks.
 
 ## What is new for the challenge
 
@@ -159,6 +159,6 @@ The pre-extension baseline is `e03ddbb` (2026-08-13). Toban already had sixteen 
 
 The implementation branch is `codex/toban-webmcp-chat-creation`. Review its dated commits/diff against `e03ddbb` for the new work. Existing-project eligibility and submission requirements must be checked against the [official challenge rules](https://webmcp.devpost.com/rules).
 
-For the eventual public demo, keep one 90–100-second flow: detailed request → completed roster → one-line task correction → print preview. Use English narration and visible product output; keep tool-contract and failure-test details in this document. Recording, public YouTube upload, production WebMCP client confirmation and final submission remain separate actions. Production deployment and the UI/API smoke are complete as recorded above.
+For the eventual public demo, keep one 90–100-second flow: detailed request → completed roster → one-line task correction → print preview. Use English narration and visible product output; keep tool-contract and failure-test details in this document. Recording, public YouTube upload and final submission remain separate actions. Production deployment, the UI/API smoke and user-confirmed production WebMCP operation are complete as recorded above.
 
 License: MIT, as in the repository's existing `LICENSE`.

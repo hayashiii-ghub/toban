@@ -87,7 +87,6 @@ export default function Home() {
       >
         <ScheduleHeader
           scheduleName={s.activeSchedule.name}
-          schedule={s.activeSchedule}
           localSaveStatus={s.localSaveStatus}
           rotationLabel={rotationLabel}
         />

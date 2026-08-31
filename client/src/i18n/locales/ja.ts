@@ -406,7 +406,6 @@ export const ja: Record<string, string> = {
   "templatesDetail.createFromThis": "このテンプレートで作る",
 
   // Roster notices
-  "summary.sharedEdits": "共有済みの表への変更は、共有先にも同期されます。",
   "summary.saveFailed":
     "端末に保存できませんでした。内容を失わないよう、この画面を閉じずに保存先の空き容量・設定を確認してください。",
   "summary.beforeStart": "開始前の配置（{date}開始）",

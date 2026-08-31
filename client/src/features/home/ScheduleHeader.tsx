@@ -1,19 +1,16 @@
 import { m } from "framer-motion";
 import { usePrintDateString } from "@/hooks/usePrintDateString";
 import { useT } from "@/i18n";
-import type { Schedule } from "@/rotation/types";
 
 interface ScheduleHeaderProps {
   scheduleName: string;
   rotationLabel: string;
-  schedule?: Schedule;
   localSaveStatus?: "saved" | "failed" | "pending";
 }
 
 export function ScheduleHeader({
   scheduleName,
   rotationLabel,
-  schedule,
   localSaveStatus,
 }: ScheduleHeaderProps) {
   const t = useT();
@@ -35,19 +32,14 @@ export function ScheduleHeader({
           >
             {scheduleName}
           </h1>
-          {(schedule?.slug || localSaveStatus === "failed") && (
+          {localSaveStatus === "failed" && (
             <div
               className="rotation-no-print mt-3 space-y-1 text-xs sm:text-sm [overflow-wrap:anywhere]"
               style={{ color: "var(--dt-text-secondary)" }}
             >
-              {schedule?.slug && (
-                <p className="text-xs">{t("summary.sharedEdits")}</p>
-              )}
-              {localSaveStatus === "failed" && (
-                <p role="alert" className="font-bold text-red-700">
-                  {t("summary.saveFailed")}
-                </p>
-              )}
+              <p role="alert" className="font-bold text-red-700">
+                {t("summary.saveFailed")}
+              </p>
             </div>
           )}
           <div
