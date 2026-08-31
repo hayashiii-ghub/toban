@@ -27,7 +27,7 @@ Japanese equivalent:
 ## Supported boundaries
 
 - One person per task group. Several task strings in one group stay together and are displayed on the same card. Different member/group counts can cause multiple duties or unassigned people; weighted fairness is not promised.
-- Manual rotation, or date-based rotation with a start date and a positive integer interval. `cycle_days` counts eligible days. Five eligible days is not necessarily every Monday.
+- Manual rotation, or date-based rotation with a start date and an integer interval of 1–365 days, matching the editor and cloud API. `cycle_days` counts eligible days between changes of assignee, not the length of a full round or the number of people/tasks. Daily or every weekday means `cycle_days: 1`, even for four people and four tasks. Five eligible days is not necessarily every Monday.
 - Optional pauses on Saturdays, Sundays and Japanese holidays. Pausing does not advance the calculated turn: cards/table retain that turn, while the existing calendar presentation leaves paused dates blank. It is not an individual availability constraint.
 - New date inputs are limited to 1980–2099, matching the existing holiday calculator's documented equinox range and bounding computation. The calculator uses Toban's existing modern Japanese holiday rules and 2020/2021 exceptions; it does not claim a complete historical legal calendar.
 - Temporary absence, per-person weekday restrictions, simultaneous multi-person duties, shifts and optimization are unsupported. A client should explain the limitation before approximating a request. `update_member.skip` is persistent exclusion until changed back, never “today only.”
@@ -113,7 +113,7 @@ pnpm build
 pnpm test:e2e
 ```
 
-Final local checks: **696 unit tests in 50 files and 19 Playwright E2E tests passed**. Type checking, lint, formatting and production build also passed. The build retains a warning for a JavaScript chunk larger than 500 kB; no unrelated bundle refactor was included.
+Final local checks: **708 unit tests in 52 files and 19 Playwright E2E tests passed**. Type checking, lint, formatting and production build also passed. The build retains a warning for a JavaScript chunk larger than 500 kB; no unrelated bundle refactor was included.
 
 The deterministic tests exercise the actual hooks, registered functions, DOM, reload persistence, strict failures, duplicate-name rejection, request replay, storage failure, paused editors, late cloud responses, immediate print visibility and grouped tasks. Playwright's cloud routes and print dialog are mocked; those tests do not prove production sharing or physical printing. Desktop/mobile screenshots are written to ignored `e2e/test-results/` artifacts and must be visually inspected.
 
@@ -132,7 +132,17 @@ Session observation, 2026-08-31: all 12 creation/edit flows succeeded through th
 
 The home-calendar examples required navigating from the current month (August) to the requested start month (September) with the visible calendar arrow. Two-day and three-day boundaries, weekends included, were checked on the visible calendar. The office case also checked the September 21–23 holiday pause. The two unsupported absence/weekday requests were identified as requiring clarification, with persistent `skipped` flags unchanged.
 
-The real client returned `PRINT_REQUESTED` once, but an actual native print preview was not observable through its browser interface. Printing/PDF saving was not performed. The client did not expose an exact browser version. Cloud sync reported an error because no local API backend was running; local saves succeeded. No test published a roster or contacted the production backend. Do not treat these local checks as production release evidence.
+The Codex in-app client returned `PRINT_REQUESTED`, but its interface did not expose a native print preview. The user subsequently verified creation, task replacement and an actual native Chrome print preview through nekuda WebMCP Workbench, supplying screenshots on 2026-08-31. Physical printing/PDF saving was not confirmed. The client did not expose an exact browser version. Cloud sync reported an error because no local API backend was running; local saves succeeded. No test published a roster or contacted the production backend. Do not treat these local checks as production release evidence.
+
+## Release follow-up (2026-08-31)
+
+- Removed redundant member/group/rotation conditions below the title; the existing editor retains the settings. Local-save failure and shared-roster notices remain.
+- Aligned guide/task-card descriptions across neighboring cards with different title wrapping; desktop and mobile visual checks passed.
+- The user's first nekuda run used a four-day interval; the later correction to one eligible day succeeded. The original raw request/tool arguments are unavailable, so this does not establish a calculation bug. The shared tool schema and descriptions now distinguish the interval between assignments from roster size/full-round duration. No automatic rewriting of a legitimate four-day interval was added.
+- Added runtime rejection of intervals over 365 before mutation, matching the existing cloud API. Both create/configure regressions failed before the fix and passed afterward.
+- Unsent cloud edits now leave a durable ID-only recovery marker. After reopening the page, the existing locally saved body is sent before any server pull; rejected writes remain protected without endless retries. Deletion clears recovery markers. Storage must be available for cross-reload protection.
+- Three additional source-blind local WebMCP conversations passed: Japanese and English weekday rotation, plus an explicit four-eligible-day rotation. Inputs, returned settings and September 1/2/7 calendar cells matched. One initial development hot-reload tool handle was refreshed; this is not a measured nekuda error rate.
+- The deployment command now explicitly selects remote D1. Before deployment, the live schema and migration history are checked to avoid re-adding columns already created by the runtime safety net.
 
 ## What is new for the challenge
 
