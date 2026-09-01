@@ -222,9 +222,12 @@ test("English multi-task labels stay natural in every view and print", async ({
 
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole("button", { name: "Wheel", exact: true }).click();
-  expect(await page.locator("svg title").allTextContents()).toContain(
-    "📦 Restock supplies, Check inventory: Alex"
-  );
+  await expect(
+    page
+      .locator("svg title")
+      .filter({ hasText: "📦 Restock supplies, Check inventory: Alex" })
+      .first()
+  ).toHaveText("📦 Restock supplies, Check inventory: Alex");
   await page.getByRole("button", { name: "Print", exact: true }).click();
   await page.emulateMedia({ media: "print" });
   await page.screenshot({
