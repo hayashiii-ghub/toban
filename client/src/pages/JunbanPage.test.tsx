@@ -2,8 +2,13 @@ import { describe, it, expect, afterEach } from "vitest";
 import { render, cleanup, within } from "@testing-library/react";
 import JunbanPage from "./JunbanPage";
 import { JUNBAN_PAGE_SEO } from "@shared/seo-templates";
+import { LanguageProvider } from "@/i18n";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  localStorage.removeItem("toban-lang");
+  document.documentElement.lang = "ja";
+});
 
 describe("JunbanPage", () => {
   it("見出し・導入・ベネフィットを描画する", () => {
@@ -26,6 +31,21 @@ describe("JunbanPage", () => {
     const { container } = render(<JunbanPage />);
     const cta = container.querySelector('a[href="/?view=disc"]');
     expect(cta).not.toBeNull();
+  });
+
+  it("英語UIでは円盤の実例も英語で表示する", () => {
+    localStorage.setItem("toban-lang", "en");
+    const { container } = render(
+      <LanguageProvider>
+        <JunbanPage />
+      </LanguageProvider>
+    );
+    const view = within(container);
+    expect(view.getAllByText("Alex").length).toBeGreaterThan(0);
+    expect(view.getByText("Cleaning", { exact: true })).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(
+      /たろう|はなこ|ゆうき|そうじ|はいぜん|にっちょく/
+    );
   });
 
   it("ランダム抽選を約束しない FAQ を含む（intent ミスマッチ回避）", () => {

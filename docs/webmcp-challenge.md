@@ -31,7 +31,7 @@ Japanese equivalent:
 - One person per task group. Several task strings in one group stay together and are displayed on the same card. Different member/group counts can cause multiple duties or unassigned people; weighted fairness is not promised.
 - Manual rotation, or date-based rotation with a start date and an integer interval of 1–365 days, matching the editor and cloud API. `cycle_days` counts eligible days between changes of assignee, not the length of a full round or the number of people/tasks. Daily or every weekday means `cycle_days: 1`, even for four people and four tasks. Five eligible days is not necessarily every Monday.
 - Optional pauses on Saturdays, Sundays and Japanese holidays. Pausing does not advance the calculated turn: cards/table retain that turn, while the existing calendar presentation leaves paused dates blank. It is not an individual availability constraint.
-- New date inputs are limited to 1980–2099, matching the existing holiday calculator's documented equinox range and bounding computation. The calculator uses Toban's existing modern Japanese holiday rules and 2020/2021 exceptions; it does not claim a complete historical legal calendar.
+- New date inputs are limited to 1980–2099, matching the holiday calculator's equinox range and bounding computation. The calculator applies Japanese holiday rule changes and one-off imperial holidays within that range, including the 2020/2021 Olympic exceptions. Its 1980–2027 date sets match the [Cabinet Office CSV](https://www8.cao.go.jp/chosei/shukujitsu/syukujitsu.csv); equinox dates after that published calendar remain formula-based predictions.
 - Temporary absence, per-person weekday restrictions, simultaneous multi-person duties, shifts and optimization are unsupported. A client should explain the limitation before approximating a request. `update_member.skip` is persistent exclusion until changed back, never “today only.”
 - Cards, table, calendar and wheel remain the existing views. The wheel keeps the existing `disc` tool value and its restrictions; the other views remain available.
 - Print means requesting the browser dialog. A tool cannot attest that the user printed or saved a PDF; clients that block it must use the visible Print button.
@@ -88,7 +88,7 @@ The application generates IDs/colors and validates the entire definition before 
 
 Use `get_schedule_details` to inspect the overview and rotation conditions. `section: "members"` and `section: "groups"` return IDs and paged rows; group rows contain individual tasks or member-pool IDs. `get_current_assignments` maps group IDs to member IDs. An optional `date: "YYYY-MM-DD"` queries another date without changing or saving the roster. Date mode returns `before_start` for initial placements, `paused` with no duties on excluded dates, or `scheduled` for a requested active date. Manual mode returns `manual`, since it cannot predict future manual changes. Date/month queries use the supported 1980–2099 range. `list_schedules` also supports pagination and exact-name filtering. Pass each `next_cursor` until null; pages remain valid JSON within a 1,500-character budget rather than clipping a string.
 
-Edits accept an optional `schedule_id`; otherwise the active roster is resolved when the queued operation starts. `update_schedule.task_changes` changes only the named groups' tasks. `add_task_groups` and `remove_group_ids` add or remove independent duties in task mode, without changing the member list. `group_member_changes` sets each group's ordered eligible `member_ids`; `null` restores the default pool of all members. Empty pools, duplicate/unknown IDs, conflicting edits, and removal of the final duty are rejected before applying any part of the update. Member operations accept a `member_id` or a unique exact name. An ambiguous name returns candidates and a paged lookup path, with no mutation. These IDs are tool data, not new labels in the normal UI.
+Edits accept an optional `schedule_id`; otherwise the active roster is resolved when the queued operation starts. `update_schedule.task_changes` changes only the named groups' tasks. `add_task_groups` and `remove_group_ids` add or remove independent duties in task mode, without changing the member list. `group_member_changes` sets each group's ordered eligible `member_ids`; `null` restores the default pool of all members. Empty pools, duplicate/unknown IDs, conflicting edits, removal of the final duty, and member removal/exclusion that would empty an explicit eligible pool are rejected before applying any part of the update. Member operations accept a `member_id` or a unique exact name. An ambiguous name returns candidates and a paged lookup path, with no mutation. These IDs are tool data, not new labels in the normal UI.
 
 Results are JSON inside the existing MCP-compatible text content. Mutations return `ok`, `code`, `schedule_id`, `applied`, `summary` and `persistence`. Read tools also provide structured JSON instead of the earlier prose-only output; clients that parsed that prose must adapt.
 
@@ -108,14 +108,15 @@ Tool output never includes edit tokens. User-entered roster/member/task text is 
 ## Verification
 
 ```sh
+pnpm format:check
 pnpm check
 pnpm lint
-pnpm test
+pnpm test:coverage
 pnpm build
 pnpm test:e2e
 ```
 
-Final local checks: **708 unit tests in 52 files and 19 Playwright E2E tests passed**. Type checking, lint, formatting and production build also passed. The build retains a warning for a JavaScript chunk larger than 500 kB; no unrelated bundle refactor was included.
+Historical pre-English-polish checks: **708 unit tests in 52 files and 19 Playwright E2E tests passed**. Later candidate and production evidence is recorded below. The build retains a warning for a JavaScript chunk larger than 500 kB; no unrelated bundle refactor was included.
 
 The deterministic tests exercise the actual hooks, registered functions, DOM, reload persistence, strict failures, duplicate-name rejection, request replay, storage failure, paused editors, late cloud responses, immediate print visibility and grouped tasks. Playwright's cloud routes and print dialog are mocked; those tests do not prove production sharing or physical printing. Desktop/mobile screenshots are written to ignored `e2e/test-results/` artifacts and must be visually inspected.
 
@@ -146,7 +147,7 @@ The Codex in-app client returned `PRINT_REQUESTED`, but its interface did not ex
 - Three additional source-blind local WebMCP conversations passed: Japanese and English weekday rotation, plus an explicit four-eligible-day rotation. Inputs, returned settings and September 1/2/7 calendar cells matched. One initial development hot-reload tool handle was refreshed; this is not a measured nekuda error rate.
 - The deployment command now explicitly selects remote D1. Before deployment, the live schema and migration history are checked to avoid re-adding columns already created by the runtime safety net.
 
-### Production release evidence
+### First production release evidence (historical)
 
 - Source through `3434825` was fast-forwarded to GitHub `main`; its GitHub CI passed. The final code passed 708 unit tests in 52 files, all 19 E2E tests, type checking, lint, formatting and the production build.
 - The canonical `pnpm run deploy:cf` deployed Worker version `2b3a4907-e00c-47be-83d9-c3503e88fca3`; the repository-connected automatic deployment subsequently produced `1018ad45-ae23-4ef6-a8e0-f76e73906ee0` from the same code. The live entry asset `/assets/index-Bb3RBHUJ.js` matched the local build byte for byte (SHA-256 `72cfabea6273377195a0483c631d334a27ef7df4d3095293d609ea4f164f3ed4`).
@@ -154,6 +155,8 @@ The Codex in-app client returned `PRINT_REQUESTED`, but its interface did not ex
 - A synthetic two-person roster was created through the production editor, saved to cloud, reloaded, changed from plant watering to supplies and intentionally shared. Its separate public page and public API showed the saved content. A subsequent edit also reached the public URL while preserving the other task and daily rotation settings. A fresh 390px-wide shared page had no horizontal overflow. The visible Print button was invoked without page errors; the native dialog is not observable through this connection.
 - The synthetic roster was deleted through the UI after verification. Its public API then returned 404. No user roster was edited or deleted.
 - A previously open browser initially retained the old service-worker page; a further normal reload loaded the current asset. No cache or browser storage was cleared. The user subsequently confirmed production WebMCP operation in Chrome/nekuda; this is user-observed evidence, distinct from the agent UI/API checks.
+
+The values above describe the first WebMCP production release through `3434825`. They are retained as historical evidence and are not the current production identifiers.
 
 ## English UI follow-up (2026-08-31)
 
@@ -177,11 +180,17 @@ These English UI changes were first verified locally. The checks in this section
 - The complete release candidate passed 859 unit tests across 57 files and all 23 E2E tests, plus type, lint, formatting and production-build checks. Native WebMCP calls on localhost verified creation, duty editing, month selection, dated reads, confirmation, blocked edits and cancellation. Desktop, 390px and print images were visually checked.
 - E2E publication and print requests use isolated mocks. Local verification does not prove a public backend write or a physical print/PDF save.
 
+### Current production release (2026-08-31)
+
+- GitHub `main` and the deployed source are `c8639d3`. [GitHub Actions run 33386966425](https://github.com/hayashiii-ghub/toban-app/actions/runs/33386966425) passed formatting, type checking, lint, coverage tests and the production build for that exact commit. The workflow at that time skipped E2E on a direct `main` push, so the 23 E2E results above are local release evidence rather than CI evidence.
+- The canonical Cloudflare deployment produced Worker version `46d5cff5-0836-4d78-b485-7636c0102d5d`. The live entry asset `/assets/index-8q8hLtrd.js` matched the local production build (SHA-256 `6e8e451a7b0f7148024ce287738e8d4f3416de61ec0346478b92d2e267c4ccd9`). `/api/health/schema` returned `200` with `ok: true`.
+- Production UI smoke covered English creation, editing, local/cloud persistence, reload, calendar display, explicit sharing and a separate public page. The synthetic roster was then deleted and its public API returned 404. Existing user rosters were not changed. The user separately confirmed native WebMCP operation in Chrome/nekuda.
+
 ## What is new for the challenge
 
 The pre-extension baseline is `e03ddbb` (2026-08-13). Toban already had sixteen WebMCP tools, including template-only creation and printing, before the challenge. This work adds complete custom-definition creation, targeted task edits, stable target resolution, strict errors, structured/paged read results, truthful local-save/publication outcomes and the state/sync protections needed for fast follow-up commands. The existing app and original tools are not presented as newly created for the event.
 
-The implementation branch is `codex/toban-webmcp-chat-creation`. Review its dated commits/diff against `e03ddbb` for the new work. Existing-project eligibility and submission requirements must be checked against the [official challenge rules](https://webmcp.devpost.com/rules).
+Review the fixed published range [`e03ddbb..c8639d3`](https://github.com/hayashiii-ghub/toban-app/compare/e03ddbb...c8639d3) for the challenge work. Existing-project eligibility and submission requirements must be checked against the [official challenge rules](https://webmcp.devpost.com/rules).
 
 For the eventual public demo, keep one 90–100-second flow: detailed request → completed roster → one-line task correction → print preview. Use English narration and visible product output; keep tool-contract and failure-test details in this document. Recording, public YouTube upload and final submission remain separate actions. Production deployment, the UI/API smoke and user-confirmed production WebMCP operation are complete as recorded above.
 

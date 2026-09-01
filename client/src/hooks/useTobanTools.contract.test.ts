@@ -617,6 +617,7 @@ describe("targeted edits", () => {
     expect(h.state().schedules[1].name).toBe("Other");
     expect(h.saved()).toEqual(h.state());
     expect(JSON.stringify(response)).not.toContain("SECRET_EDIT_TOKEN");
+    expect(response).not.toHaveProperty("sharing_note");
   });
 
   it("rejects an invalid group in a batch without applying an earlier valid edit", async () => {
@@ -748,6 +749,30 @@ describe("member counts and rotation", () => {
       ]);
     }
   );
+
+  it("rejects removing or skipping the only eligible member in an explicit group pool", async () => {
+    const source = sched({
+      assignmentMode: "task",
+      members: [member("m1", "Restricted"), member("m2", "Outside pool")],
+      groups: [
+        group("g1", ["Restricted"], { memberIds: ["m1"] }),
+        group("g2", ["Open"]),
+      ],
+    });
+    const removal = harness([source]);
+    const beforeRemoval = structuredClone(removal.state());
+    expect(
+      await removal.run("remove_member", { member_id: "m1" })
+    ).toMatchObject({ code: "INVALID_INPUT", applied: false });
+    expect(removal.state()).toEqual(beforeRemoval);
+
+    const exclusion = harness([structuredClone(source)]);
+    const beforeExclusion = structuredClone(exclusion.state());
+    expect(
+      await exclusion.run("update_member", { member_id: "m1", skip: true })
+    ).toMatchObject({ code: "INVALID_INPUT", applied: false });
+    expect(exclusion.state()).toEqual(beforeExclusion);
+  });
 
   it("preserves the final member and rejects additions at either relevant limit", async () => {
     const h = harness([
@@ -1658,6 +1683,24 @@ describe("atomic task edits and explicit sharing confirmation", () => {
     });
     expect(h.active().groups).toHaveLength(3);
     expect(h.home.commitToolState).toHaveBeenCalledTimes(1);
+    expect(
+      await h.run("update_schedule", { ...input, name: "Different" })
+    ).toMatchObject({ code: "INVALID_INPUT", applied: false });
+  });
+
+  it("replays an omitted-target retry after the active roster changes", async () => {
+    const h = harness([sched(), sched({ id: "s2", name: "Other" })]);
+    const input = { request_id: "rename-active", name: "Renamed" };
+    const first = await h.run("update_schedule", input);
+    expect(first).toMatchObject({ ok: true, schedule_id: "s1" });
+
+    await h.run("switch_schedule", { schedule_id: "s2" });
+    expect(await h.run("update_schedule", input)).toEqual({
+      ...first,
+      replayed: true,
+    });
+    expect(h.state().schedules.find(s => s.id === "s1")?.name).toBe("Renamed");
+    expect(h.active().name).toBe("Other");
     expect(
       await h.run("update_schedule", { ...input, name: "Different" })
     ).toMatchObject({ code: "INVALID_INPUT", applied: false });

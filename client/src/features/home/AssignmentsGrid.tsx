@@ -2,7 +2,8 @@ import { AnimatePresence, m } from "framer-motion";
 import type { AssignmentMode, Member, TaskGroup } from "@/rotation/types";
 import { CARD_STAGGER_DELAY, TASK_STAGGER_DELAY } from "@/rotation/constants";
 import { getGridCols } from "@/rotation/utils";
-import { useT } from "@/i18n";
+import { formatTaskNames } from "@/rotation/taskFormatting";
+import { useLocale, useT } from "@/i18n";
 
 interface AssignmentsGridProps {
   assignments: Array<{ group: TaskGroup; member: Member }>;
@@ -22,6 +23,7 @@ export function AssignmentsGrid({
   assignmentMode,
 }: AssignmentsGridProps) {
   const t = useT();
+  const { locale } = useLocale();
   const isTaskMode = assignmentMode === "task";
   return (
     <div className="px-3 sm:px-4 py-3 sm:py-4 rotation-print-card-section">
@@ -30,10 +32,10 @@ export function AssignmentsGrid({
           {assignments
             .map(({ group, member }) =>
               isTaskMode
-                ? `${group.tasks.join("・")}: ${member.name}`
-                : `${member.name}: ${group.tasks.join("・")}`
+                ? `${formatTaskNames(group.tasks, locale)}: ${member.name}`
+                : `${member.name}: ${formatTaskNames(group.tasks, locale)}`
             )
-            .join("、")}
+            .join(locale === "en" ? "; " : "、")}
         </div>
         <ul
           className={`list-none p-0 grid gap-3 md:gap-4 rotation-print-card-grid ${getGridCols()}`}
@@ -45,8 +47,8 @@ export function AssignmentsGrid({
                 key={`${scheduleId}-${member.id}-${group.id}-${rotation}`}
                 aria-label={
                   isTaskMode
-                    ? `${group.tasks.join("・")}: ${member.name}`
-                    : `${member.name}: ${group.tasks.join("・")}`
+                    ? `${formatTaskNames(group.tasks, locale)}: ${member.name}`
+                    : `${member.name}: ${formatTaskNames(group.tasks, locale)}`
                 }
                 className={`theme-border theme-shadow theme-surface rotation-print-card overflow-hidden min-w-0 flex flex-col [overflow-wrap:anywhere] ${isTaskMode ? "rotation-task-card" : ""}`}
                 style={{

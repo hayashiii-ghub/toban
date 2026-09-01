@@ -2,7 +2,8 @@ import { useRef, useState, useEffect, useMemo } from "react";
 import { m } from "framer-motion";
 import type { AssignmentMode, Member, TaskGroup } from "@/rotation/types";
 import { computeAssignments } from "@/rotation/utils";
-import { useT } from "@/i18n";
+import { formatTaskNames } from "@/rotation/taskFormatting";
+import { useLocale, useT } from "@/i18n";
 
 interface RotationQuickTableProps {
   groups: TaskGroup[];
@@ -24,6 +25,7 @@ export function RotationQuickTable({
   assignmentMode,
 }: RotationQuickTableProps) {
   const t = useT();
+  const { locale } = useLocale();
   const activeMembers = useMemo(
     () => members.filter(m => !m.skipped),
     [members]
@@ -178,7 +180,7 @@ export function RotationQuickTable({
                         {group.emoji}
                       </span>{" "}
                       <span className="text-xs sm:text-sm">
-                        {group.tasks.join("・")}
+                        {formatTaskNames(group.tasks, locale)}
                       </span>
                     </th>
                     {activeMembers.map((_, rotationIndex) => {

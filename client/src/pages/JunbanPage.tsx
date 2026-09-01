@@ -42,6 +42,14 @@ const SAMPLE_GROUPS: TaskGroup[] = [
   { id: "g2", tasks: ["はいぜん"], emoji: "🍚" },
   { id: "g3", tasks: ["にっちょく"], emoji: "📋" },
 ];
+const SAMPLE_MEMBERS_EN: Member[] = SAMPLE_MEMBERS.map((member, index) => ({
+  ...member,
+  name: ["Alex", "Sam", "Riley"][index],
+}));
+const SAMPLE_GROUPS_EN: TaskGroup[] = SAMPLE_GROUPS.map((group, index) => ({
+  ...group,
+  tasks: [["Cleaning"], ["Meal service"], ["Class helper"]][index],
+}));
 
 export default function JunbanPage() {
   const t = useT();
@@ -102,8 +110,8 @@ export default function JunbanPage() {
       <section className="px-4 pb-10 max-w-2xl mx-auto">
         <div className="rounded-2xl border border-lp-line bg-lp-card p-4 sm:p-6">
           <RotationDisc
-            groups={SAMPLE_GROUPS}
-            members={SAMPLE_MEMBERS}
+            groups={locale === "en" ? SAMPLE_GROUPS_EN : SAMPLE_GROUPS}
+            members={locale === "en" ? SAMPLE_MEMBERS_EN : SAMPLE_MEMBERS}
             rotation={0}
             assignmentMode="member"
           />

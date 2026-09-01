@@ -5,7 +5,8 @@ import {
   sectorMidpoint,
   sectorPath,
 } from "@/rotation/discGeometry";
-import { useT } from "@/i18n";
+import { formatTaskNames } from "@/rotation/taskFormatting";
+import { useLocale, useT } from "@/i18n";
 import { TaskLegend } from "@/features/home/TaskLegend";
 
 interface RotationDiscProps {
@@ -34,6 +35,7 @@ export function RotationDisc({
   assignmentMode,
 }: RotationDiscProps) {
   const t = useT();
+  const { locale } = useLocale();
   const pool = members.filter(m => !m.skipped);
 
   // 単一回転ディスクで忠実に表現できる構成かを判定する。
@@ -102,7 +104,7 @@ export function RotationDisc({
       roleLabelPos: sectorMidpoint(C, C, ROLE_LABEL_R, startDeg, endDeg),
       memberLabelPos: sectorMidpoint(C, C, MEMBER_LABEL_R, startDeg, endDeg),
       roleText: role
-        ? `${role.emoji} ${role.tasks.join("・")}`
+        ? `${role.emoji} ${formatTaskNames(role.tasks, locale)}`
         : `💤 ${t("disc.offDuty")}`,
     };
   });
@@ -136,7 +138,7 @@ export function RotationDisc({
       {segments.map(seg => (
         <g key={seg.member.id}>
           {/* hover ツールチップ / a11y。盤面は絵文字のみなので、ここで役割：メンバーを補う。 */}
-          <title>{`${seg.roleText}：${seg.member.name}`}</title>
+          <title>{`${seg.roleText}${locale === "en" ? ": " : "："}${seg.member.name}`}</title>
           {/* 役割リング（外・固定側）。役割名は横書きだと盤からはみ出すため絵文字のみ、フルテキストは凡例で担保。 */}
           {mode !== "inner" && (
             <>

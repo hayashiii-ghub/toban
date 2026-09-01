@@ -29,6 +29,16 @@ const SHARE_URL =
     ? `${window.location.origin}/about`
     : "https://toban.app/about";
 
+const CONTACT_CATEGORY_LABEL_KEYS: Record<
+  (typeof CONTACT_CATEGORIES)[number],
+  string
+> = {
+  不具合の報告: "contact.category.bug",
+  機能のご要望: "contact.category.feature",
+  使い方の質問: "contact.category.howTo",
+  その他: "contact.category.other",
+};
+
 function ShareDropdown({ onClose }: { onClose: () => void }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
@@ -205,7 +215,7 @@ function ContactForm() {
           </option>
           {CONTACT_CATEGORIES.map(c => (
             <option key={c} value={c} style={{ color: C.text }}>
-              {c}
+              {t(CONTACT_CATEGORY_LABEL_KEYS[c])}
             </option>
           ))}
         </select>

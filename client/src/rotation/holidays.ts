@@ -34,6 +34,11 @@ const HOLIDAY_NAMES_EN: Record<string, string> = {
   勤労感謝の日: "Labor Thanksgiving Day",
   振替休日: "Substitute Holiday",
   国民の休日: "National Holiday",
+  体育の日: "Health and Sports Day",
+  大喪の礼: "State Funeral of Emperor Showa",
+  即位礼正殿の儀: "Enthronement Ceremony",
+  結婚の儀: "Imperial Wedding Ceremony",
+  天皇の即位の日: "Emperor's Accession Day",
 };
 
 // 年単位キャッシュ
@@ -81,6 +86,19 @@ const OLYMPIC_HOLIDAY_OVERRIDES: Record<
   ],
 };
 
+const IMPERIAL_EVENT_HOLIDAYS: Record<
+  number,
+  Array<[number, number, string]>
+> = {
+  1989: [[2, 24, "大喪の礼"]],
+  1990: [[11, 12, "即位礼正殿の儀"]],
+  1993: [[6, 9, "結婚の儀"]],
+  2019: [
+    [5, 1, "天皇の即位の日"],
+    [10, 22, "即位礼正殿の儀"],
+  ],
+};
+
 /** 指定年のすべての祝日を計算 */
 export function getHolidaysForYear(year: number): JapaneseHoliday[] {
   const cached = cache.get(year);
@@ -91,20 +109,23 @@ export function getHolidaysForYear(year: number): JapaneseHoliday[] {
     holidays.set(toKey(year, m, d), name);
   };
 
-  // 固定祝日
+  // 固定祝日と制度変更
   add(1, 1, "元日");
+  if (year <= 1999) add(1, 15, "成人の日");
+  else add(1, nthMonday(year, 1, 2), "成人の日");
   add(2, 11, "建国記念の日");
-  add(2, 23, "天皇誕生日");
-  add(4, 29, "昭和の日");
+  if (year >= 2020) add(2, 23, "天皇誕生日");
+  if (year <= 1988) add(4, 29, "天皇誕生日");
+  else if (year <= 2006) add(4, 29, "みどりの日");
+  else add(4, 29, "昭和の日");
   add(5, 3, "憲法記念日");
-  add(5, 4, "みどりの日");
+  if (year >= 2007) add(5, 4, "みどりの日");
   add(5, 5, "こどもの日");
+  if (year <= 2002) add(9, 15, "敬老の日");
+  else add(9, nthMonday(year, 9, 3), "敬老の日");
   add(11, 3, "文化の日");
   add(11, 23, "勤労感謝の日");
-
-  // ハッピーマンデー
-  add(1, nthMonday(year, 1, 2), "成人の日");
-  add(9, nthMonday(year, 9, 3), "敬老の日");
+  if (year >= 1989 && year <= 2018) add(12, 23, "天皇誕生日");
 
   const specialHolidays = OLYMPIC_HOLIDAY_OVERRIDES[year];
   if (specialHolidays) {
@@ -112,45 +133,31 @@ export function getHolidaysForYear(year: number): JapaneseHoliday[] {
       add(month, day, name);
     }
   } else {
-    add(7, nthMonday(year, 7, 3), "海の日");
-    add(8, 11, "山の日");
-    add(10, nthMonday(year, 10, 2), "スポーツの日");
+    if (year >= 1996)
+      add(7, year <= 2002 ? 20 : nthMonday(year, 7, 3), "海の日");
+    if (year >= 2016) add(8, 11, "山の日");
+    add(
+      10,
+      year <= 1999 ? 10 : nthMonday(year, 10, 2),
+      year <= 2019 ? "体育の日" : "スポーツの日"
+    );
   }
 
   // 春分の日・秋分の日
   add(3, vernalEquinoxDay(year), "春分の日");
   add(9, autumnalEquinoxDay(year), "秋分の日");
 
-  // 振替休日: 祝日が日曜なら翌営業日が振替休日
-  const baseHolidays = Array.from(holidays.entries()).sort();
-  for (const [key] of baseHolidays) {
-    const d = parseIsoDateLocal(key);
-    if (!d) continue;
-    if (d.getDay() === 0) {
-      // 翌日から、まだ祝日でない平日を探す
-      const next = new Date(d);
-      do {
-        next.setDate(next.getDate() + 1);
-      } while (
-        holidays.has(
-          toKey(next.getFullYear(), next.getMonth() + 1, next.getDate())
-        )
-      );
-      holidays.set(
-        toKey(next.getFullYear(), next.getMonth() + 1, next.getDate()),
-        "振替休日"
-      );
-    }
+  for (const [month, day, name] of IMPERIAL_EVENT_HOLIDAYS[year] ?? []) {
+    add(month, day, name);
   }
 
-  // 国民の休日: 祝日に挟まれた平日
-  const allKeys = Array.from(holidays.keys()).sort();
-  for (let i = 0; i < allKeys.length - 1; i++) {
-    const d1 = parseIsoDateLocal(allKeys[i]);
-    const d2 = parseIsoDateLocal(allKeys[i + 1]);
-    if (!d1 || !d2) continue;
-    const diffDays = diffLocalCalendarDays(d1, d2);
-    if (diffDays === 2) {
+  // 国民の休日: 1986年以降、祝日に挟まれた平日
+  if (year >= 1986) {
+    const baseKeys = Array.from(holidays.keys()).sort();
+    for (let i = 0; i < baseKeys.length - 1; i++) {
+      const d1 = parseIsoDateLocal(baseKeys[i]);
+      const d2 = parseIsoDateLocal(baseKeys[i + 1]);
+      if (!d1 || !d2 || diffLocalCalendarDays(d1, d2) !== 2) continue;
       const between = new Date(d1);
       between.setDate(between.getDate() + 1);
       const betweenKey = toKey(
@@ -158,13 +165,36 @@ export function getHolidaysForYear(year: number): JapaneseHoliday[] {
         between.getMonth() + 1,
         between.getDate()
       );
-      if (
-        !holidays.has(betweenKey) &&
-        between.getDay() !== 0 &&
-        between.getDay() !== 6
-      ) {
+      if (!holidays.has(betweenKey) && between.getDay() !== 0) {
         holidays.set(betweenKey, "国民の休日");
       }
+    }
+  }
+
+  // 振替休日: 2007年からは翌日が祝日なら次の非祝日まで繰り越す
+  const baseHolidays = Array.from(holidays.entries()).sort();
+  for (const [key] of baseHolidays) {
+    const d = parseIsoDateLocal(key);
+    if (!d) continue;
+    if (d.getDay() === 0) {
+      const next = new Date(d);
+      next.setDate(next.getDate() + 1);
+      let nextKey = toKey(
+        next.getFullYear(),
+        next.getMonth() + 1,
+        next.getDate()
+      );
+      if (year >= 2007) {
+        while (holidays.has(nextKey)) {
+          next.setDate(next.getDate() + 1);
+          nextKey = toKey(
+            next.getFullYear(),
+            next.getMonth() + 1,
+            next.getDate()
+          );
+        }
+      }
+      if (!holidays.has(nextKey)) holidays.set(nextKey, "振替休日");
     }
   }
 

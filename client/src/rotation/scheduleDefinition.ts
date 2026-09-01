@@ -5,9 +5,8 @@ import { MEMBER_PRESETS } from "./constants";
 import { parseIsoDateLocal } from "./dateUtils";
 import type { RotationConfig, Schedule } from "./types";
 
-// The existing Japanese equinox formulas cover 1980–2099. Restrict new tool
-// input to that range, which also bounds countSkipDays' per-year work. This
-// does not add historical holiday rules absent from the existing calculator.
+// The Japanese holiday calculator and equinox formulas cover 1980–2099.
+// Restrict new tool input to that range, which also bounds per-year work.
 export const ROTATION_DATE_MIN = "1980-01-01";
 export const ROTATION_DATE_MAX = "2099-12-31";
 

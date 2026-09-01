@@ -200,6 +200,13 @@ it("shows English holiday labels while preserving user-entered roster text", () 
     );
     expect(container.textContent).toContain("September 2026");
     expect(container.textContent).toContain("Respect for the Aged Day");
+    const holiday = container.querySelector(
+      '[title="Respect for the Aged Day"]'
+    );
+    expect(holiday).toHaveTextContent("Seniors");
+    expect(holiday?.querySelector(".sr-only")).toHaveTextContent(
+      "Respect for the Aged Day"
+    );
     expect(container.textContent).not.toContain("敬老の日");
     expect(container.textContent).toContain("掃除");
     expect(container.textContent).toContain("田中");

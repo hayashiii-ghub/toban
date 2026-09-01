@@ -102,6 +102,10 @@ export const ja: Record<string, string> = {
     "不具合の報告や機能のご要望など、お気軽にご連絡ください。",
   "contact.categoryLabel": "お問い合わせ種別",
   "contact.selectPlaceholder": "選択してください",
+  "contact.category.bug": "不具合の報告",
+  "contact.category.feature": "機能のご要望",
+  "contact.category.howTo": "使い方の質問",
+  "contact.category.other": "その他",
   "contact.emailLabel": "メールアドレス",
   "contact.messageLabel": "お問い合わせ内容",
   "contact.messagePlaceholder":

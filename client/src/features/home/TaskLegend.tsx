@@ -1,5 +1,6 @@
 import type { TaskGroup } from "@/rotation/types";
-import { useT } from "@/i18n";
+import { formatTaskNames } from "@/rotation/taskFormatting";
+import { useLocale, useT } from "@/i18n";
 
 interface TaskLegendProps {
   groups: TaskGroup[];
@@ -30,6 +31,7 @@ export function TaskLegend({
   shape = "rounded",
 }: TaskLegendProps) {
   const t = useT();
+  const { locale } = useLocale();
   const chipClass = `theme-border inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
     shape === "pill" ? "rounded-full" : "rounded"
   }`;
@@ -50,7 +52,7 @@ export function TaskLegend({
           }}
         >
           <span aria-hidden="true">{group.emoji}</span>
-          <span>{group.tasks.join("・")}</span>
+          <span>{formatTaskNames(group.tasks, locale)}</span>
         </li>
       ))}
       {showOffDuty && (

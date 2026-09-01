@@ -100,6 +100,10 @@ export const en: Record<string, string> = {
     "Bug reports, feature requests—feel free to get in touch.",
   "contact.categoryLabel": "Inquiry type",
   "contact.selectPlaceholder": "Please select",
+  "contact.category.bug": "Bug report",
+  "contact.category.feature": "Feature request",
+  "contact.category.howTo": "How-to question",
+  "contact.category.other": "Other",
   "contact.emailLabel": "Email address",
   "contact.messageLabel": "Your message",
   "contact.messagePlaceholder":

@@ -64,7 +64,7 @@ export function ShareConfirmationDialog({
             {t("shareConfirm.title")}
           </h2>
         </div>
-        <div className="p-4 sm:p-5">
+        <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:p-5">
           <p
             id="share-confirm-description"
             className="text-sm mb-5 break-words"

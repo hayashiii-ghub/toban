@@ -26,6 +26,61 @@ describe("getHolidaysForYear", () => {
     });
   });
 
+  describe("制度変更の境界", () => {
+    it("天皇誕生日と4月29日の名称を在位期間に合わせる", () => {
+      expect(holidayMap(1988).get("1988-04-29")).toBe("天皇誕生日");
+      expect(holidayMap(1989).get("1989-04-29")).toBe("みどりの日");
+      expect(holidayMap(1989).get("1989-12-23")).toBe("天皇誕生日");
+      expect(holidayMap(2018).get("2018-12-23")).toBe("天皇誕生日");
+      expect(holidayMap(2019).has("2019-02-23")).toBe(false);
+      expect(holidayMap(2019).has("2019-12-23")).toBe(false);
+      expect(holidayMap(2020).get("2020-02-23")).toBe("天皇誕生日");
+    });
+
+    it("成人・海・敬老・体育の日の移動年を反映する", () => {
+      expect(holidayMap(1999).get("1999-01-15")).toBe("成人の日");
+      expect(holidayMap(2000).get("2000-01-10")).toBe("成人の日");
+      expect(holidayMap(2002).get("2002-07-20")).toBe("海の日");
+      expect(holidayMap(2003).get("2003-07-21")).toBe("海の日");
+      expect(holidayMap(2002).get("2002-09-15")).toBe("敬老の日");
+      expect(holidayMap(2004).get("2004-09-20")).toBe("敬老の日");
+      expect(holidayMap(1999).get("1999-10-10")).toBe("体育の日");
+      expect(holidayMap(2000).get("2000-10-09")).toBe("体育の日");
+      expect(holidayMap(2019).get("2019-10-14")).toBe("体育の日");
+      expect(holidayMap(2022).get("2022-10-10")).toBe("スポーツの日");
+    });
+
+    it("みどりの日・昭和の日と追加祝日の施行年を反映する", () => {
+      expect(holidayMap(2006).get("2006-04-29")).toBe("みどりの日");
+      expect(holidayMap(2006).get("2006-05-04")).toBe("国民の休日");
+      expect(holidayMap(2007).get("2007-04-29")).toBe("昭和の日");
+      expect(holidayMap(2007).get("2007-05-04")).toBe("みどりの日");
+      expect(holidayMap(1995).has("1995-07-20")).toBe(false);
+      expect(holidayMap(1996).get("1996-07-20")).toBe("海の日");
+      expect(holidayMap(2015).has("2015-08-11")).toBe(false);
+      expect(holidayMap(2016).get("2016-08-11")).toBe("山の日");
+    });
+
+    it("国民の休日と振替休日を当時の規則で計算する", () => {
+      expect(holidayMap(1982).has("1982-05-04")).toBe(false);
+      expect(holidayMap(1986).has("1986-05-04")).toBe(false);
+      expect(holidayMap(1987).get("1987-05-04")).toBe("国民の休日");
+      expect(holidayMap(1991).get("1991-05-04")).toBe("国民の休日");
+      expect(holidayMap(1998).has("1998-05-06")).toBe(false);
+      expect(holidayMap(2008).get("2008-05-06")).toBe("振替休日");
+    });
+
+    it("範囲内の皇室行事による特例休日を含める", () => {
+      expect(holidayMap(1989).get("1989-02-24")).toBe("大喪の礼");
+      expect(holidayMap(1990).get("1990-11-12")).toBe("即位礼正殿の儀");
+      expect(holidayMap(1993).get("1993-06-09")).toBe("結婚の儀");
+      expect(holidayMap(2019).get("2019-05-01")).toBe("天皇の即位の日");
+      expect(holidayMap(2019).get("2019-04-30")).toBe("国民の休日");
+      expect(holidayMap(2019).get("2019-05-02")).toBe("国民の休日");
+      expect(holidayMap(2019).get("2019-10-22")).toBe("即位礼正殿の儀");
+    });
+  });
+
   describe("ハッピーマンデー", () => {
     it("2026年の成人の日は1月第2月曜（1/12）", () => {
       expect(holidayMap(2026).get("2026-01-12")).toBe("成人の日");
@@ -51,6 +106,13 @@ describe("getHolidaysForYear", () => {
 
     it("2026年の秋分の日は9/23", () => {
       expect(holidayMap(2026).get("2026-09-23")).toBe("秋分の日");
+    });
+
+    it("対応範囲の両端でも春分・秋分を計算する", () => {
+      expect(holidayMap(1980).get("1980-03-20")).toBe("春分の日");
+      expect(holidayMap(1980).get("1980-09-23")).toBe("秋分の日");
+      expect(holidayMap(2099).get("2099-03-20")).toBe("春分の日");
+      expect(holidayMap(2099).get("2099-09-23")).toBe("秋分の日");
     });
   });
 
@@ -198,6 +260,15 @@ describe("localized holiday labels", () => {
   it("translates substitute holidays too", () => {
     expect(getHolidaysForMonth(2026, 4, "en").get(6)).toBe(
       "Substitute Holiday"
+    );
+  });
+
+  it("translates historical and one-off holiday names", () => {
+    expect(getHolidaysForMonth(2000, 9, "en").get(9)).toBe(
+      "Health and Sports Day"
+    );
+    expect(getHolidaysForMonth(2019, 4, "en").get(1)).toBe(
+      "Emperor's Accession Day"
     );
   });
 });

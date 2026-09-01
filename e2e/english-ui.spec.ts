@@ -1,5 +1,50 @@
 import { test, expect } from "@playwright/test";
 import { DEFAULT_APP_STATE } from "../client/src/rotation/defaultState";
+import type { AppState } from "../shared/types";
+
+const MULTITASK_STATE = {
+  schedules: [
+    {
+      id: "s_multitask",
+      name: "Office checklist",
+      rotation: 0,
+      assignmentMode: "task",
+      groups: [
+        {
+          id: "g1",
+          emoji: "📦",
+          tasks: ["Restock supplies", "Check inventory"],
+        },
+        { id: "g2", emoji: "🧹", tasks: ["Sweep floors"] },
+        { id: "g3", emoji: "🪴", tasks: ["Water plants"] },
+      ],
+      members: [
+        {
+          id: "m1",
+          name: "Alex",
+          color: "#EF4444",
+          bgColor: "#FEE2E2",
+          textColor: "#7F1D1D",
+        },
+        {
+          id: "m2",
+          name: "Sam",
+          color: "#F59E0B",
+          bgColor: "#FEF3C7",
+          textColor: "#713F12",
+        },
+        {
+          id: "m3",
+          name: "Riley",
+          color: "#10B981",
+          bgColor: "#D1FAE5",
+          textColor: "#064E3B",
+        },
+      ],
+    },
+  ],
+  activeScheduleId: "s_multitask",
+} satisfies AppState;
 
 test.use({ locale: "en-US" });
 
@@ -63,6 +108,131 @@ test("English first visit, blank creation and language switch preserve roster co
   await expect(
     page.getByRole("button", { name: "当番表を編集する" })
   ).toBeVisible();
+});
+
+test("English public pages localize contact choices, wheel samples and fair-order copy", async ({
+  page,
+}, testInfo) => {
+  await page.route("**/api/**", route =>
+    route.fulfill({ status: 400, body: "{}" })
+  );
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/about");
+  const category = page.getByLabel("Inquiry type", { exact: true });
+  await category.scrollIntoViewIfNeeded();
+  await expect(category.locator("option")).toHaveText([
+    "Please select",
+    "Bug report",
+    "Feature request",
+    "How-to question",
+    "Other",
+  ]);
+  expect(
+    await category
+      .locator("option")
+      .evaluateAll(options =>
+        options.map(option => (option as HTMLOptionElement).value)
+      )
+  ).toEqual(["", "不具合の報告", "機能のご要望", "使い方の質問", "その他"]);
+  await page
+    .getByRole("button", { name: "How do I decide the order fairly?" })
+    .click();
+  await expect(page.locator("main")).toContainText(
+    "the wheel then shows the same predictable rotation rather than picking someone at random"
+  );
+  await page.screenshot({
+    path: testInfo.outputPath("english-contact-desktop.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+
+  await page.goto("/junban");
+  await expect(page.getByText("Alex", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Cleaning", { exact: true })).toBeVisible();
+  await expect(page.locator("main")).not.toContainText(
+    /たろう|はなこ|ゆうき|そうじ|はいぜん|にっちょく/
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth
+    )
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("english-wheel-sample-mobile.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+});
+
+test("English multi-task labels stay natural in every view and print", async ({
+  page,
+}, testInfo) => {
+  await page.route("**/api/schedules**", route =>
+    route.fulfill({ status: 400, body: "{}" })
+  );
+  await page.addInitScript(state => {
+    localStorage.setItem("toban-lang", "en");
+    localStorage.setItem("rotation-schedule-app-state", JSON.stringify(state));
+  }, MULTITASK_STATE);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/");
+
+  await expect(
+    page.getByRole("listitem", {
+      name: "Restock supplies, Check inventory: Alex",
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(page.locator('div.sr-only[aria-live="polite"]')).toContainText(
+    "Restock supplies, Check inventory: Alex; Sweep floors: Sam"
+  );
+  await expect(page.locator("main")).not.toContainText("・");
+  await page.screenshot({
+    path: testInfo.outputPath("english-multitask-cards-desktop.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+
+  await page.getByRole("button", { name: "Table", exact: true }).click();
+  await expect(page.getByRole("rowheader").first()).toContainText(
+    "Restock supplies, Check inventory"
+  );
+
+  await page.getByRole("button", { name: "Calendar", exact: true }).click();
+  await expect(
+    page.getByTitle("📦 Restock supplies, Check inventory: Alex").first()
+  ).toBeVisible();
+  await expect(
+    page.getByText("Restock supplies, Check inventory", { exact: true })
+  ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByText("Mtn. Day", { exact: true })).toBeVisible();
+  await expect(page.getByTitle("Mountain Day")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth
+    )
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("english-multitask-calendar-mobile.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.getByRole("button", { name: "Wheel", exact: true }).click();
+  expect(await page.locator("svg title").allTextContents()).toContain(
+    "📦 Restock supplies, Check inventory: Alex"
+  );
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  await page.emulateMedia({ media: "print" });
+  await page.screenshot({
+    path: testInfo.outputPath("english-multitask-wheel-print.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.emulateMedia({ media: "screen" });
 });
 
 test("English template, date settings, calendar, print and shared view", async ({

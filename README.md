@@ -31,7 +31,12 @@ pnpm run deploy:cf     # migration 適用込みで Cloudflare へデプロイ
 PR を出す前に CI と同じ検査を通す:
 
 ```sh
-pnpm format:check && pnpm check && pnpm lint && pnpm test && pnpm build
+pnpm format:check
+pnpm check
+pnpm lint
+pnpm test:coverage
+pnpm build
+pnpm test:e2e
 ```
 
 ## 構成
@@ -54,7 +59,7 @@ pnpm format:check && pnpm check && pnpm lint && pnpm test && pnpm build
 │   ├── rotation/             # コア型・ユーティリティ・定数・デフォルト状態・デザインテーマ定義
 │   ├── hooks/                # useHomeState（状態集約）・useAutoSync・useTobanTools 等
 │   ├── lib/                  # API クライアント・同期マネージャ
-│   ├── i18n/                 # 自作 i18n・辞書 ja/en（UIの枠のみ翻訳）
+│   ├── i18n/                 # 自作 i18n・UI辞書 ja/en
 │   ├── types/                # 型定義（webmcp.d.ts 等）
 │   └── fonts.ts              # アプリ全体のフォント設定（デザインテーマとは独立）
 ├── server/
@@ -69,6 +74,8 @@ pnpm format:check && pnpm check && pnpm lint && pnpm test && pnpm build
     ├── types.ts / schemas.ts # 共有の型と Zod スキーマ
     ├── limits.ts             # 入力の文字数・件数上限（単一の真実源）
     ├── templates.ts          # テンプレート本体（32件。カスタムはLPを持たない）
+    ├── template-localization.ts # 組み込みテンプレートの英語表示
+    ├── template-categories.ts   # テンプレートカテゴリの ja/en 表示
     ├── jsonLd.ts             # 構造化データの組み立て
     ├── seo-templates.ts      # テンプレLPのメタ情報と共通FAQ、/junban のメタ
     └── template-content.ts   # テンプレLPごとの本文・FAQ
@@ -77,7 +84,7 @@ pnpm format:check && pnpm check && pnpm lint && pnpm test && pnpm build
 ## 規約
 
 - 入力の文字数・件数上限は `shared/limits.ts` が単一の真実源（server スキーマ / UI の maxLength / WebMCP 検証が共有する）
-- UI 文字列は `client/src/i18n` の辞書（ja / en）を通す。翻訳するのは UI の枠だけで、テンプレート・テーマ等のコンテンツは日本語のまま
+- UI 文字列は `client/src/i18n` の辞書（ja / en）を通す。組み込みテンプレート・初期ガイド・テーマ名は専用の表示用ローカライズを使う。利用者が保存した名前・担当・仕事は言語切替だけで翻訳または上書きしない
 - 新規の機能コンポーネントは `client/src/features/<機能名>/` に置く。`components/` は横断的に再利用するものだけ
 - 共有型は `shared/types.ts` に定義する
 - TypeScript strict。整形は Prettier、静的検査は ESLint（どちらも CI が検査する）
@@ -86,7 +93,7 @@ pnpm format:check && pnpm check && pnpm lint && pnpm test && pnpm build
 ## デプロイと D1
 
 - 本番デプロイは `pnpm run deploy:cf` が正規ルート（`--remote` で本番 D1 に migration を適用）
-- `wrangler deploy` 単体では D1 migration が適用されず、**保存や共有が 500 になる**
+- `wrangler deploy` 単体では D1 migration の履歴やインデックスが適用されず、本番スキーマが不整合になるおそれがある
 - `GET /api/health/schema` でスキーマの状態を確認できる（200: 正常 / 503: カラム不足）
 - サーバーは安全網として不足カラムを自動補完するが、migration を先に適用する運用が前提
 
@@ -101,7 +108,7 @@ Cloudflare 側で設定する環境変数:
 
 ## CI
 
-- **GitHub Actions** — push（main）/ PR で 整形・型・lint・ユニットテスト・ビルドを実行。E2E は PR のときのみ
+- **GitHub Actions** — push（main）/ PR で整形・型・lint・ユニットテスト・ビルド・E2Eを実行
 - **Lighthouse CI** — 毎週月曜 3:00 UTC と手動実行でパフォーマンス・アクセシビリティ・SEO を計測
 - **Sentry** — 本番のランタイムエラーを収集（`VITE_SENTRY_DSN` 設定時のみ）
 - 一括整形コミットは `.git-blame-ignore-revs` に登録済み

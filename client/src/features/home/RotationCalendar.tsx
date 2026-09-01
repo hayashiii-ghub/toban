@@ -13,6 +13,7 @@ import {
 import { getHolidaysForMonth } from "@/rotation/holidays";
 import { useT, useDateLocale, useLocale } from "@/i18n";
 import { parseIsoDateLocal } from "@/rotation/dateUtils";
+import { formatTaskNames } from "@/rotation/taskFormatting";
 import { TaskLegend } from "@/features/home/TaskLegend";
 
 interface RotationCalendarProps {
@@ -43,6 +44,65 @@ function isSameDay(a: Date, b: Date) {
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
+  );
+}
+
+const COMPACT_ENGLISH_HOLIDAYS: Record<string, string> = {
+  "New Year's Day": "New Year",
+  "Coming of Age Day": "Coming of Age",
+  "National Foundation Day": "Foundation",
+  "Emperor's Birthday": "Emperor's Day",
+  "Vernal Equinox Day": "Vernal Eq.",
+  "Showa Day": "Showa Day",
+  "Constitution Memorial Day": "Constitution",
+  "Greenery Day": "Greenery Day",
+  "Children's Day": "Children's",
+  "Marine Day": "Marine Day",
+  "Mountain Day": "Mtn. Day",
+  "Respect for the Aged Day": "Seniors",
+  "Autumnal Equinox Day": "Aut. Eq.",
+  "Sports Day": "Sports Day",
+  "Culture Day": "Culture Day",
+  "Labor Thanksgiving Day": "Thanksgiving",
+  "Substitute Holiday": "Substitute",
+  "National Holiday": "Holiday",
+  "Health and Sports Day": "Health & Sports",
+  "State Funeral of Emperor Showa": "State Funeral",
+  "Enthronement Ceremony": "Enthronement",
+  "Imperial Wedding Ceremony": "Imperial Wedding",
+  "Emperor's Accession Day": "Accession Day",
+};
+
+function HolidayLabel({ name, locale }: { name: string; locale: "ja" | "en" }) {
+  if (locale === "ja") {
+    return (
+      <span
+        className="text-[8px] sm:text-[10px] leading-tight truncate"
+        style={{ color: "#EF4444" }}
+        title={name}
+      >
+        {name}
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="text-[8px] sm:text-[10px] leading-tight w-full overflow-hidden whitespace-normal [overflow-wrap:normal] [word-break:normal]"
+      style={{ color: "#EF4444" }}
+      title={name}
+    >
+      <span className="sr-only">{name}</span>
+      <span
+        className="sm:hidden block max-w-full truncate whitespace-nowrap"
+        aria-hidden="true"
+      >
+        {COMPACT_ENGLISH_HOLIDAYS[name] ?? name}
+      </span>
+      <span className="hidden sm:inline" aria-hidden="true">
+        {name}
+      </span>
+    </span>
   );
 }
 
@@ -362,17 +422,7 @@ export function RotationCalendar({
                           {day.getDate()}
                         </span>
                         {holidayName && (
-                          <span
-                            className={
-                              locale === "en"
-                                ? "text-[9px] sm:text-[10px] leading-tight w-full [overflow-wrap:anywhere]"
-                                : "text-[8px] sm:text-[10px] leading-tight truncate"
-                            }
-                            style={{ color: "#EF4444" }}
-                            title={holidayName}
-                          >
-                            {holidayName}
-                          </span>
+                          <HolidayLabel name={holidayName} locale={locale} />
                         )}
                       </div>
                       {!isSkipped && assignments && (
@@ -385,7 +435,7 @@ export function RotationCalendar({
                                 backgroundColor: member.bgColor,
                                 color: member.textColor,
                               }}
-                              title={`${group.emoji} ${group.tasks.join("・")}：${member.name}`}
+                              title={`${group.emoji} ${formatTaskNames(group.tasks, locale)}${locale === "en" ? ": " : "："}${member.name}`}
                             >
                               <span className="hidden sm:inline">
                                 {group.emoji}{" "}
@@ -455,7 +505,8 @@ export function RotationCalendar({
                                       color: "var(--dt-text-secondary)",
                                     }}
                                   >
-                                    {group.emoji} {group.tasks.join("・")}
+                                    {group.emoji}{" "}
+                                    {formatTaskNames(group.tasks, locale)}
                                   </span>
                                 </div>
                               ))}
@@ -498,17 +549,7 @@ export function RotationCalendar({
                         {day.getDate()}
                       </span>
                       {holidayName && (
-                        <span
-                          className={
-                            locale === "en"
-                              ? "text-[9px] sm:text-[10px] leading-tight w-full [overflow-wrap:anywhere]"
-                              : "text-[8px] sm:text-[10px] leading-tight truncate"
-                          }
-                          style={{ color: "#EF4444" }}
-                          title={holidayName}
-                        >
-                          {holidayName}
-                        </span>
+                        <HolidayLabel name={holidayName} locale={locale} />
                       )}
                     </div>
                   )}

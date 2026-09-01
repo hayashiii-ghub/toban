@@ -638,7 +638,7 @@ export const COMMON_FAQ_EN: { question: string; answer: string }[] = [
   {
     question: "How do I decide the order fairly?",
     answer:
-      "The fairest approach is a rotation that shifts the order by one each time, so everyone takes on each assignment the same number of times. toban shifts it automatically, so you never have to count who did what and how often. If you're unsure about the starting order, you can decide it at random with the wheel.",
+      "The fairest approach is a rotation that shifts the order by one each time, so everyone takes on each assignment the same number of times. toban handles that rotation automatically. Set the starting order once; the wheel then shows the same predictable rotation rather than picking someone at random.",
   },
   {
     question: "How many people can I add?",

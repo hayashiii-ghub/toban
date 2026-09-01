@@ -268,14 +268,6 @@ export function buildTobanTools(
         ? {
             configuration: configuration(s),
             publication: published(s),
-            ...(s.slug
-              ? {
-                  sharing_note: say(
-                    "共有済みの表への変更は共有先にも同期されます。",
-                    "Edits to an already published roster also sync to its public link."
-                  ),
-                }
-              : {}),
           }
         : {}),
     };
@@ -349,6 +341,36 @@ export function buildTobanTools(
         }
       );
     return matches[0];
+  }
+  function rejectLostExplicitCandidate(before: Schedule, after: Schedule) {
+    const beforeEligible = new Set(
+      before.members.filter(member => !member.skipped).map(member => member.id)
+    );
+    const afterEligible = new Set(
+      after.members.filter(member => !member.skipped).map(member => member.id)
+    );
+    const beforeGroups = new Map(before.groups.map(group => [group.id, group]));
+    const emptied = after.groups.find(group => {
+      if (group.memberIds === undefined) return false;
+      const previous = beforeGroups.get(group.id);
+      if (previous?.memberIds === undefined) return false;
+      const hadCandidate = previous.memberIds.some(memberId =>
+        beforeEligible.has(memberId)
+      );
+      const hasCandidate = group.memberIds.some(memberId =>
+        afterEligible.has(memberId)
+      );
+      return hadCandidate && !hasCandidate;
+    });
+    if (emptied)
+      throw new ToolError(
+        "INVALID_INPUT",
+        say(
+          "担当候補がいなくなる仕事があります。先にその仕事の候補を変更してください。",
+          "This would leave a duty without an eligible candidate. Change that duty's member pool first."
+        ),
+        { group_id: emptied.id }
+      );
   }
   function tool<T>(
     toolName: string,
@@ -864,9 +886,8 @@ export function buildTobanTools(
             "変更する項目を指定してください。",
             "Supply at least one field to update."
           );
-        const target = selected({ schedule_id });
         const fingerprint = JSON.stringify({
-          schedule_id: target.id,
+          schedule_id,
           name: nextName,
           pinned,
           ...edits,
@@ -882,6 +903,7 @@ export function buildTobanTools(
             );
           return { ...previous.response, replayed: true };
         }
+        const target = selected({ schedule_id });
         const response = await edit({ schedule_id: target.id }, s => {
           try {
             return {
@@ -1008,7 +1030,7 @@ export function buildTobanTools(
     ),
     tool(
       "remove_member",
-      "Remove a member by member_id or unique exact name. Removes references from group member pools. The last member cannot be removed.",
+      "Remove a member by member_id or unique exact name. Removes references from group member pools. The last member cannot be removed. If an explicit duty pool would have no eligible candidate, change that pool first.",
       z.strictObject(memberShape),
       false,
       input =>
@@ -1030,18 +1052,20 @@ export function buildTobanTools(
               ? { ...g, memberIds: g.memberIds.filter(id => id !== target.id) }
               : g
           );
-          return {
+          const next = {
             ...updated,
             rotation: normalizeRotation(
               s.rotation,
               updated.members.filter(m => !m.skipped).length
             ),
           };
+          rejectLostExplicitCandidate(s, next);
+          return next;
         })
     ),
     tool(
       "update_member",
-      "Rename a member or set persistent rotation exclusion by member_id or unique exact name. skip remains in effect until explicitly changed back; it is not an absence for today or any date range. Clarify temporary absences with the user instead of using skip.",
+      "Rename a member or set persistent rotation exclusion by member_id or unique exact name. skip remains in effect until explicitly changed back; it is not an absence for today or any date range. Exclusion is rejected if an explicit duty pool would have no eligible candidate. Clarify temporary absences with the user instead of using skip.",
       z.strictObject({
         ...memberShape,
         new_name: name.optional(),
@@ -1062,7 +1086,7 @@ export function buildTobanTools(
                 }
               : m
           );
-          return {
+          const next = {
             ...s,
             members,
             rotation: normalizeRotation(
@@ -1070,6 +1094,8 @@ export function buildTobanTools(
               members.filter(m => !m.skipped).length
             ),
           };
+          if (input.skip === true) rejectLostExplicitCandidate(s, next);
+          return next;
         });
       }
     ),
