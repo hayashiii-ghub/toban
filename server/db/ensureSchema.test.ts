@@ -57,10 +57,11 @@ describe("ensureSchedulesSchema", () => {
         "rotation_config_json",
         "assignment_mode",
         "design_theme_id",
+        "font_id",
         "is_public",
       ],
     });
-    expect(runCalls).toHaveLength(5);
+    expect(runCalls).toHaveLength(6);
   });
 
   it("成功後は PRAGMA も ALTER も再実行しない", async () => {
@@ -70,6 +71,7 @@ describe("ensureSchedulesSchema", () => {
       "rotation_config_json",
       "assignment_mode",
       "design_theme_id",
+      "font_id",
       "is_public",
     ]);
 

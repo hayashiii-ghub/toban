@@ -269,6 +269,7 @@ function usePullFromServer(
       rotationConfig: fetched.rotationConfig,
       assignmentMode: fetched.assignmentMode,
       designThemeId: fetched.designThemeId,
+      fontId: fetched.fontId ?? before.fontId,
     };
     const mergedJson = JSON.stringify(serverData);
     if (mergedJson === beforeJson) return;

@@ -310,7 +310,7 @@ export const ja: Record<string, string> = {
 
   // フォント選択（アプリ全体）
   "settings.sectionFont": "文字",
-  "font.appliesToAll": "すべての当番表に適用されます",
+  "font.appliesToRoster": "この当番表に保存され、共有先にも反映されます",
   "font.selectAria": "{name}の文字を選択",
   "font.sample": "あいう Aa",
   "font.standard": "標準",

@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
+import { FONT_IDS } from "../../shared/appearance";
 import { schedules } from "../db/schema";
 import { ensureSchedulesSchema } from "../db/ensureSchema";
 import {
@@ -61,6 +62,7 @@ function serializeSchedule(row: typeof schedules.$inferSelect) {
     const assignmentMode = row.assignmentMode
       ? z.enum(["member", "task"]).parse(row.assignmentMode)
       : undefined;
+    const fontId = row.fontId ? z.enum(FONT_IDS).parse(row.fontId) : undefined;
 
     return {
       slug: row.slug,
@@ -71,6 +73,7 @@ function serializeSchedule(row: typeof schedules.$inferSelect) {
       rotationConfig,
       assignmentMode,
       designThemeId: row.designThemeId ?? undefined,
+      fontId,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -119,6 +122,7 @@ app.post("/", async c => {
             : null,
           assignmentMode: data.assignmentMode ?? null,
           designThemeId: data.designThemeId ?? null,
+          fontId: data.fontId ?? null,
           createdAt: now,
           updatedAt: now,
         });
@@ -226,6 +230,7 @@ app.put("/:slug", async c => {
           : null,
         assignmentMode: data.assignmentMode ?? null,
         designThemeId: data.designThemeId ?? null,
+        fontId: data.fontId ?? null,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(schedules.slug, slug));

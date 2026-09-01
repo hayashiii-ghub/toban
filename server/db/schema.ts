@@ -20,6 +20,7 @@ export const schedules = sqliteTable("schedules", {
   rotationConfigJson: text("rotation_config_json"),
   assignmentMode: text("assignment_mode"),
   designThemeId: text("design_theme_id"),
+  fontId: text("font_id"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

@@ -23,11 +23,16 @@ import {
 } from "@/rotation/utils";
 import {
   createScheduleFromDefinition,
+  appearancePatchSchema,
   rotationDefinitionSchema,
   rotationInputSchema,
   scheduleDefinitionSchema,
   toRotationConfig,
 } from "@/rotation/scheduleDefinition";
+import {
+  applyScheduleAppearance,
+  getScheduleAppearance,
+} from "@/rotation/scheduleAppearance";
 import {
   applyScheduleEdits,
   scheduleEditsSchema,
@@ -110,6 +115,7 @@ function configuration(s: Schedule) {
     task_group_count: s.groups.length,
     assignment_mode: s.assignmentMode ?? "member",
     rotation: rotationData(s.rotationConfig),
+    appearance: getScheduleAppearance(s),
   };
 }
 
@@ -792,7 +798,7 @@ export function buildTobanTools(
     ),
     tool(
       "create_schedule",
-      "Create and select a complete duty roster in one operation. Use definition for custom names, members, task_groups and rotation; use template only for an exact built-in template name (one of the two). One task group goes to one person; multiple tasks in it stay together. Defaults: localized name, colors, manual rotation, assignment_mode task. Date mode requires start_date and cycle_days. cycle_days is the eligible-day interval between changes of assignee: daily/every weekday/平日ごと = 1, regardless of member/task count; it is not a full round. Skipped days pause rotation (cards/table keep the turn; calendar cells are blank). Supported: cyclic duties, manual/date rotation and Japanese holiday skipping. Date-scoped absence, individual weekday restrictions, simultaneous multi-person duties and fairness optimization are unsupported: clarify these with the user before creating an approximation. New rosters remain private; existing private backup may follow. request_id deduplicates retries only within this page lifetime.",
+      "Create and select a complete duty roster in one operation. Use definition for custom names, members, task_groups, rotation and an optional appearance; use template only for an exact built-in template name (one of the two). When the request conveys an audience, setting or mood, choose a complete appearance that fits it; do not invent custom colors or fonts outside the enums. One task group goes to one person; multiple tasks in it stay together. Defaults: localized name, member colors, manual rotation, assignment_mode task. Date mode requires start_date and cycle_days. cycle_days is the eligible-day interval between changes of assignee: daily/every weekday/平日ごと = 1, regardless of member/task count; it is not a full round. Skipped days pause rotation (cards/table keep the turn; calendar cells are blank). Supported: cyclic duties, manual/date rotation and Japanese holiday skipping. Date-scoped absence, individual weekday restrictions, simultaneous multi-person duties and fairness optimization are unsupported: clarify these with the user before creating an approximation. New rosters remain private; existing private backup may follow. request_id deduplicates retries only within this page lifetime.",
       z.strictObject({
         template: name.optional(),
         definition: scheduleDefinitionSchema.optional(),
@@ -970,6 +976,26 @@ export function buildTobanTools(
           updateRequests.set(request_id, { fingerprint, response });
         }
         return response;
+      }
+    ),
+    tool(
+      "configure_appearance",
+      "Change a roster's font, color palette or texture using only the supplied axes. Interpret the user's audience, setting and mood, then choose from the typed options. Examples: a cheerful classroom can use handwriting + sunflower + soft; a clear office notice can use print + print + smooth; a calm refined roster can use elegant + hydrangea + smooth. Omitted axes stay unchanged.",
+      z.strictObject({
+        ...targetShape,
+        ...appearancePatchSchema.shape,
+      }),
+      false,
+      input => {
+        const { schedule_id, ...appearance } = input;
+        if (Object.values(appearance).every(value => value === undefined))
+          invalid(
+            "変更する文字・色・質感を指定してください。",
+            "Supply at least one appearance setting."
+          );
+        return edit({ schedule_id }, schedule =>
+          applyScheduleAppearance(schedule, appearance)
+        );
       }
     ),
     tool(

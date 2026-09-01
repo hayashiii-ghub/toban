@@ -1,23 +1,16 @@
 import { Check } from "lucide-react";
-import { useEffect, useState } from "react";
-import {
-  APP_FONTS,
-  applyFont,
-  ensureFontLoaded,
-  getFontById,
-  getSavedFontId,
-  saveFontId,
-} from "@/fonts";
+import { useEffect } from "react";
+import { APP_FONTS, ensureFontLoaded } from "@/fonts";
 import { useT } from "@/i18n";
+import type { FontId } from "@shared/appearance";
 
 interface FontPickerProps {
-  /** 選択が変わったとき呼ぶ（親のサマリー更新用、任意） */
-  onChange?: (fontId: string) => void;
+  selectedFontId: FontId;
+  onSelect: (fontId: FontId) => void;
 }
 
-export function FontPicker({ onChange }: FontPickerProps) {
+export function FontPicker({ selectedFontId, onSelect }: FontPickerProps) {
   const t = useT();
-  const [selected, setSelected] = useState(getSavedFontId());
 
   // プレビューを各フォントで見せるため、ピッカーを開いた時点で全フォントを読み込む。
   // 起動時ではなくここで読むので、既定ユーザーの初期負荷は増えない。
@@ -25,22 +18,15 @@ export function FontPicker({ onChange }: FontPickerProps) {
     APP_FONTS.forEach(ensureFontLoaded);
   }, []);
 
-  const handleSelect = (fontId: string) => {
-    setSelected(fontId);
-    saveFontId(fontId);
-    applyFont(getFontById(fontId));
-    onChange?.(fontId);
-  };
-
   return (
     <div className="grid grid-cols-2 gap-2 p-0.5">
       {APP_FONTS.map(font => {
-        const isSelected = selected === font.id;
+        const isSelected = selectedFontId === font.id;
         return (
           <button
             key={font.id}
             type="button"
-            onClick={() => handleSelect(font.id)}
+            onClick={() => onSelect(font.id)}
             className={`relative theme-border p-3 text-left transition-all duration-150 ${
               isSelected ? "ring-2 ring-offset-1" : "hover:opacity-80"
             }`}

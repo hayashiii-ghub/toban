@@ -8,6 +8,7 @@ import { ApiError, getScheduleForEdit } from "@/lib/api";
 import { decodeShareTransferData } from "@/lib/shareTransfer";
 import { useT, tStandalone } from "@/i18n";
 import { Loader2 } from "lucide-react";
+import { getSavedFontId } from "@/fonts";
 
 const transferDataSchema = z.object({
   slug: z.string().min(1),
@@ -74,6 +75,7 @@ export default function Transfer() {
           rotationConfig: fetched.rotationConfig,
           assignmentMode: fetched.assignmentMode,
           designThemeId: fetched.designThemeId,
+          fontId: fetched.fontId ?? existing?.fontId ?? getSavedFontId(),
           pinned: existing?.pinned,
         };
 

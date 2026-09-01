@@ -174,7 +174,7 @@ test("English tools edit groups, print the requested month and require a sharing
   });
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.waitForFunction(
-    () => Object.keys((window as unknown as Harness).tobanTools).length === 17
+    () => Object.keys((window as unknown as Harness).tobanTools).length === 18
   );
 
   const created = await call(page, "create_schedule", {

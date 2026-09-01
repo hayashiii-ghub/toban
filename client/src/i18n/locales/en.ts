@@ -311,7 +311,7 @@ export const en: Record<string, string> = {
 
   // Font selection (whole app)
   "settings.sectionFont": "Font",
-  "font.appliesToAll": "Applies to every roster",
+  "font.appliesToRoster": "Saved with this roster and shown on shared copies",
   "font.selectAria": "Select the {name} font",
   "font.sample": "Aa Bb",
   "font.standard": "Standard",

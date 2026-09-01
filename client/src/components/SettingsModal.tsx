@@ -19,7 +19,8 @@ import { DesignThemePicker } from "./settings/DesignThemePicker";
 import { FontPicker } from "./settings/FontPicker";
 import { RotationConfigEditor } from "./settings/RotationConfigEditor";
 import { getThemeById, getThemeLabel } from "@/rotation/designThemes";
-import { getFontById, getSavedFontId } from "@/fonts";
+import { applyFont, getFontById, getSavedFontId } from "@/fonts";
+import type { FontId } from "@shared/appearance";
 import { applyThemeToRoot } from "@/contexts/DesignThemeContext";
 import { useLocale, useT } from "@/i18n";
 
@@ -31,6 +32,7 @@ interface Props {
   pinned?: boolean;
   assignmentMode?: AssignmentMode;
   designThemeId?: string;
+  fontId?: FontId;
   canDelete: boolean;
   onSave: (settings: ScheduleSettings) => void;
   onDuplicate: () => void;
@@ -46,6 +48,7 @@ type EditorPatch = {
   pinned?: boolean;
   assignmentMode?: AssignmentMode;
   designThemeId?: string | undefined;
+  fontId?: FontId;
 };
 
 export function SettingsModal({
@@ -56,6 +59,7 @@ export function SettingsModal({
   pinned,
   assignmentMode,
   designThemeId,
+  fontId: savedFontId,
   canDelete,
   onSave,
   onDuplicate,
@@ -81,9 +85,7 @@ export function SettingsModal({
   const [editDesignThemeId, setEditDesignThemeId] = useState<
     string | undefined
   >(designThemeId);
-  // フォントはアプリ全体設定（schedule 保存フローに乗せず即適用・localStorage 保存）。
-  // ここでは AccordionSection のサマリー表示のためだけに現在値を持つ。
-  const [fontId, setFontId] = useState(getSavedFontId());
+  const [fontId, setFontId] = useState<FontId>(savedFontId ?? getSavedFontId());
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
@@ -115,11 +117,13 @@ export function SettingsModal({
           : editAssignmentMode;
       const nextDesignThemeId =
         "designThemeId" in patch ? patch.designThemeId : editDesignThemeId;
+      const nextFontId = "fontId" in patch ? (patch.fontId ?? fontId) : fontId;
 
       if (nextName !== scheduleName) return true;
       if (nextPinned !== (pinned ?? false)) return true;
       if (nextAssignmentMode !== (assignmentMode ?? "member")) return true;
       if (nextDesignThemeId !== designThemeId) return true;
+      if (nextFontId !== (savedFontId ?? getSavedFontId())) return true;
       if (JSON.stringify(nextGroups) !== initialGroupsJson.current) return true;
       if (JSON.stringify(nextMembers) !== initialMembersJson.current)
         return true;
@@ -135,12 +139,14 @@ export function SettingsModal({
       editAssignmentMode,
       editDesignThemeId,
       editGroups,
+      fontId,
       editMembers,
       editName,
       editPinned,
       editRotationConfig,
       pinned,
       scheduleName,
+      savedFontId,
     ]
   );
 
@@ -155,6 +161,7 @@ export function SettingsModal({
       if ("assignmentMode" in patch && patch.assignmentMode)
         setEditAssignmentMode(patch.assignmentMode);
       if ("designThemeId" in patch) setEditDesignThemeId(patch.designThemeId);
+      if ("fontId" in patch && patch.fontId) setFontId(patch.fontId);
       setIsDirty(computeDirty(patch));
     },
     [computeDirty]
@@ -171,6 +178,14 @@ export function SettingsModal({
     (themeId: string) => {
       applyEditorPatch({ designThemeId: themeId });
       applyThemeToRoot(getThemeById(themeId));
+    },
+    [applyEditorPatch]
+  );
+
+  const handleFontPreview = useCallback(
+    (nextFontId: FontId) => {
+      applyEditorPatch({ fontId: nextFontId });
+      applyFont(getFontById(nextFontId));
     },
     [applyEditorPatch]
   );
@@ -215,7 +230,8 @@ export function SettingsModal({
     if (editDesignThemeId !== designThemeId) {
       handleThemePreview(designThemeId ?? "whiteboard");
     }
-  }, [editDesignThemeId, designThemeId, handleThemePreview]);
+    applyFont(getFontById(savedFontId ?? getSavedFontId()));
+  }, [editDesignThemeId, designThemeId, handleThemePreview, savedFontId]);
 
   const handleCloseWithCheck = useCallback(() => {
     if (isDirty) {
@@ -295,6 +311,7 @@ export function SettingsModal({
       pinned: editPinned,
       assignmentMode: editAssignmentMode,
       designThemeId: editDesignThemeId,
+      fontId,
     });
   };
 
@@ -509,7 +526,7 @@ export function SettingsModal({
             />
           </AccordionSection>
 
-          {/* 文字（アプリ全体） */}
+          {/* 文字（この当番表） */}
           <AccordionSection
             title={t("settings.sectionFont")}
             summary={t(getFontById(fontId).labelKey)}
@@ -519,9 +536,9 @@ export function SettingsModal({
               className="text-xs mb-2"
               style={{ color: "var(--dt-text-muted)" }}
             >
-              {t("font.appliesToAll")}
+              {t("font.appliesToRoster")}
             </p>
-            <FontPicker onChange={setFontId} />
+            <FontPicker selectedFontId={fontId} onSelect={handleFontPreview} />
           </AccordionSection>
 
           {/* タスク */}

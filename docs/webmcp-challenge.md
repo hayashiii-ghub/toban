@@ -58,7 +58,7 @@ In this implementation session, Codex Desktop's in-app browser discovered and ca
 
 ## Tool contract
 
-The existing sixteen tool names are retained. `create_schedule` accepts exactly one of the legacy `template` name or a complete `definition`:
+The current page registers eighteen WebMCP tools. It retains the sixteen baseline tool names and adds `prepare_share` for human-confirmed publication plus `configure_appearance` for typed visual customization. `create_schedule` accepts exactly one of the legacy `template` name or a complete `definition`:
 
 ```json
 {
@@ -79,12 +79,17 @@ The existing sixteen tool names are retained. `create_schedule` accepts exactly 
       "skip_saturday": true,
       "skip_sunday": true,
       "skip_holidays": true
+    },
+    "appearance": {
+      "font": "print",
+      "color": "print",
+      "texture": "smooth"
     }
   }
 }
 ```
 
-The application generates IDs/colors and validates the entire definition before inserting and selecting one complete roster. New definitions use task assignment mode. A missing rotation defaults to manual. All write inputs are validated at runtime, including unknown keys, types, empty names/tasks, limits and real calendar dates. Limits reuse `shared/limits.ts` (50 members, 20 groups, 20 tasks per group, 100 characters per name/task).
+The application generates IDs/member colors and validates the entire definition before inserting and selecting one complete roster. New definitions use task assignment mode. A missing rotation defaults to manual. An optional complete `appearance` lets the agent select a typed font, color palette and texture from the audience, setting or mood in the request; Toban validates and stores the combination with the roster. `configure_appearance` changes any subset later while preserving omitted axes. All write inputs are validated at runtime, including unknown keys, types, appearance enums, empty names/tasks, limits and real calendar dates. Limits reuse `shared/limits.ts` (50 members, 20 groups, 20 tasks per group, 100 characters per name/task).
 
 Use `get_schedule_details` to inspect the overview and rotation conditions. `section: "members"` and `section: "groups"` return IDs and paged rows; group rows contain individual tasks or member-pool IDs. `get_current_assignments` maps group IDs to member IDs. An optional `date: "YYYY-MM-DD"` queries another date without changing or saving the roster. Date mode returns `before_start` for initial placements, `paused` with no duties on excluded dates, or `scheduled` for a requested active date. Manual mode returns `manual`, since it cannot predict future manual changes. Date/month queries use the supported 1980–2099 range. `list_schedules` also supports pagination and exact-name filtering. Pass each `next_cursor` until null; pages remain valid JSON within a 1,500-character budget rather than clipping a string.
 
@@ -199,6 +204,6 @@ The pre-extension baseline is `e03ddbb` (2026-08-13). Toban already had sixteen 
 
 Review the fixed published range [`e03ddbb..fffe72d`](https://github.com/hayashiii-ghub/toban-app/compare/e03ddbb...fffe72d) for the challenge work. Existing-project eligibility and submission requirements must be checked against the [official challenge rules](https://webmcp.devpost.com/rules).
 
-For the eventual public demo, keep one 90–100-second flow: detailed request → completed roster → one-line task correction → print preview. Use English narration and visible product output; keep tool-contract and failure-test details in this document. Recording, public YouTube upload and final submission remain separate actions. Production deployment, the UI/API smoke and user-confirmed production WebMCP operation are complete as recorded above.
+For the public demo, keep one approximately 1:54 flow: detailed request → completed roster → one-line task correction → September calendar verification → human-confirmed sharing → public-link verification. Use English narration and visible product output; keep tool-contract and failure-test details in this document. Recording, public YouTube upload and final submission remain separate actions. Production deployment, the UI/API smoke and user-confirmed production WebMCP operation are complete as recorded above.
 
 License: MIT, as in the repository's existing `LICENSE`.

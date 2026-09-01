@@ -4,6 +4,13 @@ import { LIMITS } from "@shared/limits";
 import { MEMBER_PRESETS } from "./constants";
 import { parseIsoDateLocal } from "./dateUtils";
 import type { RotationConfig, Schedule } from "./types";
+import {
+  APPEARANCE_COLOR_IDS,
+  APPEARANCE_TEXTURE_IDS,
+  FONT_IDS,
+} from "@shared/appearance";
+import { applyScheduleAppearance } from "./scheduleAppearance";
+import { getSavedFontId } from "@/fonts";
 
 // The Japanese holiday calculator and equinox formulas cover 1980–2099.
 // Restrict new tool input to that range, which also bounds per-year work.
@@ -65,6 +72,26 @@ export const rotationDefinitionSchema = rotationInputSchema
     }
   });
 
+export const appearanceDefinitionSchema = z.strictObject({
+  font: z
+    .enum(FONT_IDS)
+    .describe(
+      "Choose standard for neutral use, handwriting for friendly/classroom use, elegant for formal or refined use, and print for clear notices."
+    ),
+  color: z
+    .enum(APPEARANCE_COLOR_IDS)
+    .describe(
+      "Choose a palette that fits the roster context. Examples: sunflower for cheerful classrooms, print for offices/notices, hydrangea for calm/refined settings, fresh_green for nature or care, night_sky for evening activities."
+    ),
+  texture: z
+    .enum(APPEARANCE_TEXTURE_IDS)
+    .describe(
+      "Choose smooth for clean/neutral layouts, textured for handmade/energetic layouts, and soft for warm/friendly layouts."
+    ),
+});
+
+export const appearancePatchSchema = appearanceDefinitionSchema.partial();
+
 export const scheduleDefinitionSchema = z.strictObject({
   name: boundedText(LIMITS.scheduleName).optional(),
   members: z.array(boundedText(LIMITS.memberName)).min(1).max(LIMITS.members),
@@ -81,6 +108,7 @@ export const scheduleDefinitionSchema = z.strictObject({
     .min(1)
     .max(LIMITS.groups),
   rotation: rotationDefinitionSchema.default({ mode: "manual" }),
+  appearance: appearanceDefinitionSchema.optional(),
 });
 
 export type RotationInput = z.output<typeof rotationInputSchema>;
@@ -112,7 +140,7 @@ export function createScheduleFromDefinition(
   // or schedule is created until the entire definition has passed validation.
   const validated = scheduleDefinitionSchema.parse(definition);
 
-  return {
+  const schedule: Schedule = {
     id: `s${nanoid()}`,
     name: validated.name ?? (locale === "ja" ? "新しい当番表" : "New schedule"),
     rotation: 0,
@@ -128,5 +156,9 @@ export function createScheduleFromDefinition(
       emoji: group.emoji ?? "📋",
     })),
     rotationConfig: toRotationConfig(validated.rotation),
+    fontId: getSavedFontId(),
   };
+  return validated.appearance
+    ? applyScheduleAppearance(schedule, validated.appearance)
+    : schedule;
 }

@@ -27,7 +27,7 @@ import { toast } from "sonner";
 /**
  * handleSaveSettings の保存ペイロード（Schedule の設定系フィールド）。
  * partial merge ではなく設定全体の置換。ただし rotationConfig のみ未指定時は現値維持で、
- * 他の optional（pinned / assignmentMode / designThemeId）は undefined で上書きされる。
+ * 他の optional（pinned / assignmentMode / designThemeId / fontId）は undefined で上書きされる。
  */
 export type ScheduleSettings = Omit<
   Schedule,
@@ -279,6 +279,7 @@ export function useScheduleManager() {
           : undefined,
         assignmentMode: source.assignmentMode,
         designThemeId: source.designThemeId,
+        fontId: source.fontId,
       };
       startTransition(() => {
         setState(prev => ({
@@ -300,6 +301,7 @@ export function useScheduleManager() {
         pinned,
         assignmentMode,
         designThemeId,
+        fontId,
       } = settings;
       updateActiveSchedule(schedule => ({
         ...schedule,
@@ -314,6 +316,7 @@ export function useScheduleManager() {
         pinned,
         assignmentMode,
         designThemeId,
+        fontId,
       }));
     },
     [updateActiveSchedule]

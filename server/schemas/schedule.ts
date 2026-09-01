@@ -5,6 +5,7 @@ import {
   rotationConfigSchema as baseRotationConfigSchema,
 } from "../../shared/schemas";
 import { LIMITS } from "../../shared/limits";
+import { FONT_IDS } from "../../shared/appearance";
 
 // Server-side: stricter validation with length limits and patterns
 // #RGB, #RRGGBB, #RRGGBBAA のみ許可（実際にクライアントが生成する形式）
@@ -51,6 +52,7 @@ export const createScheduleSchema = z
     rotationConfig: rotationConfigSchema,
     assignmentMode: z.enum(["member", "task"]).optional(),
     designThemeId: z.string().trim().min(1).max(50).optional(),
+    fontId: z.enum(FONT_IDS).optional(),
   })
   .superRefine((data, ctx) => {
     const memberIds = new Set(data.members.map(member => member.id));

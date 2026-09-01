@@ -95,6 +95,23 @@ describe("createScheduleFromDefinition", () => {
     });
   });
 
+  it("stores a complete typed appearance with the new roster", () => {
+    const schedule = createScheduleFromDefinition(
+      {
+        ...officeDefinition,
+        appearance: {
+          font: "elegant",
+          color: "hydrangea",
+          texture: "smooth",
+        },
+      },
+      "en"
+    );
+
+    expect(schedule.fontId).toBe("elegant");
+    expect(schedule.designThemeId).toBe("sarasara/lavender");
+  });
+
   it("keeps unequal counts and grouped tasks intact under existing cyclic assignment", () => {
     const definition = scheduleDefinitionSchema.parse({
       members: ["A", "B"],
@@ -171,6 +188,16 @@ describe("scheduleDefinitionSchema", () => {
       { task_groups: [{ tasks: ["A"], member_ids: ["A"] }] },
     ],
     ["unknown rotation key", { rotation: { weekday: "Monday" } }],
+    [
+      "unknown appearance choice",
+      {
+        appearance: {
+          font: "comic-sans",
+          color: "sunflower",
+          texture: "soft",
+        },
+      },
+    ],
     ["non-boolean skip", { rotation: { skip_saturday: "true" } }],
     [
       "invalid date",

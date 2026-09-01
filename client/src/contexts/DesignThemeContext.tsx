@@ -4,6 +4,8 @@ import {
   DEFAULT_HEADER_BG,
   type DesignTheme,
 } from "@/rotation/designThemes";
+import { applyFont, getFontById, getSavedFontId } from "@/fonts";
+import type { FontId } from "@shared/appearance";
 
 interface DesignThemeContextType {
   theme: DesignTheme;
@@ -13,9 +15,8 @@ const DesignThemeContext = createContext<DesignThemeContextType | undefined>(
   undefined
 );
 
-// フォント（--dt-font-family と太字トークン）は色テーマから独立したアプリ全体設定で、
-// client/src/fonts.ts が単独で所有・適用する。ここでは触らない（テーマ切替でフォントが
-// 巻き戻らないようにするため）。theme.typography は現状未使用。
+// フォントは色テーマと独立した軸で、Provider が当番表ごとの fontId を適用する。
+// theme.typography は旧テーマ互換のため残しているが現状未使用。
 export function applyThemeToRoot(theme: DesignTheme) {
   const root = document.documentElement;
   const { colors, borders, shadows, effects } = theme;
@@ -74,11 +75,13 @@ export function applyThemeToRoot(theme: DesignTheme) {
 
 interface DesignThemeProviderProps {
   themeId: string | undefined;
+  fontId?: FontId;
   children: React.ReactNode;
 }
 
 export function DesignThemeProvider({
   themeId,
+  fontId,
   children,
 }: DesignThemeProviderProps) {
   const theme = useMemo(() => getThemeById(themeId), [themeId]);
@@ -86,6 +89,10 @@ export function DesignThemeProvider({
   useEffect(() => {
     applyThemeToRoot(theme);
   }, [theme]);
+
+  useEffect(() => {
+    applyFont(getFontById(fontId ?? getSavedFontId()));
+  }, [fontId]);
 
   const value = useMemo(() => ({ theme }), [theme]);
 

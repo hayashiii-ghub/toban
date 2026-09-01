@@ -16,6 +16,7 @@ export function toScheduleData(schedule: Schedule): ScheduleData {
     rotationConfig,
     assignmentMode,
     designThemeId,
+    fontId,
   } = schedule;
   return {
     name,
@@ -25,6 +26,7 @@ export function toScheduleData(schedule: Schedule): ScheduleData {
     rotationConfig,
     assignmentMode,
     designThemeId,
+    fontId,
   };
 }
 

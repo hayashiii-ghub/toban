@@ -68,6 +68,7 @@ function fakeScheduleRow(overrides: Partial<Record<string, unknown>> = {}) {
     rotation_config_json: null,
     assignment_mode: null,
     design_theme_id: null,
+    font_id: null,
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",
     ...overrides,
@@ -259,6 +260,19 @@ describe("POST /api/schedules (Create)", () => {
     expect(res.status).toBe(400);
   });
 
+  it("returns 400 for an unknown font ID", async () => {
+    const mockDB = createMockD1(() => ({ results: [] }));
+    const app = await createTestApp(mockDB);
+
+    const res = await app.request("/api/schedules", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(validScheduleData({ fontId: "comic-sans" })),
+    });
+
+    expect(res.status).toBe(400);
+  });
+
   it("returns 400 when group references unknown member id", async () => {
     const mockDB = createMockD1(() => ({ results: [] }));
     const app = await createTestApp(mockDB);
@@ -286,7 +300,11 @@ describe("POST /api/schedules (Create)", () => {
 
 describe("GET /api/schedules/:slug (Public read)", () => {
   it("returns 200 for a public schedule", async () => {
-    const row = fakeScheduleRow({ is_public: 1 });
+    const row = fakeScheduleRow({
+      is_public: 1,
+      design_theme_id: "mochimochi/sunflower",
+      font_id: "handwriting",
+    });
     const mockDB = createMockD1(sql => {
       if (sql.includes("select")) return { results: [row] };
       return { results: [] };
@@ -309,6 +327,8 @@ describe("GET /api/schedules/:slug (Public read)", () => {
         textColor: "#000000",
       },
     ]);
+    expect(json.designThemeId).toBe("mochimochi/sunflower");
+    expect(json.fontId).toBe("handwriting");
   });
 
   it("returns 404 for a non-public schedule", async () => {

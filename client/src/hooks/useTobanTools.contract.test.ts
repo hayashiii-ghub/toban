@@ -216,12 +216,13 @@ afterEach(() => {
 });
 
 describe("registered tool contracts", () => {
-  it("exposes all seventeen tools, untrusted data hints and only four read-only tools", () => {
+  it("exposes all eighteen tools, untrusted data hints and only four read-only tools", () => {
     const h = harness();
     expect(h.tools.map(tool => tool.name).sort()).toEqual([
       "add_member",
       "advance_rotation",
       "change_view",
+      "configure_appearance",
       "configure_rotation",
       "create_schedule",
       "duplicate_schedule",
@@ -416,6 +417,36 @@ describe("read tools", () => {
 });
 
 describe("creation and retry", () => {
+  it("creates a roster with an agent-selected appearance in the same operation", async () => {
+    const h = harness();
+    const response = await h.run("create_schedule", {
+      definition: {
+        ...officeDefinition,
+        appearance: {
+          font: "handwriting",
+          color: "sunflower",
+          texture: "soft",
+        },
+      },
+    });
+
+    expect(response).toMatchObject({
+      ok: true,
+      applied: true,
+      configuration: {
+        appearance: {
+          font: "handwriting",
+          color: "sunflower",
+          texture: "soft",
+        },
+      },
+    });
+    expect(h.active()).toMatchObject({
+      fontId: "handwriting",
+      designThemeId: "mochimochi/sunflower",
+    });
+  });
+
   it("creates and selects one complete definition, then reads its actual settings", async () => {
     const h = harness();
     const response = await h.run("create_schedule", {
@@ -559,6 +590,59 @@ describe("creation and retry", () => {
 });
 
 describe("targeted edits", () => {
+  it("changes appearance atomically while preserving omitted axes", async () => {
+    const h = harness([
+      sched({
+        fontId: "standard",
+        designThemeId: "sarasara/whiteboard",
+      }),
+    ]);
+
+    expect(
+      await h.run("configure_appearance", {
+        font: "elegant",
+        color: "hydrangea",
+      })
+    ).toMatchObject({
+      ok: true,
+      applied: true,
+      configuration: {
+        appearance: {
+          font: "elegant",
+          color: "hydrangea",
+          texture: "smooth",
+        },
+      },
+    });
+    expect(h.active()).toMatchObject({
+      fontId: "elegant",
+      designThemeId: "sarasara/lavender",
+    });
+
+    expect(
+      await h.run("configure_appearance", { texture: "textured" })
+    ).toMatchObject({ ok: true, applied: true });
+    expect(h.active()).toMatchObject({
+      fontId: "elegant",
+      designThemeId: "zarazara/lavender",
+    });
+  });
+
+  it("rejects empty or unknown appearance choices without applying them", async () => {
+    const h = harness();
+    const before = structuredClone(h.state());
+
+    expect(await h.run("configure_appearance", {})).toMatchObject({
+      ok: false,
+      code: "INVALID_INPUT",
+      applied: false,
+    });
+    expect(
+      await h.run("configure_appearance", { color: "rainbow" })
+    ).toMatchObject({ ok: false, code: "INVALID_INPUT", applied: false });
+    expect(h.state()).toEqual(before);
+  });
+
   it("switches by unique name or ID, rejecting ambiguous names without selecting the first", async () => {
     const h = harness([
       sched(),
@@ -1488,7 +1572,7 @@ describe("useTobanTools registration", () => {
         ({ home }) => useTobanTools(home),
         { initialProps: { home: first.get() } }
       );
-      expect(documentRegister).toHaveBeenCalledTimes(17);
+      expect(documentRegister).toHaveBeenCalledTimes(18);
       expect(registerTool).not.toHaveBeenCalled();
       const registered = documentRegister.mock.calls.map(
         ([tool]) => tool as WebMCPTool
@@ -1498,7 +1582,7 @@ describe("useTobanTools registration", () => {
       );
       expect(signals.every(signal => !signal.aborted)).toBe(true);
       rerender({ home: second.get() });
-      expect(documentRegister).toHaveBeenCalledTimes(17);
+      expect(documentRegister).toHaveBeenCalledTimes(18);
       const read = registered.find(
         tool => tool.name === "get_schedule_details"
       )!;
@@ -1523,7 +1607,7 @@ describe("useTobanTools registration", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
       const { unmount } = renderHook(() => useTobanTools(harness().get()));
-      expect(registerTool).toHaveBeenCalledTimes(17);
+      expect(registerTool).toHaveBeenCalledTimes(18);
       expect(warn).toHaveBeenCalledOnce();
       unmount();
       expect(

@@ -8,6 +8,7 @@ import type {
   ScheduleTemplate,
   TaskGroup,
 } from "./types";
+import { getSavedFontId, isFontId } from "@/fonts";
 import { countSkipDays, isSkippedDate } from "./holidays";
 import {
   addDays,
@@ -142,6 +143,9 @@ export function sanitizeSchedule(schedule: unknown): Schedule | null {
   if (isNonEmptyString(schedule.designThemeId)) {
     result.designThemeId = schedule.designThemeId;
   }
+  result.fontId = isFontId(schedule.fontId)
+    ? schedule.fontId
+    : getSavedFontId();
   if (typeof schedule.pinned === "boolean") {
     result.pinned = schedule.pinned;
   }
@@ -232,6 +236,7 @@ export function createScheduleFromTemplate(
   if (template.designThemeId) {
     schedule.designThemeId = template.designThemeId;
   }
+  schedule.fontId = template.fontId ?? getSavedFontId();
   return schedule;
 }
 

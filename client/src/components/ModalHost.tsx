@@ -78,6 +78,7 @@ export function ModalHost({
               pinned={activeSchedule.pinned}
               assignmentMode={activeSchedule.assignmentMode}
               designThemeId={activeSchedule.designThemeId}
+              fontId={activeSchedule.fontId}
               canDelete={schedules.length > 1}
               onSave={onSaveSettings}
               onDuplicate={onDuplicateSchedule}

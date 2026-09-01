@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { FONT_IDS } from "./appearance";
 
 /** お問い合わせの種別（client の select と server の検証で共有し、drift を防ぐ） */
 export const CONTACT_CATEGORIES = [
@@ -50,6 +51,7 @@ const scheduleDataSchema = z.object({
   rotationConfig: rotationConfigSchema.optional(),
   assignmentMode: assignmentModeSchema.optional(),
   designThemeId: z.string().optional(),
+  fontId: z.enum(FONT_IDS).optional(),
 });
 
 /** スケジュールレスポンス（API応答用） */

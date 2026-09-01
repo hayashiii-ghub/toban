@@ -86,7 +86,10 @@ export default function Home() {
       : t("rotation.nth", { n: s.effectiveRotation });
 
   return (
-    <DesignThemeProvider themeId={s.activeSchedule.designThemeId}>
+    <DesignThemeProvider
+      themeId={s.activeSchedule.designThemeId}
+      fontId={s.activeSchedule.fontId}
+    >
       <main
         className="rotation-page min-h-screen"
         style={{ backgroundColor: "var(--dt-page-bg)" }}

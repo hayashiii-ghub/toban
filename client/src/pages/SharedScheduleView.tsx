@@ -18,6 +18,7 @@ import { PrintMenu } from "@/components/PrintMenu";
 import { usePrintDateString } from "@/hooks/usePrintDateString";
 import { usePrintMode } from "@/hooks/usePrintMode";
 import { useT } from "@/i18n";
+import { getSavedFontId } from "@/fonts";
 import "./home.css";
 
 export default function SharedScheduleView() {
@@ -122,6 +123,7 @@ export default function SharedScheduleView() {
       assignmentMode: schedule.assignmentMode,
       rotationConfig: schedule.rotationConfig,
       designThemeId: schedule.designThemeId,
+      fontId: schedule.fontId ?? getSavedFontId(),
     };
 
     const newState = {
@@ -177,7 +179,10 @@ export default function SharedScheduleView() {
       : t("rotation.nth", { n: effectiveRotation });
 
   return (
-    <DesignThemeProvider themeId={schedule?.designThemeId}>
+    <DesignThemeProvider
+      themeId={schedule?.designThemeId}
+      fontId={schedule?.fontId}
+    >
       <main
         className="rotation-page min-h-screen"
         style={{ backgroundColor: "var(--dt-page-bg)" }}

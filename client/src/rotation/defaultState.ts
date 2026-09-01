@@ -13,6 +13,7 @@ export const DEFAULT_APP_STATE: AppState = {
       rotation: 0,
       assignmentMode: "task",
       designThemeId: "sarasara/chalkboard",
+      fontId: "standard",
       groups: [
         {
           id: "g1",
@@ -91,6 +92,7 @@ export const DEFAULT_APP_STATE_EN: AppState = {
       rotation: 0,
       assignmentMode: "task",
       designThemeId: "sarasara/chalkboard",
+      fontId: "standard",
       groups: [
         {
           id: "g1",

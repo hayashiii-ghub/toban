@@ -1,3 +1,5 @@
+import type { FontId } from "./appearance";
+
 export interface TaskGroup {
   id: string;
   tasks: string[];
@@ -44,6 +46,7 @@ export interface Schedule {
   pinned?: boolean;
   assignmentMode?: AssignmentMode;
   designThemeId?: string;
+  fontId?: FontId;
 }
 
 export interface AppState {
@@ -58,6 +61,7 @@ export interface ScheduleTemplate {
   members: Member[];
   assignmentMode?: AssignmentMode;
   designThemeId?: string;
+  fontId?: FontId;
 }
 
 /** サーバーAPIが返すスケジュール表現。Scheduleとは別で、slugやタイムスタンプを持つ。 */
@@ -70,6 +74,7 @@ export interface ScheduleDTO {
   rotationConfig?: RotationConfig;
   assignmentMode?: AssignmentMode;
   designThemeId?: string;
+  fontId?: FontId;
   createdAt: string;
   updatedAt: string;
 }

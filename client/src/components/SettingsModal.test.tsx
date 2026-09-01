@@ -81,6 +81,7 @@ const createProps = (overrides: Record<string, unknown> = {}) => ({
   pinned: false,
   assignmentMode: "member" as const,
   designThemeId: "whiteboard",
+  fontId: "handwriting" as const,
   canDelete: true,
   onSave: vi.fn(),
   onDuplicate: vi.fn(),
@@ -127,6 +128,9 @@ describe("SettingsModal", () => {
     const { getByText } = queryDialog(container);
     fireEvent.click(getByText("保存する")!);
     expect(props.onSave).toHaveBeenCalledOnce();
+    expect(props.onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ fontId: "handwriting" })
+    );
   });
 
   it("複製ボタンでonDuplicateが呼ばれる", () => {

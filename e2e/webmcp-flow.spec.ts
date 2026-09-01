@@ -85,7 +85,7 @@ test.beforeEach(async ({ page }) => {
   await page.waitForFunction(
     () =>
       Object.keys((window as unknown as { tobanTools: object }).tobanTools)
-        .length === 17
+        .length === 18
   );
 });
 
@@ -174,7 +174,7 @@ test("one create, immediate edits, persisted reload and committed-view print", a
   await page.waitForFunction(
     () =>
       Object.keys((window as unknown as { tobanTools: object }).tobanTools)
-        .length === 17
+        .length === 18
   );
   expect(await call(page, "get_schedule_details")).toMatchObject({
     name: "3階の掃除当番",
@@ -318,7 +318,7 @@ for (const locale of ["ja", "en"] as const) {
     await page.waitForFunction(
       () =>
         Object.keys((window as unknown as { tobanTools: object }).tobanTools)
-          .length === 17
+          .length === 18
     );
     const custom =
       locale === "en"

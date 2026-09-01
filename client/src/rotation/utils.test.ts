@@ -365,18 +365,26 @@ describe("sanitizeSchedule", () => {
     ).toBeUndefined();
   });
 
-  it("preserves slug, editToken, designThemeId, pinned", () => {
+  it("preserves slug, editToken, designThemeId, fontId, pinned", () => {
     const result = sanitizeSchedule({
       ...validSchedule,
       slug: "abc",
       editToken: "tok123",
       designThemeId: "sakura",
+      fontId: "handwriting",
       pinned: true,
     });
     expect(result?.slug).toBe("abc");
     expect(result?.editToken).toBe("tok123");
     expect(result?.designThemeId).toBe("sakura");
+    expect(result?.fontId).toBe("handwriting");
     expect(result?.pinned).toBe(true);
+  });
+
+  it("replaces an unknown font ID with the safe legacy default", () => {
+    expect(
+      sanitizeSchedule({ ...validSchedule, fontId: "comic-sans" })?.fontId
+    ).toBe("standard");
   });
 
   it("sanitizes rotationConfig and strips invalid cycleDays", () => {

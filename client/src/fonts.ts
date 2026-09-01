@@ -1,9 +1,11 @@
-// アプリ全体のフォント設定。色テーマ（designThemes）とは独立した軸で、
-// localStorage に保存する個人設定。既定の Kiwi Maru は index.html で先読み済み。
-// それ以外は選択時に初めて取得する（遅延ロード）ので、既定ユーザーの負荷は増えない。
+// フォント定義。新しい当番表では Schedule.fontId が正本で、旧データだけ
+// localStorage の個人設定を互換用の初期値として使う。既定の Kiwi Maru は
+// index.html で先読みし、それ以外は選択時に初めて取得する。
+
+import { FONT_IDS, type FontId } from "@shared/appearance";
 
 interface AppFont {
-  id: string;
+  id: FontId;
   /** i18n キー（表示名） */
   labelKey: string;
   /** CSS font-family 値 */
@@ -47,19 +49,24 @@ export const APP_FONTS: AppFont[] = [
 const DEFAULT_FONT_ID = "standard";
 const FONT_STORAGE_KEY = "toban-font";
 
+export function isFontId(id: unknown): id is FontId {
+  return typeof id === "string" && FONT_IDS.some(value => value === id);
+}
+
 export function getFontById(id: string | null | undefined): AppFont {
   return APP_FONTS.find(f => f.id === id) ?? APP_FONTS[0];
 }
 
-export function getSavedFontId(): string {
+export function getSavedFontId(): FontId {
   try {
-    return localStorage.getItem(FONT_STORAGE_KEY) || DEFAULT_FONT_ID;
+    const saved = localStorage.getItem(FONT_STORAGE_KEY);
+    return isFontId(saved) ? saved : DEFAULT_FONT_ID;
   } catch {
     return DEFAULT_FONT_ID;
   }
 }
 
-export function saveFontId(id: string) {
+export function saveFontId(id: FontId) {
   try {
     localStorage.setItem(FONT_STORAGE_KEY, id);
   } catch {

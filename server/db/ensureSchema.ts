@@ -27,6 +27,10 @@ const REQUIRED_SCHEDULE_COLUMNS: RequiredColumn[] = [
     sql: "ALTER TABLE schedules ADD COLUMN design_theme_id text",
   },
   {
+    name: "font_id",
+    sql: "ALTER TABLE schedules ADD COLUMN font_id text",
+  },
+  {
     name: "is_public",
     sql: "ALTER TABLE schedules ADD COLUMN is_public integer DEFAULT 0 NOT NULL",
   },
