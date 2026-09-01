@@ -165,11 +165,11 @@ These English UI changes were first verified locally. The checks in this section
 - Localized all 32 built-in templates, including the blank starter: names, tasks and sample members are English when created in English. The picker, gallery, detail pages and template links use the same data. Saved rosters, IDs, assignments, colors and themes are preserved.
 - Template-based WebMCP creation accepts both the displayed English name and the original Japanese name; the created content follows the active interface language.
 - Shortened and aligned control labels, added singular/plural forms, localized theme names and the browser page title, and formatted future start dates in English. No new explanatory banners were added.
-- The holiday option explicitly says Japanese public holidays. English holiday names wrap inside calendar cells, including on narrow screens; holiday dates and rotation calculations are unchanged.
+- The holiday option explicitly says Japanese public holidays. English holiday names stay readable inside narrow calendar cells. The calculator also applies historical rule changes and one-off imperial holidays across the supported range, as described under Supported boundaries.
 - The built-in Getting started guide now follows language switching, including guides already saved in Japanese or the older English version. Its title, steps, descriptions, editor and print view agree; custom rosters and edited guides are not translated. Explicit edits, copies and sharing use the displayed language, while a language switch alone never writes a translation to the shared roster.
 - Before the tool extensions below, local checks passed 788 unit tests in 55 files and all 22 Playwright E2E tests, along with type checking, lint, formatting and the production build. English blank/template creation, switching languages without translating saved data, one/four-day settings, calendar labels, print output and sharing were exercised. Desktop, 390px mobile and print screenshots were reviewed independently.
 - The English sharing E2E uses an isolated in-memory API fixture, and printing records the dialog request plus print CSS. Those checks do not publish real schedules or prove a physical print/PDF save.
-- Template categories are shared through a small module so opening the app does not load the SEO template descriptions. The main bundle is about 631 kB; the existing 500 kB chunk warning remains.
+- Template categories are shared through a small module so opening the app does not load the SEO template descriptions. The main bundle is about 647 kB; the existing 500 kB chunk warning remains.
 
 ## English demo tool extensions (2026-08-31)
 
@@ -180,17 +180,24 @@ These English UI changes were first verified locally. The checks in this section
 - The complete release candidate passed 859 unit tests across 57 files and all 23 E2E tests, plus type, lint, formatting and production-build checks. Native WebMCP calls on localhost verified creation, duty editing, month selection, dated reads, confirmation, blocked edits and cancellation. Desktop, 390px and print images were visually checked.
 - E2E publication and print requests use isolated mocks. Local verification does not prove a public backend write or a physical print/PDF save.
 
-### Current production release (2026-08-31)
+### Previous production release (2026-08-31, historical)
 
 - GitHub `main` and the deployed source are `c8639d3`. [GitHub Actions run 33386966425](https://github.com/hayashiii-ghub/toban-app/actions/runs/33386966425) passed formatting, type checking, lint, coverage tests and the production build for that exact commit. The workflow at that time skipped E2E on a direct `main` push, so the 23 E2E results above are local release evidence rather than CI evidence.
 - The canonical Cloudflare deployment produced Worker version `46d5cff5-0836-4d78-b485-7636c0102d5d`. The live entry asset `/assets/index-8q8hLtrd.js` matched the local production build (SHA-256 `6e8e451a7b0f7148024ce287738e8d4f3416de61ec0346478b92d2e267c4ccd9`). `/api/health/schema` returned `200` with `ok: true`.
 - Production UI smoke covered English creation, editing, local/cloud persistence, reload, calendar display, explicit sharing and a separate public page. The synthetic roster was then deleted and its public API returned 404. Existing user rosters were not changed. The user separately confirmed native WebMCP operation in Chrome/nekuda.
 
+### Current production release (2026-09-01)
+
+- Runtime implementation `fffe72d` is published on GitHub `main`. [GitHub Actions run 33479725803](https://github.com/hayashiii-ghub/toban-app/actions/runs/33479725803) passed formatting, type checking, lint, **871 coverage tests in 58 files**, the production build and **25 Playwright E2E tests** for that exact commit. E2E now runs on both pull requests and direct `main` pushes.
+- Candidate-pool edits now reject removal or exclusion of the final eligible member atomically. An `update_schedule` retry with an omitted roster ID replays its first result even if the active tab changes, and mutation results no longer return the removed shared-roster sync note. Historical holiday dates from 1980 through 2027 match the Cabinet Office CSV.
+- The canonical Cloudflare deployment produced Worker version `9c662bb0-45e7-4339-bd7f-3c163b0f31e9`. Cache-bypassed live HTML served `/assets/index-Bqcyg9Xy.js`, which matched the local production build (SHA-256 `40ef65e5c4265dbff1eba9f945981b1480e510a46d8d686600dc5666ba7407e3`). `/api/health/schema` returned `200` with `ok: true`.
+- Fresh English production pages were visually checked at desktop and 390px widths with service workers blocked. The Getting started guide, `/junban` samples, FAQ, contact form and public-page layout rendered in English without horizontal overflow. This was read-only verification; no production roster was created or changed.
+
 ## What is new for the challenge
 
 The pre-extension baseline is `e03ddbb` (2026-08-13). Toban already had sixteen WebMCP tools, including template-only creation and printing, before the challenge. This work adds complete custom-definition creation, targeted task edits, stable target resolution, strict errors, structured/paged read results, truthful local-save/publication outcomes and the state/sync protections needed for fast follow-up commands. The existing app and original tools are not presented as newly created for the event.
 
-Review the fixed published range [`e03ddbb..c8639d3`](https://github.com/hayashiii-ghub/toban-app/compare/e03ddbb...c8639d3) for the challenge work. Existing-project eligibility and submission requirements must be checked against the [official challenge rules](https://webmcp.devpost.com/rules).
+Review the fixed published range [`e03ddbb..fffe72d`](https://github.com/hayashiii-ghub/toban-app/compare/e03ddbb...fffe72d) for the challenge work. Existing-project eligibility and submission requirements must be checked against the [official challenge rules](https://webmcp.devpost.com/rules).
 
 For the eventual public demo, keep one 90–100-second flow: detailed request → completed roster → one-line task correction → print preview. Use English narration and visible product output; keep tool-contract and failure-test details in this document. Recording, public YouTube upload and final submission remain separate actions. Production deployment, the UI/API smoke and user-confirmed production WebMCP operation are complete as recorded above.
 
