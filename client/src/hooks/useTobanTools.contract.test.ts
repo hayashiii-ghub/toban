@@ -1474,7 +1474,7 @@ describe("useTobanTools registration", () => {
     }
   });
 
-  it("registers once using navigator, refreshes state, and unregisters via the abort signal", async () => {
+  it("registers once using document, refreshes state, and unregisters via the abort signal", async () => {
     const registerTool = vi.fn();
     const documentRegister = vi.fn();
     const restore = setContexts(
@@ -1488,17 +1488,17 @@ describe("useTobanTools registration", () => {
         ({ home }) => useTobanTools(home),
         { initialProps: { home: first.get() } }
       );
-      expect(registerTool).toHaveBeenCalledTimes(17);
-      expect(documentRegister).not.toHaveBeenCalled();
-      const registered = registerTool.mock.calls.map(
+      expect(documentRegister).toHaveBeenCalledTimes(17);
+      expect(registerTool).not.toHaveBeenCalled();
+      const registered = documentRegister.mock.calls.map(
         ([tool]) => tool as WebMCPTool
       );
-      const signals = registerTool.mock.calls.map(
+      const signals = documentRegister.mock.calls.map(
         ([, options]) => (options as WebMCPRegisterToolOptions).signal!
       );
       expect(signals.every(signal => !signal.aborted)).toBe(true);
       rerender({ home: second.get() });
-      expect(registerTool).toHaveBeenCalledTimes(17);
+      expect(documentRegister).toHaveBeenCalledTimes(17);
       const read = registered.find(
         tool => tool.name === "get_schedule_details"
       )!;
@@ -1515,11 +1515,11 @@ describe("useTobanTools registration", () => {
     }
   });
 
-  it("falls back to document and continues registering after an individual failure", () => {
+  it("falls back to navigator and continues registering after an individual failure", () => {
     const registerTool = vi.fn().mockImplementationOnce(() => {
       throw new Error("unsupported tool");
     });
-    const restore = setContexts(undefined, { registerTool });
+    const restore = setContexts({ registerTool }, undefined);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
       const { unmount } = renderHook(() => useTobanTools(harness().get()));

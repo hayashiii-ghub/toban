@@ -3,8 +3,8 @@
 //       https://developer.chrome.com/docs/ai/webmcp (Chrome 実装)
 //
 // 表記揺れ / spec churn をこの 1 ファイルに隔離する:
-// - Chrome の flag 実装 (chrome://flags/#enable-webmcp-testing) は navigator.modelContext
-// - spec draft は document.modelContext
+// - 現行 API / spec draft は document.modelContext
+// - 旧 Chrome 実装は navigator.modelContext
 // useTobanTools 側で両方を feature-detect するため、どちらも optional で宣言する。
 
 /** execute の戻り値。MCP 互換の content 配列。 */

@@ -1195,7 +1195,7 @@ export function useTobanTools(s: HomeState): void {
     ref.current = s;
   });
   useEffect(() => {
-    const mc = navigator.modelContext ?? document.modelContext;
+    const mc = document.modelContext ?? navigator.modelContext;
     if (!mc) return;
     const controller = new AbortController();
     for (const tool of buildTobanTools(() => ref.current, controller.signal)) {
