@@ -102,7 +102,11 @@ export const scheduleDefinitionSchema = z.strictObject({
           .array(boundedText(LIMITS.task))
           .min(1)
           .max(LIMITS.tasksPerGroup),
-        emoji: boundedText(LIMITS.emoji).optional(),
+        emoji: boundedText(LIMITS.emoji)
+          .describe(
+            "Choose one semantically appropriate emoji for this duty based on its task names and context."
+          )
+          .optional(),
       })
     )
     .min(1)
