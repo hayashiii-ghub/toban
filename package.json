@@ -30,7 +30,7 @@
     "@sentry/react": "^10.52.0",
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.40.0",
-    "hono": "^4.12.32",
+    "hono": "^4.13.5",
     "lucide-react": "^1.14.0",
     "nanoid": "^6.0.0",
     "react": "^19.2.7",

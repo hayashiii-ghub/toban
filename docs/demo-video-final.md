@@ -1,9 +1,22 @@
-# Toban WebMCP demo video — final shooting plan
+# Toban WebMCP demo video — final 120-second edit
 
-Status: production-ready shooting plan, not yet recorded  
-Verified against: `main` at `f8ec0d6` and the production ChatGPT in-app browser on 2026-09-01  
-Target duration: 1:54 (acceptable range: 1:51–1:57)  
-Format: 1920 × 1080, 16:9, English UI, English narration and captions
+Status: final master published on YouTube; final source release evidence pending
+
+Demo video: [https://youtu.be/4CSxh6WW51w](https://youtu.be/4CSxh6WW51w)
+
+Live app: [https://toban.app/](https://toban.app/)
+
+Source: [github.com/hayashiii-ghub/toban-app](https://github.com/hayashiii-ghub/toban-app)
+
+Duration: 2:00
+
+Format: 1920 × 1080, 30 fps, H.264 video with AAC audio, English narration and captions
+
+Reviewed master: `Toban-WebMCP-Challenge-final.mp4`
+
+SHA-256: `7859a787b8de03c0176ba64584835f0693ade96e952c6fb689595ce80ac27794`
+
+Voice: HeyGen `Annie - Lifelike`, female American English
 
 ## Creative lock
 
@@ -13,173 +26,123 @@ Format: 1920 × 1080, 16:9, English UI, English narration and captions
 
 **Core message**
 
-> The agent interprets. Toban validates. You stay in control.
+> The agent interprets. Toban validates the roster and calculates the rotation. You stay in control.
 
-**Demo roster**
+The edit uses the real Toban and WebMCP-client recording as the main visual. It keeps cause and effect in recorded order, trims waiting and window-switch frames, and adds only restrained crops, captions, a short brand intro and a short brand close.
 
-- Name: `Classroom Helpers`
+## Final sequence
+
+| Time      | Picture and product evidence                                                                                                                    | Principal WebMCP evidence                                                  | Narration purpose                                                                                                        |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 0:00–0:05 | Toban title and product footage                                                                                                                 | —                                                                          | One plain-language request becomes a complete editable roster.                                                           |
+| 0:05–0:17 | Existing Toban UI remains visible                                                                                                               | 18 typed page tools                                                        | Establish that WebMCP uses Toban's real roster actions.                                                                  |
+| 0:17–0:27 | The complete classroom request and structured call are shown together                                                                           | `create_schedule`, `change_view`                                           | Plain-language intent becomes structured roster actions; Toban owns supported-input validation and rotation calculation. |
+| 0:27–0:48 | `Classroom Helpers` appears as a styled Table with Alex, Maya, Leo, Zoe and four separate duties                                                | Structured members, task groups, rotation, view, appearance and task emoji | Show one-request creation as a normal editable Toban roster.                                                             |
+| 0:48–1:01 | Plant Care becomes Supply Check; appearance and task eligibility are changed without replacing the roster                                       | `get_schedule_details`, `update_schedule`, `configure_appearance`          | Show narrow follow-ups that preserve unrelated fields.                                                                   |
+| 1:01–1:13 | `Library Desk Rotation` appears as September 2026 Calendar; weekends and Japanese holidays remain paused                                        | `create_schedule`, `change_view`                                           | Show Toban's three-eligible-day rotation calculation.                                                                    |
+| 1:13–1:22 | September 24 is queried while the roster and displayed month remain unchanged                                                                   | `get_schedule_details`, `get_current_assignments`                          | Show a read-only answer calculated from saved rules.                                                                     |
+| 1:22–1:30 | `Workshop Roles` appears as a manual Wheel and advances one step, from turn 0 to turn 1                                                         | `create_schedule`, `change_view`, `advance_rotation`                       | Show a non-date workflow and a precise state change.                                                                     |
+| 1:30–1:41 | Structured assignments are verified; Zoe becomes Zoey while the Wheel and current turn remain                                                   | `get_schedule_details`, `get_current_assignments`, `update_member`         | Show verification after mutation and a narrow member edit.                                                               |
+| 1:41–1:53 | The agent prepares sharing; Toban displays its confirmation dialog; the recording stops before any human publish action or public-link creation | `prepare_share`, visible confirmation, then agent stop                     | Make the publication boundary visible without implying publication.                                                      |
+| 1:53–2:00 | Completed product footage and Toban end card                                                                                                    | —                                                                          | Restate responsibility: agent interprets, Toban validates and calculates, person controls publication.                   |
+
+The visible client may perform additional reads. Do not claim that each scene has a fixed number of tool calls; the submission claim is that Toban exposes 18 typed tools in total.
+
+## Demo rosters
+
+### Classroom Helpers — Table and refinements
+
 - Members: Alex, Maya, Leo, Zoe
-- Duties: Materials, Whiteboard, Recycling, Plant Care
+- Initial duties: Materials, Whiteboard, Recycling, Plant Care
 - Start: September 1, 2026
 - Rotation: every eligible weekday
 - Paused dates: Saturdays, Sundays and Japanese public holidays
-- Initial view: Table
-- Appearance intent: cheerful and friendly for an elementary classroom
-- Expected agent choice: Handwriting / Sunflower / Soft
-- Follow-up edit: Plant Care → Supply Check
+- Initial presentation: Table
+- Initial visual intent: cheerful and friendly for an elementary classroom
+- Follow-ups shown: Plant Care → Supply Check; appearance-only change; ordered eligibility pools for selected duties
 
-Use fictional names only. Do not introduce a second roster, printing, templates, the wheel view, implementation internals or test counts.
+### Library Desk Rotation — Calendar and read-only query
 
-## Exact prompts
+- Members: Emma, Noah, Olivia, Liam
+- Duties: Welcome Desk, Returns, Shelf Check, Reading Area
+- Start: September 1, 2026
+- Rotation: every three eligible days
+- Paused dates: Saturdays, Sundays and Japanese public holidays
+- Presentation: September 2026 Calendar
+- Read-only query: assignment on September 24, 2026 without changing roster state or the displayed month
 
-### 1. Create the roster
+### Workshop Roles — manual Wheel
 
-> Create a roster called Classroom Helpers for Alex, Maya, Leo, and Zoe. Use four separate duties, one per person each turn: Materials, Whiteboard, Recycling, and Plant Care. Start on September 1, 2026, rotate every eligible weekday, pause on Saturdays, Sundays, and Japanese holidays, and show it as a table. Choose a cheerful, friendly visual style for an elementary classroom, including the font, color, and texture.
+- Members: Alex, Maya, Leo, Zoe
+- Duties: Facilitator, Timekeeper, Note Taker, Equipment Check
+- Rotation: manual
+- Presentation: Wheel (`disc` in the tool contract)
+- Follow-ups shown: advance one turn; verify assignments from structured reads; rename Zoe to Zoey while preserving the Wheel and current turn
 
-Expected minimum sequence:
+Use fictional names only. Printing and templates are omitted from the final edit.
 
-```text
-create_schedule
-→ change_view
-```
+## Exact final narration
 
-The client may perform additional reads. Do not claim a fixed number of tool calls.
-
-### 2. Make one targeted change
-
-> Replace Plant Care with Supply Check.
-
-Expected minimum sequence:
-
-```text
-get_schedule_details
-→ update_schedule
-```
-
-### 3. Show the date calculation
-
-> Show this roster as a calendar for September 2026.
-
-Expected call:
-
-```text
-change_view
-```
-
-The call should select `calendar` with month `2026-09`.
-
-### 4. Prepare sharing
-
-> Share this roster with the class.
-
-Expected call:
-
-```text
-prepare_share
-```
-
-The tool only opens confirmation. The person recording must click **Share schedule** in Toban.
-
-### 5. Verify publication
-
-> Verify the public link.
-
-Expected call:
-
-```text
-get_share_link
-```
-
-## Timeline
-
-| Time      | Picture and action                                                                                                                                                                                                                 | Evidence retained                                                                                  | Narration                                                                                                                                                                                         | Proof overlay                                                                      |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| 0:00–0:08 | Start with the clean English Toban page and a new English-only ChatGPT task. The first request is pasted but not yet sent.                                                                                                         | Existing Toban product and a clean first request                                                   | **Toban is a human-first duty-roster app. For this challenge, I exposed its live domain model to agents through WebMCP.**                                                                         | `Human-first app + typed WebMCP domain tools`                                      |
-| 0:08–0:18 | Hold on the complete request for two seconds, then send it.                                                                                                                                                                        | People, duties, date, rotation, excluded days, view and visual intent are readable                 | **In one request, I describe the people, duties, rotation rules, view, and the feeling the roster should have.**                                                                                  | `One natural-language request`                                                     |
-| 0:18–0:32 | Keep the real `create_schedule` and `change_view` tool cards and the resulting Table view in one continuous cause-and-effect sequence. Briefly reveal the structured `members`, `task_groups`, `rotation` and `appearance` fields. | Real typed calls and the completed styled, editable roster                                         | **The agent chooses a fitting font, color, and texture along with the roster definition. Toban validates everything, calculates the rotation, saves it, and renders the result.**                 | `Agent · interprets intent` then `Toban · validates · calculates · saves`          |
-| 0:32–0:42 | Hold on the completed Table long enough to read the four people, four duties and rotation columns.                                                                                                                                 | `Classroom Helpers` as a normal Toban roster                                                       | **This is not a generated answer. It is the same roster people can still inspect and edit in the app.**                                                                                           | `A normal, editable Toban roster`                                                  |
-| 0:42–0:58 | Send the edit request. Retain `get_schedule_details` and `update_schedule`, then zoom briefly to the changed row.                                                                                                                  | Plant Care alone becomes Supply Check; people, dates and rotation remain unchanged                 | **For the follow-up, the agent reads the roster's structured details and replaces only Plant Care. The people, dates, and rotation rules stay unchanged.**                                        | `Structured read → targeted update` then `Plant Care → Supply Check`               |
-| 0:58–1:16 | Send the calendar request. Show `change_view`, then zoom to September 18–24. September 21–23 have holiday labels and no assignments; September 24 resumes at the next eligible turn.                                               | Toban's calendar calculation and the three-day Japanese holiday pause                              | **When I ask for September, Toban—not the model—computes the calendar. Weekends and Japan's September twenty-first through twenty-third holidays pause the rotation without advancing the turn.** | `Schedule logic runs in Toban—not in the model` then `Sep 21–23 · rotation paused` |
-| 1:16–1:34 | Send the sharing request and show `prepare_share`. Keep the confirmation and the result `CONFIRMATION_REQUIRED`, `applied: false` visible. Without a cut, move the human cursor to **Share schedule** and click.                   | The agent requests sharing, but publication remains unchanged until the visible human confirmation | **Public sharing has a different boundary. The WebMCP tool opens this confirmation, but it does not publish. I review the roster and choose Share schedule in the page.**                         | `Agent · requests sharing` then `Human · publishes in the page`                    |
-| 1:34–1:46 | Ask to verify the link. Show the real `get_share_link` card, `publication: public` and the verified view-only URL.                                                                                                                 | Publication verification occurs only after the human action                                        | **Only after that human action can the agent verify that the public link is live.**                                                                                                               | `Website · public link verified`                                                   |
-| 1:46–1:54 | Keep the finished `Classroom Helpers` roster visible and add the restrained Toban end card.                                                                                                                                        | Final product state                                                                                | **The agent interprets. Toban validates. You stay in control.**                                                                                                                                   | `The agent interprets.` / `Toban validates.` / `You stay in control.`              |
-
-## Final narration
-
-> Toban is a human-first duty-roster app. For this challenge, I exposed its live domain model to agents through WebMCP.
+> Toban turns one plain-language request into a complete, editable duty roster.
 >
-> In one request, I describe the people, duties, rotation rules, view, and the feeling the roster should have.
+> Toban is a human-first roster app. For this challenge, I extended its Web M C P surface to eighteen typed tools, letting an agent use real roster actions directly on the page.
 >
-> The agent chooses a fitting font, color, and texture along with the roster definition. Toban validates everything, calculates the rotation, saves it, and renders the result.
+> Web M C P turns that plain-language intent into Toban's structured roster actions. Toban validates the supported roster definition and calculates the actual rotation.
 >
-> This is not a generated answer. It is the same roster people can still inspect and edit in the app.
+> In one request, I specify the people, four separate duties, the start date, eligible weekdays, excluded holidays, the table view, and a classroom-friendly appearance. The agent passes that complete definition to Toban. Toban validates it, calculates the rotation, saves it, and returns a normal editable table.
 >
-> For the follow-up, the agent reads the roster's structured details and replaces only Plant Care. The people, dates, and rotation rules stay unchanged.
+> Short follow-ups change only the requested fields. Toban preserves the people and rotation rules while updating one duty, changing the visual style, or limiting who is eligible for a task.
 >
-> When I ask for September, Toban—not the model—computes the calendar. Weekends and Japan's September twenty-first through twenty-third holidays pause the rotation without advancing the turn.
+> The same tools can create a library rotation that advances every three eligible days. Toban handles weekends and Japanese holidays, and the agent can query a future assignment without changing the roster.
 >
-> Public sharing has a different boundary. The WebMCP tool opens this confirmation, but it does not publish. I review the roster and choose Share schedule in the page.
+> The answer comes from two read-only tools over Toban's saved rotation rules. It checks September twenty-four while the roster and displayed month stay completely unchanged.
 >
-> Only after that human action can the agent verify that the public link is live.
+> For work without dates, the agent creates a manual wheel. One follow-up advances the complete rotation by exactly one turn.
 >
-> The agent interprets. Toban validates. You stay in control.
+> After changing state, the agent verifies every assignment from structured details. A narrow member update then preserves the wheel and current turn.
+>
+> Publishing stays under human control. The agent can prepare the share step, but Toban stops at a visible confirmation. Nothing is published unless the person reviews the roster and decides to share it.
+>
+> The agent interprets. Toban validates the roster and calculates the rotation. You stay in control.
 
-The narration is 183 spoken words. Read calmly and leave short silent gaps for the viewer to inspect each result.
+## Truthfulness boundaries
 
-## Recording setup
-
-- Record the production site at `https://toban.app/`.
-- Record in a new, clean ChatGPT task with Toban open in the in-app browser. Do not record the implementation or debugging task.
-- Use English for the UI, roster content, agent conversation, narration and captions.
-- Use a clean browser state. Close onboarding and remove any earlier `Classroom Helpers` roster before recording.
-- Keep the Getting started guide only if removing it would make the starting state look unnatural; do not open it during the demo.
-- Use 1920 × 1080, browser zoom 100%, hidden bookmark bar and disabled notifications.
-- Set the ChatGPT window to 1512 × 850 before capture. The Cap Window export was locally verified at 1920 × 1080, 30 fps with this geometry; the current preparation task is not final footage.
-- Keep Toban at roughly 70–75% of the frame and the agent/tool evidence at 25–30%.
-- Keep the full natural-language request, the real WebMCP tool name and the resulting Toban change contiguous in every beat.
-- Record creation through link verification as one continuous master session. Capture two or three complete takes, choose the most stable one, and trim only inactive waits in Cap so roster identity, publication state and tool history stay consistent.
-- Cut waiting time and long agent prose. Do not replace real tool execution with fabricated JSON or a simulated success state.
-- The production ChatGPT in-app browser is the primary recording path. It was verified with the previous 17-tool release and a successful real WebMCP call on `f8ec0d6`; re-verify the new 18-tool appearance release before recording. Chrome with nekuda remains the fallback.
-- Reload the production tab twice, or close and reopen it, before the preflight check so an older service-worker asset cannot survive into the take.
-- In a separate preflight task, run `list_schedules` without making changes. Start the take only when `Getting started` is the sole roster and `Classroom Helpers` does not exist.
-- Keep client branding, logos and mascots outside the final frame. If the verified client cannot be framed or cropped without retaining an unlicensed third-party mark, obtain permission or use another verified client.
-- Keep full narration subtitles in a fixed lower-third area, at no more than two lines. Show at most one proof overlay at a time in a separate upper area; use proof overlays only for real tool names, the changed duty and the paused-date result.
-- Use no unlicensed music, third-party logos or mascots. Do not add a fake client label or fabricated interface.
-- Use only the default view-only sharing tab. Never expose or select the edit-link tab or edit token.
-
-## Rehearsal acceptance checks
-
-- `Classroom Helpers` does not already exist before the first take.
-- Creation produces four separate rows and four members in Table view.
-- The Start column is Materials=Alex, Whiteboard=Maya, Recycling=Leo, Plant Care=Zoe.
-- The targeted edit changes only Plant Care to Supply Check.
-- September 21, 22 and 23 show English Japanese-holiday labels and no assignments.
-- September 24 resumes one turn after September 18; the paused dates do not advance the rotation.
-- `prepare_share` reports confirmation required and does not publish before the click.
-- The human click on **Share schedule** is visible in the uninterrupted footage.
-- `get_share_link` runs only after confirmation and reports a public view-only URL.
-- The verified public URL is opened and shows the same `Classroom Helpers` roster.
-- The resulting public roster remains available through the judging period if its URL is shown in the video.
-- The final export targets 1:54 and remains within 1:51–1:57.
-- The final export includes audible English narration and contains no unlicensed third-party trademarks or copyrighted music.
-
-## Editing boundaries
-
-Permitted edits: trim inactive waits, add gentle crops or push-ins, add concise captions, normalize narration volume and remove accidental dead air.
-
-Do not reorder cause and effect. Each sequence must remain visibly truthful:
+Each sequence must preserve the real order:
 
 ```text
 natural-language request
-→ actual WebMCP tool name
+→ actual page-defined WebMCP tool
 → actual Toban result
 ```
 
-For sharing, preserve the full boundary:
+For public sharing, preserve the full boundary:
 
 ```text
 prepare_share
-→ confirmation appears
-→ person clicks Share schedule
-→ get_share_link verifies publication
+→ Toban shows confirmation; applied is still false
+→ the agent stops
+→ the recording ends before any person publishes or any public URL exists
 ```
+
+Do not describe `prepare_share` as publication. Do not show an edit token. Do not claim that the model calculates rotation dates, that a print request proves PDF creation, or that an unverified source revision is deployed.
+
+## Final review and publication gate
+
+1. Review the final export at normal speed and at the exact scene boundaries above. Check for frozen footage, mismatched captions, exposed window-switch frames, stale Getting started footage, accidental client branding, dead air and cropped controls.
+2. Confirm audible narration through the closing line and continuous visual coverage from 0:00 through 2:00.
+3. The application verification passed locally after the Hono 4.13.5 security update. Re-run it if source changes during final cleanup:
+
+   ```sh
+   corepack enable
+   pnpm install --frozen-lockfile
+   pnpm format:check
+   pnpm check
+   pnpm lint
+   pnpm test:coverage
+   pnpm build
+   pnpm exec playwright install chromium  # first run only
+   pnpm test:e2e
+   ```
+
+4. Final source commit, CI run, Worker version and deployed asset: **TODO — record after release.** Deploy through the repository's canonical `pnpm run deploy:cf` path, then verify the live asset and `/api/health/schema`.
+5. YouTube upload: complete — [watch the public demo](https://youtu.be/4CSxh6WW51w). Submit the challenge entry only after the final source release evidence and public checks are complete.

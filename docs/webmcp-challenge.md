@@ -2,7 +2,15 @@
 
 Toban turns a chat request into an editable, printable duty roster on the page. A WebMCP-capable client interprets the request and calls Toban's domain tools. Toban does not embed a chatbot or require an LLM API key.
 
-**Status: published at [toban.app](https://toban.app/) on 2026-08-31; not submitted to the challenge.** Local WebMCP conversations and production UI saving/sharing were verified separately. The user also confirmed WebMCP works on production in Chrome/nekuda on 2026-08-31. The Codex in-app connection itself did not discover production tools, and its Chrome connection did not expose a WebMCP capability. A public demo video and submission remain outstanding.
+**Submission status (2026-09-03):** the app is live at [toban.app](https://toban.app/), the source is public at [github.com/hayashiii-ghub/toban-app](https://github.com/hayashiii-ghub/toban-app), and the final 2:00 master has passed technical and editorial QA. **Demo video:** [https://youtu.be/4CSxh6WW51w](https://youtu.be/4CSxh6WW51w). Challenge submission remains pending until the final source release and public checks are complete.
+
+## Judge-facing summary
+
+- **18 typed WebMCP tools** expose Toban's existing roster actions and domain rules on the page.
+- The agent converts an ordinary-language request into structured actions; **Toban validates the data and calculates the rotation**.
+- The final 2:00 demo shows three real outputs: a styled classroom Table with targeted edits, a library Calendar with weekend/holiday handling and a read-only future-date query, and a manually advanced Workshop Wheel.
+- Public sharing remains a human decision: `prepare_share` opens a visible confirmation with `applied: false`, and the demo ends there. A person must decide whether to publish before `get_share_link` can verify any public result.
+- Toban remains useful without an agent and does not embed a chatbot or require an LLM API key.
 
 ## Try the experience
 
@@ -10,21 +18,19 @@ English browsers start in English. You can also use the language button at the b
 
 With a connected WebMCP client, open Toban's home page and ask:
 
-> Create Office duties for Alex, Sam, Riley and Jordan. Four separate duties: vacuuming, rubbish, wiping desks and watering plants. Start September 1, 2026, rotate each eligible day, and pause rotation on Saturdays, Sundays and Japanese holidays. Show it as a table.
+> Create a roster called Classroom Helpers for Alex, Maya, Leo, and Zoe. Use four separate duties, one per person each turn: Materials, Whiteboard, Recycling, and Plant Care. Start on September 1, 2026, rotate every eligible weekday, pause on Saturdays, Sundays, and Japanese holidays, and show it as a table. Choose a fitting emoji for each duty and a cheerful, friendly font, color, and texture for an elementary classroom.
 
 Then:
 
-> Replace watering plants with restocking supplies.
+> Replace Plant Care with Supply Check. Keep the members, rotation rules, view, and appearance unchanged.
 
-> Open the print preview.
-
-The intended flow is one complete creation operation, one view change when requested, and a targeted edit. The user supplies ordinary language, not template names, tool names or JSON. Missing essential people/tasks need clarification; colors, emoji and an optional roster name have defaults.
+The intended flow is one complete creation operation followed by a targeted edit. The user supplies ordinary language, not template names, tool names or JSON. Missing essential people/tasks need clarification; an optional roster name, colors and emoji have safe defaults.
 
 Japanese equivalent:
 
-> 「オフィス掃除当番」を作って。葵、蓮、美咲、悠の4人。床掃除、ゴミ出し、机拭き、植物の水やりを1人1つ。2026年9月1日から平日ごとに交代し、土日と日本の祝日は交代を進めない。早見表で見せて。
+> 「Classroom Helpers」という当番表を作って。メンバーは Alex、Maya、Leo、Zoe。仕事は Materials、Whiteboard、Recycling、Plant Care を1人1つ。2026年9月1日から平日ごとに交代し、土日と日本の祝日は交代を進めない。早見表で表示して、各仕事に合う絵文字と、小学校の教室に合う明るく親しみやすいフォント、色、質感を選んで。
 
-> 植物の水やりを備品補充に変えて。
+> Plant Care だけを Supply Check に変えて。メンバー、交代条件、表示、見た目は変えないで。
 
 ## Supported boundaries
 
@@ -58,7 +64,18 @@ In this implementation session, Codex Desktop's in-app browser discovered and ca
 
 ## Tool contract
 
-The current page registers eighteen WebMCP tools. It retains the sixteen baseline tool names and adds `prepare_share` for human-confirmed publication plus `configure_appearance` for typed visual customization. `create_schedule` accepts exactly one of the legacy `template` name or a complete `definition`:
+The current page registers eighteen WebMCP tools. It retains the sixteen baseline tool names and adds `prepare_share` for a typed agent-to-human handoff before Toban's existing human publication action, plus `configure_appearance` for typed visual customization.
+
+| Capability                           | Tools                                                                                 |
+| ------------------------------------ | ------------------------------------------------------------------------------------- |
+| Read and verify                      | `list_schedules`, `get_current_assignments`, `get_schedule_details`, `get_share_link` |
+| Select and present                   | `switch_schedule`, `change_view`, `print_schedule`                                    |
+| Create and copy                      | `create_schedule`, `duplicate_schedule`                                               |
+| Refine roster content                | `update_schedule`, `add_member`, `remove_member`, `update_member`                     |
+| Configure and advance                | `configure_appearance`, `set_rotation`, `configure_rotation`, `advance_rotation`      |
+| Prepare human-controlled publication | `prepare_share`                                                                       |
+
+`create_schedule` accepts exactly one of the legacy `template` name or a complete `definition`:
 
 ```json
 {
@@ -191,19 +208,25 @@ These English UI changes were first verified locally. The checks in this section
 - The canonical Cloudflare deployment produced Worker version `46d5cff5-0836-4d78-b485-7636c0102d5d`. The live entry asset `/assets/index-8q8hLtrd.js` matched the local production build (SHA-256 `6e8e451a7b0f7148024ce287738e8d4f3416de61ec0346478b92d2e267c4ccd9`). `/api/health/schema` returned `200` with `ok: true`.
 - Production UI smoke covered English creation, editing, local/cloud persistence, reload, calendar display, explicit sharing and a separate public page. The synthetic roster was then deleted and its public API returned 404. Existing user rosters were not changed. The user separately confirmed native WebMCP operation in Chrome/nekuda.
 
-### Current production release (2026-09-01)
+### Last fully evidenced production release (2026-09-01)
 
-- Runtime implementation `fffe72d` is published on GitHub `main`. [GitHub Actions run 33479725803](https://github.com/hayashiii-ghub/toban-app/actions/runs/33479725803) passed formatting, type checking, lint, **871 coverage tests in 58 files**, the production build and **25 Playwright E2E tests** for that exact commit. E2E now runs on both pull requests and direct `main` pushes.
+- Runtime implementation `fffe72d` was the published GitHub `main` revision for this verification. [GitHub Actions run 33479725803](https://github.com/hayashiii-ghub/toban-app/actions/runs/33479725803) passed formatting, type checking, lint, **871 coverage tests in 58 files**, the production build and **25 Playwright E2E tests** for that exact commit. E2E runs on both pull requests and direct `main` pushes.
 - Candidate-pool edits now reject removal or exclusion of the final eligible member atomically. An `update_schedule` retry with an omitted roster ID replays its first result even if the active tab changes, and mutation results no longer return the removed shared-roster sync note. Historical holiday dates from 1980 through 2027 match the Cabinet Office CSV.
 - The canonical Cloudflare deployment produced Worker version `9c662bb0-45e7-4339-bd7f-3c163b0f31e9`. Cache-bypassed live HTML served `/assets/index-Bqcyg9Xy.js`, which matched the local production build (SHA-256 `40ef65e5c4265dbff1eba9f945981b1480e510a46d8d686600dc5666ba7407e3`). `/api/health/schema` returned `200` with `ok: true`.
 - Fresh English production pages were visually checked at desktop and 390px widths with service workers blocked. The Getting started guide, `/junban` samples, FAQ, contact form and public-page layout rendered in English without horizontal overflow. This was read-only verification; no production roster was created or changed.
 
 ## What is new for the challenge
 
-The pre-extension baseline is `e03ddbb` (2026-08-13). Toban already had sixteen WebMCP tools, including template-only creation and printing, before the challenge. This work adds complete custom-definition creation, targeted task edits, stable target resolution, strict errors, structured/paged read results, truthful local-save/publication outcomes and the state/sync protections needed for fast follow-up commands. The existing app and original tools are not presented as newly created for the event.
+The repository commit immediately preceding the challenge work is `e03ddbb` (2026-08-13). Toban already had sixteen WebMCP tools, including template-only creation and printing, before the challenge. Work after the official challenge start adds complete custom-definition creation, targeted and eligibility-aware edits, stable target resolution, strict errors, structured/paged reads, a typed appearance contract, agent guidance for task emoji, `prepare_share` as an agent-to-human handoff before the existing sharing UI, English demo UI, and the state/sync protections needed for fast follow-up commands. The existing app, original tools, and existing human sharing action are not presented as newly created for the event.
 
-Review the fixed published range [`e03ddbb..fffe72d`](https://github.com/hayashiii-ghub/toban-app/compare/e03ddbb...fffe72d) for the challenge work. Existing-project eligibility and submission requirements must be checked against the [official challenge rules](https://webmcp.devpost.com/rules).
+The final submission tag will freeze the challenge-period source at [`e03ddbb...webmcp-challenge-2026`](https://github.com/hayashiii-ghub/toban-app/compare/e03ddbb...webmcp-challenge-2026). The equivalent official-start boundary can be inspected locally with:
 
-For the public demo, keep one approximately 1:54 flow: detailed request → completed roster → one-line task correction → September calendar verification → human-confirmed sharing → public-link verification. Use English narration and visible product output; keep tool-contract and failure-test details in this document. Recording, public YouTube upload and final submission remain separate actions. Production deployment, the UI/API smoke and user-confirmed production WebMCP operation are complete as recorded above.
+```sh
+git log --since="2026-08-26T03:00:00+09:00" --oneline
+```
+
+The final submission candidate uses Hono 4.13.5 after the dependency security update, and the full local verification gate above passed. Final source commit, CI run, Worker version and deployed asset: **TODO — record after the release is published and verified.** A source update is not evidence that production is already serving it.
+
+The QA-approved final 2:00 master (`Toban-WebMCP-Challenge-final.mp4`, SHA-256 `7859a787b8de03c0176ba64584835f0693ade96e952c6fb689595ce80ac27794`) follows this order: value proposition and the 18-tool surface → Classroom Helpers Table creation → narrow duty, appearance and eligibility refinements → Library Desk Calendar and a read-only September 24 query → Workshop Roles manual Wheel, one-step advance, structured verification and member rename → `prepare_share` → a visible confirmation where the agent stops. The recording does not show a human publishing or a public link being created. The edit uses English narration, captions and real product/tool footage. The public demo is available at [https://youtu.be/4CSxh6WW51w](https://youtu.be/4CSxh6WW51w); challenge submission remains a separate action until the final source release and public checks are complete.
 
 License: MIT, as in the repository's existing `LICENSE`.
