@@ -58,7 +58,7 @@
     "esbuild": "^0.28.1",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "jsdom": "^29.1.1",
+    "jsdom": "^30.0.1",
     "prettier": "^3.9.6",
     "react-doctor": "^0.2.8",
     "tailwindcss": "^4.3.3",
