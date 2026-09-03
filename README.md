@@ -14,7 +14,7 @@ Toban turns a plain-language request into a structured, editable duty roster. A 
 - **WebMCP surface:** 18 typed page tools for creating, reading, refining, viewing, printing, and preparing a roster for sharing
 - **Two-minute demo:** classroom Table creation and targeted refinements → library Calendar calculation and a read-only future-date query → manual Workshop Wheel → a prepared share step that stops at Toban's human confirmation
 - **Publication boundary:** `prepare_share` only opens Toban's confirmation dialog. A person must click **Share schedule** before `get_share_link` can verify a public URL.
-- **Challenge-period source:** the preceding repository commit is [`e03ddbb`](https://github.com/hayashiii-ghub/toban-app/commit/e03ddbb8c14dd49c868d4294969106f72d397cae). The final fixed range will be [`e03ddbb...webmcp-challenge-2026`](https://github.com/hayashiii-ghub/toban-app/compare/e03ddbb...webmcp-challenge-2026).
+- **Challenge-period source:** the preceding repository commit is [`e03ddbb`](https://github.com/hayashiii-ghub/toban-app/commit/e03ddbb8c14dd49c868d4294969106f72d397cae). The fixed submission range is [`e03ddbb...webmcp-challenge-2026`](https://github.com/hayashiii-ghub/toban-app/compare/e03ddbb...webmcp-challenge-2026).
 
 See [the judge-facing implementation notes](docs/webmcp-challenge.md) and [the final 120-second video map](docs/demo-video-final.md).
 
