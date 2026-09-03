@@ -1,6 +1,6 @@
 # Toban WebMCP demo video — final 120-second edit
 
-Status: final master published on YouTube; final source release evidence pending
+Status: final master published on YouTube; final source release verified
 
 Demo video: [https://youtu.be/4CSxh6WW51w](https://youtu.be/4CSxh6WW51w)
 
@@ -144,5 +144,5 @@ Do not describe `prepare_share` as publication. Do not show an edit token. Do no
    pnpm test:e2e
    ```
 
-4. Final source commit, CI run, Worker version and deployed asset: **TODO — record after release.** Deploy through the repository's canonical `pnpm run deploy:cf` path, then verify the live asset and `/api/health/schema`.
+4. Final release implementation commit [`31bc66b`](https://github.com/hayashiii-ghub/toban-app/commit/31bc66bdf9ab3bd66aa6821f8812cf3b8f4891f9) passed [GitHub Actions run 33730776789](https://github.com/hayashiii-ghub/toban-app/actions/runs/33730776789), including formatting, type checking, lint, 878 coverage tests in 58 files, the production build, and 25 Playwright E2E tests. The canonical `pnpm run deploy:cf` command reported Worker version `874f43f0-baa9-41e5-a018-adc36bc5dd02`; Wrangler's paired follow-up deployment made version `ea5e3eda-4ed3-47ba-825c-0bd964f72d42` active. On 2026-09-03, cache-bypassed HTML from both `toban.app` and the `workers.dev` endpoint served `/assets/index-OHhWDdLY.js` (SHA-256 `7026cd50479148711e4c9403dafc5c4679ae313d96bace5793c69507b9332229`), and `/api/health/schema` returned `200` with `ok: true`.
 5. YouTube upload: complete — [watch the public demo](https://youtu.be/4CSxh6WW51w). Submit the challenge entry only after the final source release evidence and public checks are complete.
