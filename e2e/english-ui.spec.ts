@@ -73,7 +73,9 @@ test("English first visit, blank creation and language switch preserve roster co
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Getting started"
   );
-  await expect(page).toHaveTitle(/Free Duty Roster/);
+  await expect(page).toHaveTitle(
+    "当番表作成アプリ toban｜無料で簡単作成・印刷・共有"
+  );
   await expect(page.locator("main")).not.toContainText(
     /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u
   );

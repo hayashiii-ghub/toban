@@ -22,8 +22,11 @@ export default function Home() {
   const s = useHomeState();
   const t = useT();
   useEffect(() => {
-    document.title = t("lp.docTitle");
-  }, [t]);
+    // Keep the canonical root URL's search title stable. The visible app can
+    // follow the visitor's language without exposing crawler locale detection
+    // as a different title for the same URL.
+    document.title = "当番表作成アプリ toban｜無料で簡単作成・印刷・共有";
+  }, []);
   useTobanTools(s); // WebMCP tools を登録（非対応ブラウザでは no-op）
 
   if (!s.activeSchedule) {
