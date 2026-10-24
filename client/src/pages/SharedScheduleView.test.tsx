@@ -10,6 +10,7 @@ import {
 } from "@testing-library/react";
 import { Route, Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
+import { LIMITS } from "@shared/limits";
 import { STORAGE_KEY } from "@/rotation/constants";
 import type { AppState } from "@/rotation/types";
 import SharedScheduleView from "./SharedScheduleView";
@@ -169,6 +170,26 @@ describe("SharedScheduleView", () => {
       expect(
         screen.getByText(/1年間使われずに消えた可能性があります/)
       ).toBeVisible();
+  });
+
+  it("件数の上限を超える応答は、通信エラーではなく取得失敗として伝える", async () => {
+    const member = shared.members[0];
+    stubFetch(async () =>
+      Response.json({
+        ...shared,
+        members: Array.from({ length: LIMITS.members + 1 }, (_, index) => ({
+          ...member,
+          id: `m${index}`,
+          name: `人${index}`,
+        })),
+      })
+    );
+    renderAt("/s/AbCdEfGhIj");
+    expect(
+      await screen.findByRole("heading", { name: "データの取得に失敗しました" })
+    ).toBeVisible();
+    expect(screen.queryByText(/Too big/)).toBeNull();
+    expect(screen.queryByText(/Invalid API response/)).toBeNull();
   });
 
   it("通信できないときはネットワークエラーを伝える", async () => {

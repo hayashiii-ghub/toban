@@ -18,7 +18,11 @@ export const taskGroupSchema = baseTaskGroupSchema.extend({
     .min(1)
     .max(LIMITS.tasksPerGroup),
   emoji: z.string().trim().min(1).max(LIMITS.emoji),
-  memberIds: z.array(z.string().trim().min(1).max(100)).optional(),
+  // 担当候補は表にいるメンバーから選ぶので、メンバー数の上限まで
+  memberIds: z
+    .array(z.string().trim().min(1).max(100))
+    .max(LIMITS.members)
+    .optional(),
 });
 
 export const memberSchema = baseMemberSchema.extend({

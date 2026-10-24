@@ -1,7 +1,8 @@
 /**
  * 入力文字数・件数の上限。server スキーマ（server/schemas/schedule.ts）、
- * UI の maxLength、WebMCP の入力検証（useTobanTools）が共有する単一の真実源。
- * 値を変える場合は3経路すべてに効くことを前提に判断する。
+ * 共有スキーマ（shared/schemas.ts）、UI の maxLength、
+ * WebMCP の入力検証（useTobanTools）が共有する単一の真実源。
+ * 値を変える場合はこれらの経路すべてに効くことを前提に判断する。
  */
 export const LIMITS = {
   /** 当番表の名前 */

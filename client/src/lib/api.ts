@@ -40,6 +40,14 @@ export class ApiError extends Error {
   }
 }
 
+/** 応答の形がスキーマと合わない。通信失敗とは分け、画面には検証文を出さない。 */
+export class InvalidApiResponseError extends Error {
+  constructor(endpoint: string, cause: unknown) {
+    super(`Invalid API response from ${endpoint}`, { cause });
+    this.name = "InvalidApiResponseError";
+  }
+}
+
 function parseResponse<T>(
   schema: { parse(data: unknown): T },
   data: unknown,
@@ -48,10 +56,7 @@ function parseResponse<T>(
   try {
     return schema.parse(data);
   } catch (error) {
-    throw new Error(
-      `Invalid API response from ${endpoint}: ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error }
-    );
+    throw new InvalidApiResponseError(endpoint, error);
   }
 }
 

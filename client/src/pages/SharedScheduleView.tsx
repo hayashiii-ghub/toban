@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { toast } from "sonner";
-import { getSchedule, ApiError } from "@/lib/api";
+import { getSchedule, ApiError, InvalidApiResponseError } from "@/lib/api";
 import type { ScheduleDTO } from "@/rotation/types";
 import {
   computeAssignments,
@@ -73,6 +73,9 @@ export default function SharedScheduleView() {
           if (err.status === 404) key = "shared.error.notFound";
           else if (err.status >= 500) key = "shared.error.server";
           else key = "shared.error.fetch";
+        } else if (err instanceof InvalidApiResponseError) {
+          // 上限超過などで形が合わない。zod の英語文は出さず、取得失敗として見せる。
+          key = "shared.error.fetch";
         }
         setLoaded({ slug, schedule: null, errorKey: key });
       });
