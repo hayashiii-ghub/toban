@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { LIMITS } from "@shared/limits";
 import {
   ApiError,
+  InvalidApiResponseError,
   createSchedule,
   getSchedule,
   getScheduleForEdit,
@@ -112,6 +114,31 @@ describe("getSchedule", () => {
     expect(mockFetch).toHaveBeenCalledWith(
       "/api/schedules/abc123",
       expect.objectContaining({ signal: expect.any(AbortSignal) })
+    );
+  });
+
+  it("メンバー数が上限ちょうどなら受け、1人超は応答不正にする", async () => {
+    const member = mockScheduleResponse.members[0];
+    const members = Array.from({ length: LIMITS.members }, (_, index) => ({
+      ...member,
+      id: `m${index}`,
+      name: `人${index}`,
+    }));
+    mockFetch.mockResolvedValueOnce(
+      createMockResponse({ ...mockScheduleResponse, members })
+    );
+    await expect(getSchedule("abc123")).resolves.toMatchObject({
+      members,
+    });
+
+    mockFetch.mockResolvedValueOnce(
+      createMockResponse({
+        ...mockScheduleResponse,
+        members: [...members, { ...member, id: "extra", name: "余分" }],
+      })
+    );
+    await expect(getSchedule("abc123")).rejects.toBeInstanceOf(
+      InvalidApiResponseError
     );
   });
 

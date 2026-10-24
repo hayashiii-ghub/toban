@@ -1,6 +1,7 @@
 import React from "react";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { cleanup, render, fireEvent, within } from "@testing-library/react";
+import { LIMITS } from "@shared/limits";
 import { SettingsModal } from "./SettingsModal";
 import type { TaskGroup, Member } from "@shared/types";
 
@@ -143,6 +144,62 @@ describe("SettingsModal", () => {
     ]);
     for (const link of links) expect(link).toHaveAttribute("target", "_blank");
   });
+
+  it.each([
+    [
+      "タスク",
+      {
+        groups: [
+          {
+            id: "g1",
+            tasks: Array.from(
+              { length: LIMITS.tasksPerGroup + 1 },
+              (_, index) => `仕事${index}`
+            ),
+            emoji: "🧹",
+          },
+        ],
+      },
+      `タスクは1グループ最大${LIMITS.tasksPerGroup}個までです。`,
+    ],
+    [
+      "グループ",
+      {
+        groups: Array.from({ length: LIMITS.groups + 1 }, (_, index) => ({
+          id: `g${index}`,
+          tasks: ["掃除"],
+          emoji: "🧹",
+        })),
+        assignmentMode: "task" as const,
+      },
+      `グループは最大${LIMITS.groups}個までです。`,
+    ],
+    [
+      "メンバー",
+      {
+        members: Array.from({ length: LIMITS.members + 1 }, (_, index) => ({
+          id: `m${index}`,
+          name: `人${index}`,
+          color: "#F87171",
+          bgColor: "#FEE2E2",
+          textColor: "#991B1B",
+        })),
+        assignmentMode: "task" as const,
+      },
+      `メンバーは最大${LIMITS.members}人までです。`,
+    ],
+  ] as const)(
+    "%sが上限を超えると保存せず、日本語で知らせる",
+    (_label, overrides, message) => {
+      const props = createProps(overrides);
+      const { container } = render(<SettingsModal {...props} />);
+      fireEvent.click(queryDialog(container).getByText("保存する")!);
+      expect(props.onSave).not.toHaveBeenCalled();
+      const dialog = queryDialog(container).dialog as HTMLElement;
+      expect(within(dialog).getByRole("alert")).toHaveTextContent(message);
+      expect(within(dialog).queryByText(/Too big/)).toBeNull();
+    }
+  );
 
   // 保存内容がサーバの検証を通らないと、PUT が 400 になって同期が黙って止まる
   // （syncManager が 400 を破棄するため、画面上は正常に見えたまま）。

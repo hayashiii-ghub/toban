@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { FONT_IDS } from "../../shared/appearance";
+import { LIMITS } from "../../shared/limits";
 import { schedules } from "../db/schema";
 import { ensureSchedulesSchema } from "../db/ensureSchema";
 import {
@@ -55,8 +56,15 @@ async function parseJsonBody(c: {
 
 function serializeSchedule(row: typeof schedules.$inferSelect) {
   try {
-    const groups = z.array(taskGroupSchema).parse(JSON.parse(row.groupsJson));
-    const members = z.array(memberSchema).parse(JSON.parse(row.membersJson));
+    // 保存済み JSON も作成時と同じ件数で切る
+    const groups = z
+      .array(taskGroupSchema)
+      .max(LIMITS.groups)
+      .parse(JSON.parse(row.groupsJson));
+    const members = z
+      .array(memberSchema)
+      .max(LIMITS.members)
+      .parse(JSON.parse(row.membersJson));
     const rotationConfig = row.rotationConfigJson
       ? rotationConfigObjectSchema.parse(JSON.parse(row.rotationConfigJson))
       : undefined;

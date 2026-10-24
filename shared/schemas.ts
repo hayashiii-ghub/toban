@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FONT_IDS } from "./appearance";
+import { LIMITS } from "./limits";
 
 /** お問い合わせの種別（client の select と server の検証で共有し、drift を防ぐ） */
 export const CONTACT_CATEGORIES = [
@@ -11,12 +12,15 @@ export const CONTACT_CATEGORIES = [
 
 export const contactCategorySchema = z.enum(CONTACT_CATEGORIES);
 
-/** タスクグループスキーマ */
+/**
+ * タスクグループ。
+ * 配列の件数は LIMITS に合わせる。上限がないと、大きな配列の検証でメモリを使い切る。
+ */
 export const taskGroupSchema = z.object({
   id: z.string(),
-  tasks: z.array(z.string()),
+  tasks: z.array(z.string()).max(LIMITS.tasksPerGroup),
   emoji: z.string(),
-  memberIds: z.array(z.string()).optional(),
+  memberIds: z.array(z.string()).max(LIMITS.members).optional(),
 });
 
 /** メンバースキーマ */
@@ -46,8 +50,9 @@ const assignmentModeSchema = z.enum(["member", "task"]);
 const scheduleDataSchema = z.object({
   name: z.string(),
   rotation: z.number(),
-  groups: z.array(taskGroupSchema),
-  members: z.array(memberSchema),
+  // 件数は server の LIMITS と揃える（上限なし配列は検証時にメモリを使う）
+  groups: z.array(taskGroupSchema).max(LIMITS.groups),
+  members: z.array(memberSchema).max(LIMITS.members),
   rotationConfig: rotationConfigSchema.optional(),
   assignmentMode: assignmentModeSchema.optional(),
   designThemeId: z.string().optional(),

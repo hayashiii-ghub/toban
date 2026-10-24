@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { LIMITS } from "../../shared/limits";
 import {
   createScheduleSchema,
   taskGroupSchema,
@@ -70,6 +71,25 @@ describe("taskGroupSchema", () => {
       taskGroupSchema.safeParse({ ...validGroup, tasks: [] }).success
     ).toBe(false);
   });
+
+  it("accepts memberIds at the member limit and rejects one more", () => {
+    const memberIds = Array.from(
+      { length: LIMITS.members },
+      (_, index) => `m${index}`
+    );
+    expect(
+      taskGroupSchema.safeParse({ ...validGroup, memberIds }).success
+    ).toBe(true);
+    const over = taskGroupSchema.safeParse({
+      ...validGroup,
+      memberIds: [...memberIds, "m0"],
+    });
+    expect(over.success).toBe(false);
+    if (over.success) return;
+    expect(over.error.issues.some(issue => issue.code === "too_big")).toBe(
+      true
+    );
+  });
 });
 
 describe("rotationConfigObjectSchema", () => {
@@ -123,6 +143,32 @@ describe("createScheduleSchema", () => {
     expect(
       createScheduleSchema.safeParse({ ...validPayload, name: "" }).success
     ).toBe(false);
+  });
+
+  it("accepts a full member pool and rejects one extra id", () => {
+    const members = Array.from({ length: LIMITS.members }, (_, index) => ({
+      ...validMember,
+      id: `m${index}`,
+      name: `人${index}`,
+    }));
+    const memberIds = members.map(item => item.id);
+    expect(
+      createScheduleSchema.safeParse({
+        ...validPayload,
+        members,
+        groups: [{ ...validGroup, memberIds }],
+      }).success
+    ).toBe(true);
+    const over = createScheduleSchema.safeParse({
+      ...validPayload,
+      members,
+      groups: [{ ...validGroup, memberIds: [...memberIds, memberIds[0]] }],
+    });
+    expect(over.success).toBe(false);
+    if (over.success) return;
+    expect(over.error.issues.some(issue => issue.code === "too_big")).toBe(
+      true
+    );
   });
 
   it("rejects unknown memberIds in groups", () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
+import { LIMITS } from "../../shared/limits";
 
 // Mock ensureSchedulesSchema to skip D1 schema checks
 vi.mock("../db/ensureSchema", () => ({
@@ -378,6 +379,70 @@ describe("GET /api/schedules/:slug (Public read)", () => {
     expect(res.status).toBe(400);
     const json = await readJson(res);
     expect(json.error).toBe("Invalid slug");
+  });
+
+  it("保存済みの配列は上限ちょうどなら返し、1件超は壊れたデータにする", async () => {
+    const readPublic = async (overrides: Record<string, unknown>) => {
+      const row = fakeScheduleRow({ is_public: 1, ...overrides });
+      const mockDB = createMockD1(sql => {
+        if (sql.includes("select")) return { results: [row] };
+        return { results: [] };
+      });
+      const app = await createTestApp(mockDB);
+      return app.request("/api/schedules/abcdefghij");
+    };
+    const groups = (count: number) =>
+      JSON.stringify(
+        Array.from({ length: count }, (_, index) => ({
+          id: `g${index}`,
+          tasks: ["掃除"],
+          emoji: "🧹",
+        }))
+      );
+    const members = (count: number) =>
+      JSON.stringify(
+        Array.from({ length: count }, (_, index) => ({
+          id: `m${index}`,
+          name: "田中",
+          color: "#FF0000",
+          bgColor: "#FFEEEE",
+          textColor: "#000000",
+        }))
+      );
+    const withMemberIds = (count: number) =>
+      JSON.stringify([
+        {
+          id: "g1",
+          tasks: ["掃除"],
+          emoji: "🧹",
+          memberIds: Array.from({ length: count }, (_, index) => `m${index}`),
+        },
+      ]);
+
+    expect(
+      (await readPublic({ groups_json: groups(LIMITS.groups) })).status
+    ).toBe(200);
+    const overGroups = await readPublic({
+      groups_json: groups(LIMITS.groups + 1),
+    });
+    expect(overGroups.status).toBe(500);
+    expect((await readJson(overGroups)).error).toBe("Corrupted schedule data");
+
+    expect(
+      (await readPublic({ members_json: members(LIMITS.members) })).status
+    ).toBe(200);
+    const overMembers = await readPublic({
+      members_json: members(LIMITS.members + 1),
+    });
+    expect(overMembers.status).toBe(500);
+
+    expect(
+      (await readPublic({ groups_json: withMemberIds(LIMITS.members) })).status
+    ).toBe(200);
+    const overMemberIds = await readPublic({
+      groups_json: withMemberIds(LIMITS.members + 1),
+    });
+    expect(overMemberIds.status).toBe(500);
   });
 });
 
