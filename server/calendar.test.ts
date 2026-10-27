@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { buildCalendar, escapeText, foldLine } from "./calendar";
 import type { CalendarSchedule } from "./calendar";
+import { LIMITS } from "../shared/limits";
 
 const colors = { color: "#3B82F6", bgColor: "#DBEAFE", textColor: "#1E3A5F" };
 
@@ -142,11 +143,88 @@ describe("buildCalendar", () => {
     expect(ics.startsWith("BEGIN:VCALENDAR\r\n")).toBe(true);
     expect(ics.endsWith("END:VCALENDAR\r\n")).toBe(true);
   });
+
+  it.each(["\r\n", "\n", "\r", "%000D", "\ud800"])(
+    "メンバー ID に %j があっても予定の行を挿入せず、一意の UID にする",
+    separator => {
+      const id = `m${separator}X-INJECTED:yes`;
+      const ics = buildCalendar(
+        schedule({ members: [{ id, name: "佐藤", ...colors }] }),
+        { memberId: id, lang: "ja", origin, now }
+      );
+      const unfolded = ics.replace(/\r\n /g, "");
+      expect(unfolded).not.toMatch(/(?:^|[\r\n])X-INJECTED:/);
+      expect(events(ics)[0].UID).not.toContain("\ufffd");
+      expect(events(ics)[0].SUMMARY).toBe("掃除当番：床・窓、ゴミ出し");
+      const other = buildCalendar(
+        schedule({
+          members: [{ id: "mX-INJECTED:yes", name: "佐藤", ...colors }],
+        }),
+        { memberId: "mX-INJECTED:yes", lang: "ja", origin, now }
+      );
+      expect(events(ics)[0].UID).not.toBe(events(other)[0].UID);
+    }
+  );
+
+  it("異なる改行とその文字表記を含む ID の UID が重ならない", () => {
+    const ids = ["m\r\n1", "m\n1", "m\r1", "m%000D1", "m\ud8001", "m\ufffd1"];
+    const uids = ids.map(
+      id =>
+        events(
+          buildCalendar(
+            schedule({ members: [{ id, name: "佐藤", ...colors }] }),
+            {
+              memberId: id,
+              lang: "ja",
+              origin,
+              now,
+            }
+          )
+        )[0].UID
+    );
+    expect(new Set(uids).size).toBe(ids.length);
+  });
+
+  it.each(["\\", "当", "😀"])(
+    "保存可能な最大の仕事量（%s）でも、日次フィードと各件名の出力を制限する",
+    task => {
+      const ics = buildCalendar(
+        schedule({
+          groups: Array.from({ length: LIMITS.groups }, (_, i) => ({
+            id: `g${i}`,
+            tasks: Array.from({ length: LIMITS.tasksPerGroup }, () =>
+              task.repeat(Math.floor(LIMITS.task / task.length))
+            ),
+            emoji: "🧹",
+          })),
+          rotationConfig: {
+            mode: "date",
+            startDate: "2026-01-01",
+            cycleDays: 1,
+          },
+        }),
+        { lang: "en", origin, now }
+      );
+      const list = events(ics);
+      const encoder = new TextEncoder();
+      expect(list).toHaveLength(215);
+      expect(encoder.encode(ics).length).toBeLessThan(350 * 1024);
+      for (const event of list) {
+        expect(encoder.encode(event.SUMMARY).length).toBeLessThanOrEqual(1024);
+        expect(event.SUMMARY).toMatch(/…$/);
+        expect(event.URL).toBe("https://toban.app/s/abcdefghij");
+      }
+      for (const line of ics.split("\r\n")) {
+        expect(encoder.encode(line).length).toBeLessThanOrEqual(75);
+      }
+    }
+  );
 });
 
 describe("escapeText", () => {
   it("\\ ; , と改行を逃がす", () => {
     expect(escapeText("a\\b;c,d\ne")).toBe("a\\\\b\\;c\\,d\\ne");
+    expect(escapeText("a\rb\r\nc")).toBe("a\\nb\\nc");
   });
 });
 

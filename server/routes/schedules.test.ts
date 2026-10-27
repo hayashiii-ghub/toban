@@ -504,6 +504,35 @@ describe("GET /api/schedules/:slug/calendar.ics (Calendar feed)", () => {
     expect(writes).toHaveLength(0);
   });
 
+  it.each(["\r\n", "\r", "\n"])(
+    "保存済みメンバー ID に %j があってもカレンダーの行を挿入しない",
+    async separator => {
+      const id = `m${separator}X-INJECTED:yes`;
+      const { mockDB } = dbWith(
+        dateRow({
+          name: "当番\rX-INJECTED:yes",
+          members_json: JSON.stringify([
+            {
+              id,
+              name: "田中",
+              color: "#FF0000",
+              bgColor: "#FFEEEE",
+              textColor: "#000000",
+            },
+          ]),
+        })
+      );
+      const app = await createTestApp(mockDB);
+      const res = await app.request(
+        `/api/schedules/abcdefghij/calendar.ics?member=${encodeURIComponent(id)}`
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.text()).replace(/\r\n /g, "");
+      expect(body).toContain("SUMMARY:当番\\nX-INJECTED:yes：掃除");
+      expect(body).not.toMatch(/(?:^|[\r\n])X-INJECTED:/);
+    }
+  );
+
   it("共有していない表は 404", async () => {
     const { mockDB } = dbWith(dateRow({ is_public: 0 }));
     const app = await createTestApp(mockDB);
