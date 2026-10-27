@@ -1,5 +1,3 @@
 # supply chain 防御
 # - minimumReleaseAge: 公開直後のマルウェア混入版を install しないよう待機
-# - trustPolicy=no-downgrade は workbox-build 経由の rollup@2.80.0 を弾くため
-#   現状は未設定。導入時は依存ツリーを上流から見直す
 minimumReleaseAge: 10080 # 7 days (minutes)
