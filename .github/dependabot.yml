@@ -4,26 +4,38 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
     groups:
       react:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
         patterns:
           - "react"
           - "react-dom"
           - "@types/react"
           - "@types/react-dom"
       dev-minor:
+        applies-to: version-updates
         dependency-type: "development"
         update-types:
           - "minor"
           - "patch"
       prod-minor:
+        applies-to: version-updates
         dependency-type: "production"
         update-types:
           - "minor"
           - "patch"
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -31,3 +43,16 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
+    open-pull-requests-limit: 3
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
