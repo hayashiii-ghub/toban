@@ -397,6 +397,12 @@ describe("存在しないファイルと画面のパス", () => {
       /"not_found_handling":\s*"single-page-application"/
     );
   });
+
+  it("workers.dev とプレビュー URL を無効にする", () => {
+    const config = readFileSync("wrangler.jsonc", "utf8");
+    expect(config).toMatch(/"workers_dev":\s*false/);
+    expect(config).toMatch(/"preview_urls":\s*false/);
+  });
 });
 
 describe("1 年使われていない当番表の削除（scheduled）", () => {
