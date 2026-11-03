@@ -40,4 +40,18 @@ describe("PWA のナビゲーション", () => {
   it("静的ページ /privacy への遷移を index.html で横取りしない", () => {
     expect(config).toMatch(/navigateFallbackDenylist:\s*\[[^\]]*privacy/);
   });
+
+  // Workbox は pathname + search に正規表現を当てる。クエリのドットでは外さない。
+  it("ドットを含むパスへの遷移を index.html で横取りしない", () => {
+    expect(config).toContain("/^[^?]*\\./");
+    const dotInPath = /^[^?]*\./;
+    expect(dotInPath.test("/package.json")).toBe(true);
+    expect(dotInPath.test("/.git/config")).toBe(true);
+    expect(dotInPath.test("/backend/.env")).toBe(true);
+    expect(dotInPath.test("/.well-known/security.txt")).toBe(true);
+    expect(dotInPath.test("/about")).toBe(false);
+    expect(dotInPath.test("/about?v=1.2")).toBe(false);
+    expect(dotInPath.test("/templates/office-cleaning")).toBe(false);
+    expect(dotInPath.test("/privacy")).toBe(false);
+  });
 });

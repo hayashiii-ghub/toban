@@ -35,8 +35,10 @@ export default defineConfig(({ command }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        // 静的ページへの遷移は index.html で返さない（返すと SPA の 404 になる）
-        navigateFallbackDenylist: [/^\/privacy$/, /^\/junban$/],
+        // 静的ページへの遷移は index.html で返さない（返すと SPA の 404 になる）。
+        // ドットを含むパスも index.html にしない。Workbox は pathname + search に
+        // 正規表現を当てるので、クエリのドット（?v=1.2）では反応させない。
+        navigateFallbackDenylist: [/^\/privacy$/, /^\/junban$/, /^[^?]*\./],
         // /api/ は runtimeCaching に載せない。
         // Cache Storage は cache-control: no-store を尊重しないので、載せると
         // 通信できないときに古い応答が 200 として返る。useAutoSync の引き直しは

@@ -2,12 +2,18 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "toban",
   "main": "server/worker.ts",
+  // toban.app のカスタムドメインだけで届ける。workers.dev とバージョンの
+  // プレビュー URL は開けない。次の deploy で効く。
+  "workers_dev": false,
+  "preview_urls": false,
   "compatibility_date": "2025-04-01",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./dist/client",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application",
+    // single-page-application だと、実体の無い /package.json や /.well-known/* も
+    // index.html を 200 で返してしまう。画面のパス（ドットなし）は Worker が index.html を返す。
+    "not_found_handling": "none",
   },
   "d1_databases": [
     {
