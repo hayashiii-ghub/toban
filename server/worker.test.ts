@@ -181,6 +181,224 @@ describe("bot とそれ以外の振り分け", () => {
   });
 });
 
+describe("存在しないファイルと画面のパス", () => {
+  const indexHtml = "<!doctype html><title>toban</title>";
+
+  function envWithFiles(files: Record<string, () => Response>) {
+    const fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      const file = files[new URL(url).pathname];
+      return file ? file() : new Response("missing", { status: 404 });
+    });
+    return {
+      env: { ASSETS: { fetch }, DB: {}, SLACK_WEBHOOK_URL: "" } as never,
+      fetch,
+    };
+  }
+
+  function pathsOf(fetch: ReturnType<typeof vi.fn>): string[] {
+    return fetch.mock.calls.map(call => {
+      const input = call[0] as RequestInfo | URL;
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      return new URL(url).pathname;
+    });
+  }
+
+  const index = () =>
+    new Response(indexHtml, {
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+
+  it.each([
+    "/backend/.env",
+    "/.git/config",
+    "/wp-login.php",
+    "/package.json",
+    "/assets/does-not-exist.js",
+    "/.well-known/missing.txt",
+  ])("未知のドット付きパス %s は 404", async path => {
+    const { env, fetch } = envWithFiles({ "/": index });
+    const res = await worker.fetch(
+      new Request(`https://toban.app${path}`),
+      env,
+      {} as ExecutionContext
+    );
+    expect(res.status).toBe(404);
+    expect(await res.text()).toBe("missing");
+    expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(pathsOf(fetch)).toEqual([path]);
+  });
+
+  it("bot が未知のファイルを踏んでも index.html の 200 にしない", async () => {
+    const { env, fetch } = envWithFiles({ "/": index });
+    const res = await worker.fetch(
+      new Request("https://toban.app/missing-file.txt", {
+        headers: { "User-Agent": "Googlebot" },
+      }),
+      env,
+      {} as ExecutionContext
+    );
+    expect(res.status).toBe(404);
+    expect(pathsOf(fetch)).toEqual(["/missing-file.txt"]);
+  });
+
+  it.each(["/no-such-page", "/about", "/templates/office-cleaning"])(
+    "ドットの無い未知の画面パス %s は index.html",
+    async path => {
+      const { env, fetch } = envWithFiles({ "/": index });
+      const res = await worker.fetch(
+        new Request(`https://toban.app${path}`),
+        env,
+        {} as ExecutionContext
+      );
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe(indexHtml);
+      expect(res.headers.get("Content-Type")).toContain("text/html");
+      expect(pathsOf(fetch)).toEqual([path, "/"]);
+    }
+  );
+
+  it("HEAD の画面パスも index.html を返す", async () => {
+    const { env, fetch } = envWithFiles({ "/": index });
+    const res = await worker.fetch(
+      new Request("https://toban.app/about", { method: "HEAD" }),
+      env,
+      {} as ExecutionContext
+    );
+    expect(res.status).toBe(200);
+    expect(pathsOf(fetch)).toEqual(["/about", "/"]);
+  });
+
+  it("画面パスへの POST は index.html にしない", async () => {
+    const { env, fetch } = envWithFiles({ "/": index });
+    const res = await worker.fetch(
+      new Request("https://toban.app/about", { method: "POST" }),
+      env,
+      {} as ExecutionContext
+    );
+    expect(res.status).toBe(404);
+    expect(pathsOf(fetch)).toEqual(["/about"]);
+  });
+
+  it("共有ページはファイルが無くても SPA で、noindex のまま", async () => {
+    const { env, fetch } = envWithFiles({ "/": index });
+    const res = await worker.fetch(
+      new Request("https://toban.app/s/abcdefghij"),
+      env,
+      {} as ExecutionContext
+    );
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe(indexHtml);
+    expect(res.headers.get("X-Robots-Tag")).toBe("noindex");
+    expect(pathsOf(fetch)).toEqual(["/s/abcdefghij", "/"]);
+  });
+
+  it("実在する静的ファイルは 200", async () => {
+    const { env, fetch } = envWithFiles({
+      "/favicon.svg": () =>
+        new Response("<svg></svg>", {
+          headers: { "Content-Type": "image/svg+xml" },
+        }),
+    });
+    const res = await worker.fetch(
+      new Request("https://toban.app/favicon.svg"),
+      env,
+      {} as ExecutionContext
+    );
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("<svg></svg>");
+    expect(res.headers.get("Content-Type")).toContain("image/svg+xml");
+    expect(pathsOf(fetch)).toEqual(["/favicon.svg"]);
+  });
+
+  it("実在する /.well-known/ は 200、無いものは 404", async () => {
+    const { env } = envWithFiles({
+      "/.well-known/security.txt": () =>
+        new Response("Contact: mailto:hello@example.com", {
+          headers: { "Content-Type": "text/plain" },
+        }),
+    });
+    const present = await worker.fetch(
+      new Request("https://toban.app/.well-known/security.txt"),
+      env,
+      {} as ExecutionContext
+    );
+    expect(present.status).toBe(200);
+    expect(await present.text()).toBe("Contact: mailto:hello@example.com");
+
+    const missing = await worker.fetch(
+      new Request("https://toban.app/.well-known/assetlinks.json"),
+      env,
+      {} as ExecutionContext
+    );
+    expect(missing.status).toBe(404);
+    expect(await missing.text()).toBe("missing");
+  });
+
+  it("拡張子付きの API（calendar.ics）は API のまま", async () => {
+    const { env, fetch } = envWithFiles({ "/": index });
+    const res = await worker.fetch(
+      new Request("https://toban.app/api/schedules/abcdefghij/calendar.ics"),
+      env,
+      {} as ExecutionContext
+    );
+    expect(fetch).not.toHaveBeenCalled();
+    expect(res.status).not.toBe(200);
+    expect(res.headers.get("Content-Type") ?? "").not.toContain("text/html");
+    expect(await res.text()).not.toContain("<!doctype html");
+  });
+
+  it("API の入力エラーはこれまでどおり JSON の 400", async () => {
+    const { env, fetch } = envWithFiles({ "/": index });
+    const res = await worker.fetch(
+      new Request("https://toban.app/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "https://toban.app",
+        },
+        body: "not-json",
+      }),
+      env,
+      {} as ExecutionContext
+    );
+    expect(fetch).not.toHaveBeenCalled();
+    expect(res.status).toBe(400);
+    expect(res.headers.get("Content-Type")).toContain("application/json");
+  });
+
+  it("sitemap.xml は静的ファイルの 404 にしない", async () => {
+    const { env, fetch } = envWithFiles({});
+    const res = await worker.fetch(
+      new Request("https://toban.app/sitemap.xml"),
+      env,
+      {} as ExecutionContext
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toContain("application/xml");
+    expect(await res.text()).toContain("<urlset");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("not_found_handling は single-page-application ではない", () => {
+    const config = readFileSync("wrangler.jsonc", "utf8");
+    expect(config).toMatch(/"not_found_handling":\s*"none"/);
+    expect(config).not.toMatch(
+      /"not_found_handling":\s*"single-page-application"/
+    );
+  });
+});
+
 describe("1 年使われていない当番表の削除（scheduled）", () => {
   it("編集が 1 年なくても、カレンダーから読まれている表は消さない", async () => {
     const statements: { sql: string; params: unknown[] }[] = [];

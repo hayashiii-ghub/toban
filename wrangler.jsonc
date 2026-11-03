@@ -7,7 +7,9 @@
   "assets": {
     "directory": "./dist/client",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application",
+    // single-page-application だと、実体の無い /package.json や /.well-known/* も
+    // index.html を 200 で返してしまう。画面のパス（ドットなし）は Worker が index.html を返す。
+    "not_found_handling": "none",
   },
   "d1_databases": [
     {

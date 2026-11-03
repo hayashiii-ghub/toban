@@ -42,6 +42,32 @@ function withSecurityHeaders(response: Response): Response {
   return newResponse;
 }
 
+// 画面の URL（/about、/templates/office-cleaning、/s/xxxx）にはドットが無い。
+// ドットがあるパスはファイル（拡張子、ドットファイル、.well-known、.git）。
+function pathnameHasDot(pathname: string): boolean {
+  return pathname.split("/").some(segment => segment.includes("."));
+}
+
+// not_found_handling は none。無いパスは ASSETS が 404 を返す。
+// ドットの無い GET / HEAD だけ index.html に落とす。ファイルらしいパスは 404 のまま。
+async function serveStaticOrSpa(request: Request, env: Env): Promise<Response> {
+  const assetResponse = await env.ASSETS.fetch(request);
+  if (assetResponse.status !== 404) return assetResponse;
+
+  const { pathname } = new URL(request.url);
+  if (
+    pathnameHasDot(pathname) ||
+    (request.method !== "GET" && request.method !== "HEAD")
+  ) {
+    return assetResponse;
+  }
+
+  const indexUrl = new URL(request.url);
+  indexUrl.pathname = "/";
+  indexUrl.search = "";
+  return env.ASSETS.fetch(new Request(indexUrl, request));
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
@@ -83,7 +109,7 @@ export default {
     if (slugMatch) {
       const response = botRequest
         ? await handleScheduleOgp(url, env, slugMatch[1])
-        : await env.ASSETS.fetch(request);
+        : await serveStaticOrSpa(request, env);
       const securedResponse = withSecurityHeaders(response);
       securedResponse.headers.set("X-Robots-Tag", "noindex");
       return securedResponse;
@@ -117,13 +143,14 @@ export default {
       }
     }
 
-    // bot×未知ルートは 404 status を返す（SPA fallback の 200 による soft-404 防止）。
-    // 拡張子付きパスは静的アセットなので ASSETS に任せる。人間には SPA fallback を維持。
-    if (botRequest && !pathname.includes(".") && !isKnownAppRoute(pathname)) {
+    // bot×未知の画面パスは 404（SPA の 200 による soft-404 を防ぐ）。
+    // ドットを含むパスはファイルなので下の静的配信へ。無いファイルは 404。
+    // 人の画面パスは、ファイルが無ければ index.html。
+    if (botRequest && !pathnameHasDot(pathname) && !isKnownAppRoute(pathname)) {
       return withSecurityHeaders(new Response("Not found", { status: 404 }));
     }
 
-    return withSecurityHeaders(await env.ASSETS.fetch(request));
+    return withSecurityHeaders(await serveStaticOrSpa(request, env));
   },
 
   async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext) {
