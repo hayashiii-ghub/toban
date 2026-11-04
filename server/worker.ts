@@ -65,7 +65,15 @@ async function serveStaticOrSpa(request: Request, env: Env): Promise<Response> {
   const indexUrl = new URL(request.url);
   indexUrl.pathname = "/";
   indexUrl.search = "";
-  return env.ASSETS.fetch(new Request(indexUrl, request));
+  // ASSETS.fetch は request のボディを使用済みにする。workerd は GET にも
+  // ボディを載せるので、new Request(url, request) だと
+  // 「ReadableStream is disturbed」で 500 になる。index.html にそのボディは要らない。
+  return env.ASSETS.fetch(
+    new Request(indexUrl, {
+      method: request.method,
+      headers: request.headers,
+    })
+  );
 }
 
 export default {

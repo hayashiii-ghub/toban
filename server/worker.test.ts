@@ -1,4 +1,14 @@
-import { readFileSync } from "node:fs";
+import { spawn } from "node:child_process";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./handlers/seo", async importOriginal => {
@@ -440,4 +450,139 @@ describe("1 年使われていない当番表の削除（scheduled）", () => {
     // どちらも同じ「1 年前」で比べる
     expect(params[0]).toBe(params[1]);
   });
+});
+
+describe("GET にボディがある画面パス", () => {
+  // jsdom では wrangler / esbuild が動かないので、素の Node で workerd を起動する。
+  // Node の fetch は GET にボディを付けられない。workerd は付ける。
+  // 本番の 500 は、そのボディを ASSETS.fetch が使用済みにしたあとに
+  // 同じ Request で index.html を取りに行くときに出る。
+  it("GET /transfer のボディで 500 にせず、無いファイルは 404 のまま", async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "toban-assets-"));
+    const assets = path.join(dir, "assets");
+    mkdirSync(assets);
+    const indexHtml = "<!doctype html><title>toban-fallback</title>";
+    writeFileSync(path.join(assets, "index.html"), indexHtml);
+    writeFileSync(path.join(assets, "favicon.svg"), "<svg></svg>");
+    const workerEntry = path.resolve("server/worker.ts");
+    writeFileSync(
+      path.join(dir, "wrangler.json"),
+      JSON.stringify({
+        name: "toban-transfer-repro",
+        main: workerEntry,
+        compatibility_date: "2025-04-01",
+        compatibility_flags: ["nodejs_compat"],
+        assets: {
+          directory: assets,
+          binding: "ASSETS",
+          not_found_handling: "none",
+        },
+      })
+    );
+    const port = 20000 + (process.pid % 20000);
+    writeFileSync(
+      path.join(dir, "run.mjs"),
+      `import http from "node:http";
+import { writeFileSync } from "node:fs";
+import { unstable_dev } from ${JSON.stringify(path.resolve("node_modules/wrangler/wrangler-dist/cli.js"))};
+
+function send(port, method, requestPath, body) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      {
+        hostname: "127.0.0.1",
+        port,
+        path: requestPath,
+        method,
+        headers: body
+          ? { "Content-Type": "text/plain", "Content-Length": Buffer.byteLength(body) }
+          : {},
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () =>
+          resolve({
+            status: res.statusCode ?? 0,
+            nosniff: res.headers["x-content-type-options"] ?? null,
+            body: Buffer.concat(chunks).toString("utf8"),
+          })
+        );
+      }
+    );
+    req.on("error", reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+const dev = await unstable_dev(${JSON.stringify(workerEntry)}, {
+  config: ${JSON.stringify(path.join(dir, "wrangler.json"))},
+  ip: "127.0.0.1",
+  port: ${port},
+  local: true,
+  logLevel: "error",
+  experimental: {
+    disableExperimentalWarning: true,
+    showInteractiveDevSession: false,
+  },
+});
+try {
+  const result = {
+    withBody: await send(dev.port, "GET", "/transfer?data=abc", "hello"),
+    plain: await send(dev.port, "GET", "/transfer?data=abc"),
+    missingFile: await send(dev.port, "GET", "/package.json"),
+    file: await send(dev.port, "GET", "/favicon.svg"),
+    screen: await send(dev.port, "GET", "/about"),
+    post: await send(dev.port, "POST", "/about", "x"),
+  };
+  writeFileSync(${JSON.stringify(path.join(dir, "result.json"))}, JSON.stringify(result));
+} finally {
+  await dev.stop();
+}
+`
+    );
+
+    const childResult = await new Promise<{ code: number; stderr: string }>(
+      (resolve, reject) => {
+        const child = spawn(process.execPath, [path.join(dir, "run.mjs")], {
+          cwd: path.resolve("."),
+          stdio: ["ignore", "pipe", "pipe"],
+        });
+        let stderr = "";
+        child.stderr.on("data", chunk => {
+          stderr += chunk.toString();
+        });
+        child.stdout.on("data", () => {});
+        child.on("error", reject);
+        child.on("close", code => resolve({ code: code ?? 1, stderr }));
+      }
+    );
+
+    try {
+      const resultPath = path.join(dir, "result.json");
+      if (!existsSync(resultPath)) {
+        throw new Error(
+          `workerd の確認が失敗した (${childResult.code})\n${childResult.stderr}`
+        );
+      }
+      const result = JSON.parse(readFileSync(resultPath, "utf8")) as Record<
+        string,
+        { status: number; nosniff: string | null; body: string }
+      >;
+      expect(result.withBody).toEqual({
+        status: 200,
+        nosniff: "nosniff",
+        body: indexHtml,
+      });
+      expect(result.plain).toMatchObject({ status: 200, body: indexHtml });
+      expect(result.missingFile.status).toBe(404);
+      expect(result.missingFile.body).not.toContain("<!doctype html>");
+      expect(result.file).toMatchObject({ status: 200, body: "<svg></svg>" });
+      expect(result.screen).toMatchObject({ status: 200, body: indexHtml });
+      expect(result.post.status).toBe(404);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 30_000);
 });
