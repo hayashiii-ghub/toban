@@ -13,7 +13,7 @@ import { createSchedule, getScheduleForEdit, toScheduleData } from "@/lib/api";
 import {
   scheduleSyncDebounced,
   setSyncStatusCallback,
-  flushPendingSync,
+  flushAllPendingSync,
   isScheduleSyncPaused,
   hasPendingSync,
   restorePendingScheduleSync,
@@ -238,15 +238,13 @@ export function useAutoSync(
   );
   const beforeUnload = () => {
     cancelPendingBackup();
-    const current = schedule.value;
-    if (current?.slug && current.editToken)
-      void flushPendingSync(current.id, { keepalive: true });
+    void flushAllPendingSync({ keepalive: true });
   };
   const retrySync = () => {
+    void flushAllPendingSync();
     const current = schedule.value;
-    if (!current) return;
-    if (current.slug && current.editToken) void flushPendingSync(current.id);
-    else if (onScheduleUpdate) void attemptAutoBackup(current);
+    if (current && !(current.slug && current.editToken) && onScheduleUpdate)
+      void attemptAutoBackup(current);
   };
   const visibilityChanged = () => {
     if (document.visibilityState !== "visible") return;

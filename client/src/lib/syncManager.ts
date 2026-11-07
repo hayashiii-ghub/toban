@@ -261,3 +261,16 @@ export async function flushPendingSync(
   }
   await syncPendingSchedule(scheduleId, options);
 }
+
+/** Retry every queued roster, including edits made before selecting another tab. */
+export async function flushAllPendingSync(options?: {
+  keepalive?: boolean;
+}): Promise<void> {
+  // Blocked recovery markers have no queued body. Paused rosters and in-flight
+  // PUTs retain the same guards as an explicit single-roster flush.
+  await Promise.all(
+    [...pendingSchedules.keys()].map(scheduleId =>
+      flushPendingSync(scheduleId, options)
+    )
+  );
+}

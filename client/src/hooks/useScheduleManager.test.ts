@@ -8,6 +8,8 @@ vi.mock("vue-sonner", () => ({
 }));
 import { useScheduleManager } from "./useScheduleManager";
 import type { Schedule, ScheduleTemplate } from "@/rotation/types";
+import { LIMITS } from "@shared/limits";
+import { LanguageProvider } from "@/i18n";
 const makeTemplate = (name = "テスト"): ScheduleTemplate => ({
   name,
   emoji: "🧹",
@@ -127,6 +129,24 @@ describe("useScheduleManager", () => {
     const ids = result.current.state.schedules.map(s => s.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+  it.each(["ja", "en"])(
+    "%s UI copies stay within the server name limit",
+    async locale => {
+      localStorage.setItem("toban-lang", locale);
+      const { result } = renderHook(() => useScheduleManager(), {
+        wrapper: LanguageProvider,
+      });
+      await act(() =>
+        result.current.handleAddSchedule(
+          makeTemplate("名".repeat(LIMITS.scheduleName))
+        )
+      );
+      await act(() => result.current.handleDuplicateSchedule());
+      expect(result.current.activeSchedule?.name).toHaveLength(
+        LIMITS.scheduleName
+      );
+    }
+  );
   it("handleSaveSettingsでアクティブスケジュールのフィールドを更新する", async () => {
     const { result } = renderHook(() => useScheduleManager());
     const newGroups = [{ id: "g_new", tasks: ["新タスク"], emoji: "🎯" }];
