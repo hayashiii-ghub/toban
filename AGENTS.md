@@ -26,7 +26,7 @@ corepack pnpm format:check && corepack pnpm check && corepack pnpm lint && corep
 
 ## 配信と公開
 
-- `/` はアプリ、`/about` は LP。共通シェル `client/index.html` に特定ページだけの meta・JSON-LD・スクリプトを置かない。Origin Trial トークンは 2026-11-17 00:00 UTC に失効するため、継続する場合は期限前に更新する。
+- `/` はアプリ、`/about` は LP。共通シェル `client/index.html` に特定ページだけの meta・JSON-LD・スクリプトを置かない。Origin Trial トークンは 2027-03-30 00:00 UTC に失効するため、継続する場合は期限前に更新する。
 - SPA fallback は Worker を通らない場合がある。転送は `client/public/_redirects`、ヘッダーは `_headers` と Worker の `HTML_SECURITY_HEADERS` を揃える。ルートは `App.tsx`・`server/handlers/seo.ts`・`navigateFallbackDenylist` を確認し、bot 用本文も利用者向けと揃える。配信変更は直接アクセスと更新後の Service Worker 経由を検証する。
 - `client/public/googlee79602eefe9a90c4.html` は所有権確認用のため変更・削除しない。PWA は client 環境だけで生成する。
 - Cloudflare 設定の正本は直下の `cloudflare.config.ts`、`client/cloudflare.config.ts` は Vite 用の参照だけにする。ビルド成果物は `client/.cloudflare/output/v0/`、PWA はその `workers/default/assets/` に生成する。D1 の実 ID は環境変数から読み、設定ファイルへ書かない。
