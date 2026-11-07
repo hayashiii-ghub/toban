@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
+import cloudflareConfig from "../cloudflare.config";
 
 vi.mock("./handlers/seo", async importOriginal => {
   const actual = await importOriginal<typeof import("./handlers/seo")>();
@@ -401,17 +402,14 @@ describe("存在しないファイルと画面のパス", () => {
   });
 
   it("not_found_handling は single-page-application ではない", () => {
-    const config = readFileSync("wrangler.jsonc", "utf8");
-    expect(config).toMatch(/"not_found_handling":\s*"none"/);
-    expect(config).not.toMatch(
-      /"not_found_handling":\s*"single-page-application"/
-    );
+    const config = cloudflareConfig({ mode: "production", isPreview: false });
+    expect(config.worker.assets.notFoundHandling).toBe("none");
   });
 
   it("workers.dev とプレビュー URL を無効にする", () => {
-    const config = readFileSync("wrangler.jsonc", "utf8");
-    expect(config).toMatch(/"workers_dev":\s*false/);
-    expect(config).toMatch(/"preview_urls":\s*false/);
+    const config = cloudflareConfig({ mode: "production", isPreview: false });
+    expect(config.worker.workersDev).toBe(false);
+    expect(config.worker.previewUrls).toBe(false);
   });
 });
 
@@ -453,8 +451,9 @@ describe("1 年使われていない当番表の削除（scheduled）", () => {
 });
 
 describe("GET にボディがある画面パス", () => {
-  // jsdom では wrangler / esbuild が動かないので、素の Node で workerd を起動する。
+  // jsdom では Vite / Miniflare が動かないので、素の Node で workerd を起動する。
   // Node の fetch は GET にボディを付けられない。workerd は付ける。
+  // Vite の HTTP ブリッジも GET ボディを落とすため、Miniflare へ直接送る。
   // 本番の 500 は、そのボディを ASSETS.fetch が使用済みにしたあとに
   // 同じ Request で index.html を取りに行くときに出る。
   it("GET /transfer のボディで 500 にせず、無いファイルは 404 のまま", async () => {
@@ -466,25 +465,14 @@ describe("GET にボディがある画面パス", () => {
     writeFileSync(path.join(assets, "favicon.svg"), "<svg></svg>");
     const workerEntry = path.resolve("server/worker.ts");
     writeFileSync(
-      path.join(dir, "wrangler.json"),
-      JSON.stringify({
-        name: "toban-transfer-repro",
-        main: workerEntry,
-        compatibility_date: "2025-04-01",
-        compatibility_flags: ["nodejs_compat"],
-        assets: {
-          directory: assets,
-          binding: "ASSETS",
-          not_found_handling: "none",
-        },
-      })
-    );
-    const port = 20000 + (process.pid % 20000);
-    writeFileSync(
       path.join(dir, "run.mjs"),
       `import http from "node:http";
 import { writeFileSync } from "node:fs";
-import { unstable_dev } from ${JSON.stringify(path.resolve("node_modules/wrangler/wrangler-dist/cli.js"))};
+import { createRequire } from "node:module";
+
+const require = createRequire(${JSON.stringify(path.resolve("package.json"))});
+const { build } = await import(require.resolve("vite"));
+const { Miniflare, Log, LogLevel } = await import(require.resolve("miniflare"));
 
 function send(port, method, requestPath, body) {
   return new Promise((resolve, reject) => {
@@ -516,29 +504,71 @@ function send(port, method, requestPath, body) {
   });
 }
 
-const dev = await unstable_dev(${JSON.stringify(workerEntry)}, {
-  config: ${JSON.stringify(path.join(dir, "wrangler.json"))},
-  ip: "127.0.0.1",
-  port: ${port},
-  local: true,
+const output = await build({
+  root: ${JSON.stringify(path.resolve("."))},
+  configFile: false,
+  envFile: false,
   logLevel: "error",
-  experimental: {
-    disableExperimentalWarning: true,
-    showInteractiveDevSession: false,
+  build: {
+    write: false,
+    minify: false,
+    target: "esnext",
+    lib: {
+      entry: ${JSON.stringify(workerEntry)},
+      formats: ["es"],
+      fileName: () => "worker.js",
+    },
   },
 });
+const chunks = (Array.isArray(output) ? output : [output]).flatMap(result => result.output);
+const modules = Object.fromEntries(
+  chunks.filter(chunk => chunk.type === "chunk").map(chunk => [
+    chunk.fileName,
+    { type: "esm", contents: chunk.code },
+  ])
+);
+const dev = new Miniflare({
+  host: "127.0.0.1",
+  port: 0,
+  telemetry: { enabled: false },
+  enableDevRegistry: false,
+  logRequests: false,
+  cf: false,
+  log: new Log(LogLevel.ERROR),
+  workers: [{
+    config: {
+      name: "toban-transfer-repro",
+      compatibilityDate: "2025-04-01",
+      compatibilityFlags: ["nodejs_compat"],
+      manifest: {
+        mainModule: "worker.js",
+        modulesRoot: ${JSON.stringify(dir)},
+        modules,
+      },
+      env: { ASSETS: { type: "assets" } },
+      assets: {
+        directory: ${JSON.stringify(assets)},
+        notFoundHandling: "none",
+        runWorkerFirst: true,
+        hasUserWorker: true,
+      },
+    },
+  }],
+});
 try {
+  const url = await dev.ready;
+  const port = Number(url.port);
   const result = {
-    withBody: await send(dev.port, "GET", "/transfer?data=abc", "hello"),
-    plain: await send(dev.port, "GET", "/transfer?data=abc"),
-    missingFile: await send(dev.port, "GET", "/package.json"),
-    file: await send(dev.port, "GET", "/favicon.svg"),
-    screen: await send(dev.port, "GET", "/about"),
-    post: await send(dev.port, "POST", "/about", "x"),
+    withBody: await send(port, "GET", "/transfer?data=abc", "hello"),
+    plain: await send(port, "GET", "/transfer?data=abc"),
+    missingFile: await send(port, "GET", "/package.json"),
+    file: await send(port, "GET", "/favicon.svg"),
+    screen: await send(port, "GET", "/about"),
+    post: await send(port, "POST", "/about", "x"),
   };
   writeFileSync(${JSON.stringify(path.join(dir, "result.json"))}, JSON.stringify(result));
 } finally {
-  await dev.stop();
+  await dev.dispose();
 }
 `
     );

@@ -5,12 +5,12 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite --host",
-    "build": "node scripts/prepare-wrangler-config.mjs && vite build",
-    "deploy:cf": "node scripts/prepare-wrangler-config.mjs --require && wrangler d1 migrations apply toban-maker-db --remote --config wrangler.deploy.jsonc && wrangler deploy --config dist/toban/wrangler.json",
+    "build": "vite build",
+    "deploy:cf": "node scripts/cloudflare.ts deploy",
     "preview": "vite preview --host",
     "check": "tsc --noEmit && vue-tsc --noEmit",
     "lint": "eslint .",
-    "db:migrate:local": "wrangler d1 migrations apply toban-maker-db --local",
+    "db:migrate:local": "node scripts/cloudflare.ts migrate-local",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "og:generate": "node scripts/generate-og-image.mjs",
@@ -34,7 +34,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.64.0",
+    "@cloudflare/vite-plugin": "2.0.0-beta.v.8",
     "@cloudflare/workers-types": "^4.20260527.1",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.1",
@@ -47,9 +47,11 @@
     "@vitejs/plugin-vue-jsx": "^5.1.6",
     "@vitest/coverage-v8": "^4.1.12",
     "@vue/test-utils": "^2.5.1",
+    "cf": "1.0.0-beta.26",
     "eslint": "^10.13.0",
     "eslint-plugin-vue": "^10.12.0",
     "jsdom": "^30.1.3",
+    "miniflare": "5.20261023.3-beta",
     "prettier": "^3.9.10",
     "tailwindcss": "^4.3.3",
     "typescript": "6.0.3",
@@ -59,11 +61,10 @@
     "vitest": "^4.1.12",
     "vue-tsc": "^3.3.14",
     "workbox-build": "^7.4.1",
-    "workbox-window": "^7.4.1",
-    "wrangler": "^4.151.1"
+    "workbox-window": "^7.4.1"
   },
   "engines": {
-    "node": ">=24.0.0",
+    "node": "^24.22.0 || ^26.12.0",
     "pnpm": ">=10.0.0"
   },
   "packageManager": "pnpm@10.29.1",

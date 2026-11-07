@@ -7,6 +7,7 @@ export default tseslint.config(
     ignores: [
       "dist/",
       ".wrangler/",
+      "**/.cloudflare/",
       "*.config.js",
       "*.config.ts",
       "scripts/",

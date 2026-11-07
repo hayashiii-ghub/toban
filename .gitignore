@@ -12,7 +12,8 @@ playwright-report/
 # Cloudflare
 .wrangler/
 wrangler.deploy.jsonc
-# wrangler dev が読むローカル用の秘密（SLACK_WEBHOOK_URL など）
+.cloudflare/
+# Vite が読むローカル用の秘密（SLACK_WEBHOOK_URL など）
 .dev.vars*
 
 # Environment variables

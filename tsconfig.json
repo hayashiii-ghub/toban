@@ -1,8 +1,11 @@
 {
   "include": [
     "client/src/**/*",
+    "client/cloudflare.config.ts",
     "shared/**/*",
     "server/**/*",
+    "scripts/cloudflare.ts",
+    "client/.cloudflare/types",
     "e2e/**/*",
     "*.config.ts"
   ],

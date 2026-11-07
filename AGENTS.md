@@ -12,7 +12,7 @@ corepack pnpm format:check && corepack pnpm check && corepack pnpm lint && corep
 ```
 
 - Markdown だけなら整形、コマンド・パス・参照先の照合、`git diff --check` と差分レビューを行う。最終コミットの CI を確認し、失敗・未実施を報告する。
-- E2E は Vite / Worker を自前起動し、D1 は直下の `.wrangler/state` を共有する。3000 番が使用中でも既存プロセスを止めず一時設定で別ポートを使う。
+- E2E は Vite / Worker を自前起動し、D1 は CLI と同じ直下の `.wrangler/state` を共有する。ローカル ID は本番から分離し、旧 DB の UUID 移行では元ファイルを削除・上書きしない。3000 番が使用中でも既存プロセスを止めず一時設定で別ポートを使う。
 - 保存・読込、QR、アニメーションなど検証対象の中核をモックせず、既存 test setup と fetch 境界を使う。必須要素の欠落でテストをスキップしない。
 
 ## 実装の制約
@@ -29,5 +29,6 @@ corepack pnpm format:check && corepack pnpm check && corepack pnpm lint && corep
 - `/` はアプリ、`/about` は LP。共通シェル `client/index.html` に特定ページだけの meta・JSON-LD・スクリプトを置かない。Origin Trial トークンは 2026-11-17 00:00 UTC に失効するため、継続する場合は期限前に更新する。
 - SPA fallback は Worker を通らない場合がある。転送は `client/public/_redirects`、ヘッダーは `_headers` と Worker の `HTML_SECURITY_HEADERS` を揃える。ルートは `App.tsx`・`server/handlers/seo.ts`・`navigateFallbackDenylist` を確認し、bot 用本文も利用者向けと揃える。配信変更は直接アクセスと更新後の Service Worker 経由を検証する。
 - `client/public/googlee79602eefe9a90c4.html` は所有権確認用のため変更・削除しない。PWA は client 環境だけで生成する。
-- main への squash merge は本番 Workers Builds を起動する。承認された手動公開は `CLOUDFLARE_D1_DATABASE_ID` を設定して `corepack pnpm build && corepack pnpm run deploy:cf` を使う。DB 更新を含むため `wrangler deploy` 単体で行わず、設定の ID プレースホルダーも実値で上書きしない。
+- Cloudflare 設定の正本は直下の `cloudflare.config.ts`、`client/cloudflare.config.ts` は Vite 用の参照だけにする。ビルド成果物は `client/.cloudflare/output/v0/`、PWA はその `workers/default/assets/` に生成する。D1 の実 ID は環境変数から読み、設定ファイルへ書かない。
+- main への squash merge は本番 Workers Builds を起動する。承認された手動公開はビルド・公開の両方に同じ `CLOUDFLARE_D1_DATABASE_ID` を設定し、`corepack pnpm build && corepack pnpm run deploy:cf` を使う。`deploy:cf` は成果物の対象 DB と本番 mode を照合してから D1 migration、cf の prebuilt 公開の順で実行する。`cf deploy` 単体で順序を飛ばさない。公開なしの検証は `corepack pnpm run deploy:cf --dry-run` を使う（D1 は引数検証のみ）。
 - PR は `docs:` / `fix:` などの接頭辞を付け、日本語で問題・変更・検証を書く。マージ・クローズ・ブランチ削除・設定変更・公開は依頼範囲に従い、完了時に PR、コミット、CI、実施した段階を報告する。本番反映まで依頼されたら、対象コミットの `Workers Builds: toban` と本番動作も確認する。
