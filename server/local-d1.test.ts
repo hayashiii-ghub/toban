@@ -147,6 +147,7 @@ describe("legacy local D1 preservation", () => {
     }
   );
 
+  // cf starts workerd twice; CI can exceed Vitest's default five seconds.
   it("実際の cf migrations apply が引き継いだ DB を更新し、履歴で再適用を防ぐ", () => {
     runCase(`
       createLegacyFixture();
@@ -172,7 +173,7 @@ describe("legacy local D1 preservation", () => {
       } finally { copy.close(); }
       noStagesRemain();
     `);
-  });
+  }, 35_000);
 
   it("保存領域が無い新規環境では何も作らない", () => {
     runCase(`
