@@ -1,23 +1,14 @@
-import { StrictMode, useLayoutEffect, type ReactNode } from "react";
-import {
-  act,
-  cleanup,
-  render,
-  renderHook,
-  screen,
-} from "@testing-library/react";
+import { defineComponent } from "vue";
+import { act, cleanup, render, renderHook, screen } from "@/test/vue";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useScheduleManager } from "./useScheduleManager";
 import { STORAGE_KEY } from "@/rotation/constants";
 import { loadState } from "@/lib/appState";
 import type { AppState } from "@/rotation/types";
-
 vi.mock("@/lib/api", () => ({
   deleteSchedule: vi.fn(() => Promise.resolve()),
 }));
-
 afterEach(cleanup);
-
 const renameActive =
   (name: string) =>
   (state: AppState): AppState => ({
@@ -26,29 +17,28 @@ const renameActive =
       schedule.id === state.activeScheduleId ? { ...schedule, name } : schedule
     ),
   });
-
 describe("WebMCP state commits", () => {
   it("shows the completed table name in the DOM before the command resolves", async () => {
     let manager: ReturnType<typeof useScheduleManager> | undefined;
-    function SchedulePage() {
+    const SchedulePage = defineComponent(() => {
       const current = useScheduleManager();
-      useLayoutEffect(() => {
-        manager = current;
-      });
-      return <output>{current.activeSchedule?.name}</output>;
-    }
+      manager = current;
+      return () => <output>{current.activeSchedule?.name}</output>;
+    });
     render(<SchedulePage />);
-
     await act(async () => {
       await manager!.commitToolState(renameActive("机拭き当番"));
       expect(screen.getByRole("status")).toHaveTextContent("机拭き当番");
     });
   });
-
   it("resolves only after the rendered state and storage contain the change", async () => {
     const { result } = renderHook(() => useScheduleManager());
-    let observed: { name?: string; saved: AppState } | undefined;
-
+    let observed:
+      | {
+          name?: string;
+          saved: AppState;
+        }
+      | undefined;
     await act(async () => {
       const saved = await result.current.commitToolState(
         renameActive("掃除当番")
@@ -60,16 +50,13 @@ describe("WebMCP state commits", () => {
       expect(saved).toMatchObject({ applied: true, local: "saved" });
       expect(saved.state).toEqual(result.current.getToolState());
     });
-
     expect(observed?.name).toBe("掃除当番");
     expect(observed?.saved).toEqual(result.current.state);
     expect(result.current.localSaveStatus).toBe("saved");
   });
-
   it("preserves rapid partial updates and reloads the same completed result", async () => {
     const { result } = renderHook(() => useScheduleManager());
     const initialId = result.current.state.activeScheduleId;
-
     await act(async () => {
       await result.current.commitToolState(renameActive("オフィス"));
       await result.current.commitToolState(state => ({
@@ -79,7 +66,6 @@ describe("WebMCP state commits", () => {
         ),
       }));
     });
-
     expect(result.current.activeSchedule).toMatchObject({
       name: "オフィス",
       pinned: true,
@@ -87,6 +73,28 @@ describe("WebMCP state commits", () => {
     expect(loadState()).toEqual(result.current.state);
   });
 
+  it("commits concurrent commands in order and returns each rendered snapshot", async () => {
+    let manager!: ReturnType<typeof useScheduleManager>;
+    const SchedulePage = defineComponent(() => {
+      manager = useScheduleManager();
+      return () => <output>{manager.activeSchedule?.name}</output>;
+    });
+    render(<SchedulePage />);
+    const first = manager.commitToolState(renameActive("一つ目"));
+    const second = manager.commitToolState(state => {
+      expect(screen.getByRole("status")).toHaveTextContent("一つ目");
+      expect(loadState().schedules[0].name).toBe("一つ目");
+      return renameActive("二つ目")(state);
+    });
+
+    const [firstResult, secondResult] = await act(() =>
+      Promise.all([first, second])
+    );
+    expect(firstResult.state.schedules[0].name).toBe("一つ目");
+    expect(secondResult.state.schedules[0].name).toBe("二つ目");
+    expect(screen.getByRole("status")).toHaveTextContent("二つ目");
+    expect(loadState()).toEqual(secondResult.state);
+  });
   it("reports an applied but unsaved update when localStorage rejects the write", async () => {
     const { result } = renderHook(() => useScheduleManager());
     const oldSaved = localStorage.getItem(STORAGE_KEY);
@@ -94,7 +102,6 @@ describe("WebMCP state commits", () => {
     const write = vi.spyOn(localStorage, "setItem").mockImplementation(() => {
       throw new DOMException("Storage is full", "QuotaExceededError");
     });
-
     try {
       await act(async () => {
         const saved = await result.current.commitToolState(
@@ -110,12 +117,10 @@ describe("WebMCP state commits", () => {
       warning.mockRestore();
     }
   });
-
   it("checks the edit guard again before applying a queued command", async () => {
     const { result } = renderHook(() => useScheduleManager());
     const before = result.current.state;
     let editing = false;
-
     await act(async () => {
       const pending = result.current.commitToolState(
         renameActive("変更しない"),
@@ -127,16 +132,13 @@ describe("WebMCP state commits", () => {
         code: "EDIT_IN_PROGRESS",
       });
     });
-
     expect(result.current.state).toBe(before);
     expect(loadState()).toEqual(before);
   });
-
   it("leaves state and storage untouched when a latest-state updater rejects", async () => {
     const { result } = renderHook(() => useScheduleManager());
     const before = result.current.state;
     const saved = localStorage.getItem(STORAGE_KEY);
-
     await act(async () => {
       await expect(
         result.current.commitToolState(() => {
@@ -144,27 +146,19 @@ describe("WebMCP state commits", () => {
         })
       ).rejects.toThrow("Target was removed");
     });
-
     expect(result.current.state).toBe(before);
     expect(localStorage.getItem(STORAGE_KEY)).toBe(saved);
   });
-
   it("settles a command without applying it when its page unmounts", async () => {
     const { result, unmount } = renderHook(() => useScheduleManager());
     const before = result.current.state;
     const pending = result.current.commitToolState(renameActive("離脱後"));
     unmount();
-
     expect(await pending).toMatchObject({ applied: false, code: "UNMOUNTED" });
     expect(loadState()).toEqual(before);
   });
-
-  it("does not invoke a creation updater twice under StrictMode", async () => {
-    const { result } = renderHook(() => useScheduleManager(), {
-      wrapper: ({ children }: { children: ReactNode }) => (
-        <StrictMode>{children}</StrictMode>
-      ),
-    });
+  it("does not invoke a creation updater twice when rendering again", async () => {
+    const { result, rerender } = renderHook(() => useScheduleManager());
     const initialCount = result.current.state.schedules.length;
     const create = vi.fn((state: AppState): AppState => ({
       schedules: [
@@ -173,21 +167,18 @@ describe("WebMCP state commits", () => {
       ],
       activeScheduleId: "new-schedule",
     }));
-
     await act(async () => {
       await result.current.commitToolState(create);
     });
-
+    await rerender();
     expect(create).toHaveBeenCalledTimes(1);
     expect(result.current.state.schedules).toHaveLength(initialCount + 1);
     expect(loadState()).toEqual(result.current.state);
   });
-
-  it("uses the latest state for batched manual updates and explicit targets", () => {
+  it("uses the latest state for batched manual updates and explicit targets", async () => {
     const { result } = renderHook(() => useScheduleManager());
     const originalId = result.current.state.activeScheduleId;
-
-    act(() => {
+    await act(() => {
       result.current.setState(state => ({
         schedules: [
           ...state.schedules,
@@ -205,7 +196,6 @@ describe("WebMCP state commits", () => {
         pinned: true,
       }));
     });
-
     expect(
       result.current.state.schedules.find(s => s.id === originalId)
     ).toMatchObject({ name: "元の表", pinned: true });
@@ -216,7 +206,6 @@ describe("WebMCP state commits", () => {
     expect(loadState()).toEqual(result.current.state);
   });
 });
-
 it("削除した当番表の未同期データと耐久マーカーを取り除く", async () => {
   const { scheduleSyncDebounced, hasPendingSync, flushPendingSync } =
     await import("@/lib/syncManager");
@@ -228,7 +217,7 @@ it("削除した当番表の未同期データと耐久マーカーを取り除�
     slug: "delete-slug",
     editToken: "delete-token",
   };
-  act(() => {
+  await act(() => {
     result.current.setState(current => ({
       ...current,
       schedules: [...current.schedules, doomed],
@@ -236,7 +225,7 @@ it("削除した当番表の未同期データと耐久マーカーを取り除�
   });
   scheduleSyncDebounced(doomed);
   expect(hasPendingSync(doomed.id)).toBe(true);
-  act(() => {
+  await act(() => {
     result.current.handleDeleteSchedule(doomed.id);
   });
   expect(hasPendingSync(doomed.id)).toBe(false);

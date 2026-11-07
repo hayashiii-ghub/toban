@@ -8,7 +8,7 @@
 
 ## 開発を始める
 
-Node.js 24 以上と Corepack を用意し、リポジトリ直下で実行します。pnpm のバージョンは `package.json` の指定に従います。
+Node.js 24.22 以降の 24 系（または 26.12 以降の 26 系）と Corepack を用意し、リポジトリ直下で実行します。pnpm のバージョンは `package.json` の指定に従います。
 
 ```sh
 corepack pnpm install --frozen-lockfile
@@ -17,5 +17,9 @@ corepack pnpm dev
 ```
 
 通常は http://localhost:3000 で開きます。変更・検証・公開の手順は [AGENTS.md](./AGENTS.md)、コマンド一覧は [package.json](./package.json) を参照してください。
+
+フロントエンドは Vue 3 と TypeScript、API は Cloudflare Workers と D1 を使っています。開発・ビルドは Vite、D1 の操作・公開は公式 CLI の cf を使います。cf と対応 Vite プラグインはベータ版のため、バージョンを固定しています。
+
+開発時の API はローカル D1 に接続します。旧環境の DB がある場合、`db:migrate:local` が元の DB を残したまま新しい開発用 ID へ初回だけ複製します。移行時は開発サーバーを止めて実行してください。
 
 [MIT License](./LICENSE) — Copyright (c) 2026 hayashiii-ghub

@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from "react";
+import { toValue, watchPostEffect, type Ref, type MaybeRefOrGetter } from "vue";
 
 const FOCUSABLE_SELECTOR = [
   "a[href]:not([disabled]):not([hidden])",
@@ -22,13 +22,13 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
 }
 
 export function useFocusTrap(
-  ref: RefObject<HTMLElement | null>,
-  isActive: boolean
+  ref: Ref<HTMLElement | null>,
+  isActive: MaybeRefOrGetter<boolean>
 ): void {
-  useEffect(() => {
-    if (!isActive || !ref.current) return;
+  watchPostEffect(onCleanup => {
+    if (!toValue(isActive) || !ref.value) return;
 
-    const container = ref.current;
+    const container = ref.value;
     const previouslyFocused = document.activeElement as HTMLElement | null;
 
     // Focus the first focusable element
@@ -79,13 +79,13 @@ export function useFocusTrap(
 
     document.addEventListener("keydown", handleKeyDown);
 
-    return () => {
+    onCleanup(() => {
       clearTimeout(timeoutId);
       document.removeEventListener("keydown", handleKeyDown);
       // Restore focus to previously focused element
       if (previouslyFocused && typeof previouslyFocused.focus === "function") {
         previouslyFocused.focus();
       }
-    };
-  }, [ref, isActive]);
+    });
+  });
 }

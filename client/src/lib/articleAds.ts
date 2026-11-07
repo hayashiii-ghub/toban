@@ -31,7 +31,7 @@ export function loadArticleAds(articlePath: string) {
     };
   }
 
-  // Run before wouter's subscribers, including back/forward to an earlier
+  // Run before the router's subscribers, including back/forward to an earlier
   // ad-free SPA entry. Never render the destination in the ad-bearing document.
   window.addEventListener(
     "popstate",

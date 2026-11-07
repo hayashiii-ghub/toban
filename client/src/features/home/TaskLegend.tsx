@@ -1,3 +1,4 @@
+import { defineView } from "@/lib/vue";
 import type { TaskGroup } from "@/rotation/types";
 import { formatTaskNames } from "@/rotation/taskFormatting";
 import { useLocale, useT } from "@/i18n";
@@ -24,49 +25,56 @@ interface TaskLegendProps {
  * カレンダーは四角いセルとその中の担当者チップ（rounded）に合わせる。
  * どちらもテーマの radius には依存させない。
  */
-export function TaskLegend({
-  groups,
-  align = "start",
-  showOffDuty = false,
-  shape = "rounded",
-}: TaskLegendProps) {
-  const t = useT();
-  const { locale } = useLocale();
-  const chipClass = `theme-border inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
-    shape === "pill" ? "rounded-full" : "rounded"
-  }`;
+export const TaskLegend = defineView<TaskLegendProps>(
+  ["groups", "align", "showOffDuty", "shape"],
+  props => {
+    const t = useT();
+    const { locale } = useLocale();
+    return () => {
+      const {
+        groups,
+        align = "start",
+        showOffDuty = false,
+        shape = "rounded",
+      } = props;
 
-  return (
-    <ul
-      className={`mt-3 flex flex-wrap gap-1.5 list-none p-0 ${
-        align === "center" ? "justify-center" : ""
-      }`}
-    >
-      {groups.map(group => (
-        <li
-          key={group.id}
-          className={chipClass}
-          style={{
-            backgroundColor: "var(--dt-card-bg)",
-            color: "var(--dt-text-secondary)",
-          }}
+      const chipClass = `theme-border inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
+        shape === "pill" ? "rounded-full" : "rounded"
+      }`;
+
+      return (
+        <ul
+          class={`mt-3 flex flex-wrap gap-1.5 list-none p-0 ${
+            align === "center" ? "justify-center" : ""
+          }`}
         >
-          <span aria-hidden="true">{group.emoji}</span>
-          <span>{formatTaskNames(group.tasks, locale)}</span>
-        </li>
-      ))}
-      {showOffDuty && (
-        <li
-          className={chipClass}
-          style={{
-            backgroundColor: "var(--dt-card-bg)",
-            color: "var(--dt-text-muted)",
-          }}
-        >
-          <span aria-hidden="true">💤</span>
-          <span>{t("disc.offDuty")}</span>
-        </li>
-      )}
-    </ul>
-  );
-}
+          {groups.map(group => (
+            <li
+              key={group.id}
+              class={chipClass}
+              style={{
+                backgroundColor: "var(--dt-card-bg)",
+                color: "var(--dt-text-secondary)",
+              }}
+            >
+              <span aria-hidden="true">{group.emoji}</span>
+              <span>{formatTaskNames(group.tasks, locale.value)}</span>
+            </li>
+          ))}
+          {showOffDuty && (
+            <li
+              class={chipClass}
+              style={{
+                backgroundColor: "var(--dt-card-bg)",
+                color: "var(--dt-text-muted)",
+              }}
+            >
+              <span aria-hidden="true">💤</span>
+              <span>{t("disc.offDuty")}</span>
+            </li>
+          )}
+        </ul>
+      );
+    };
+  }
+);

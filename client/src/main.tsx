@@ -1,8 +1,7 @@
-import { createRoot } from "react-dom/client";
+import { createApp } from "vue";
 import { applySavedFont } from "./fonts";
-import App from "./App";
+import App, { router } from "./App";
 import "./index.css";
 
 applySavedFont();
-
-createRoot(document.getElementById("root")!).render(<App />);
+createApp(App).use(router).mount("#root");

@@ -1,3 +1,4 @@
+import { defineView } from "@/lib/vue";
 import {
   ChevronLeft,
   ChevronRight,
@@ -5,7 +6,7 @@ import {
   Pin,
   PinOff,
   Trash2,
-} from "lucide-react";
+} from "@lucide/vue";
 import {
   PopoverMenu,
   PopoverMenuItem,
@@ -34,70 +35,71 @@ interface TabMenuProps {
 }
 
 /** 当番表タブを長押し・右クリック・ダブルクリック・Shift+F10 したときのメニュー */
-export function TabMenu({
-  target,
-  onTogglePin,
-  onMove,
-  onDuplicate,
-  onDelete,
-  onDismiss,
-}: TabMenuProps) {
-  const t = useT();
-  return (
-    <PopoverMenu
-      anchor={target.anchor}
-      label={t("tabs.menuAria", { name: target.name })}
-      onDismiss={onDismiss}
-    >
-      <PopoverMenuItem
-        icon={
-          target.pinned ? (
-            <PinOff className="size-4" aria-hidden="true" />
-          ) : (
-            <Pin className="size-4" aria-hidden="true" />
-          )
-        }
-        onSelect={onTogglePin}
-      >
-        {target.pinned ? t("tabs.menu.unpin") : t("tabs.menu.pin")}
-      </PopoverMenuItem>
-      {/* ピン留めしたタブは先頭に固定されるので、並べ替えの対象にしない */}
-      {!target.pinned && (
-        <>
+export const TabMenu = defineView<TabMenuProps>(
+  ["target", "onTogglePin", "onMove", "onDuplicate", "onDelete", "onDismiss"],
+  props => {
+    const t = useT();
+    return () => {
+      const { target, onTogglePin, onMove, onDuplicate, onDelete, onDismiss } =
+        props;
+
+      return (
+        <PopoverMenu
+          anchor={target.anchor}
+          label={t("tabs.menuAria", { name: target.name })}
+          onDismiss={onDismiss}
+        >
           <PopoverMenuItem
-            icon={<ChevronLeft className="size-4" aria-hidden="true" />}
-            disabled={!target.canMoveLeft}
-            onSelect={() => onMove("left")}
+            icon={
+              target.pinned ? (
+                <PinOff class="size-4" aria-hidden="true" />
+              ) : (
+                <Pin class="size-4" aria-hidden="true" />
+              )
+            }
+            onSelect={onTogglePin}
           >
-            {t("tabs.menu.moveLeft")}
+            {target.pinned ? t("tabs.menu.unpin") : t("tabs.menu.pin")}
           </PopoverMenuItem>
+          {/* ピン留めしたタブは先頭に固定されるので、並べ替えの対象にしない */}
+          {!target.pinned && (
+            <>
+              <PopoverMenuItem
+                icon={<ChevronLeft class="size-4" aria-hidden="true" />}
+                disabled={!target.canMoveLeft}
+                onSelect={() => onMove("left")}
+              >
+                {t("tabs.menu.moveLeft")}
+              </PopoverMenuItem>
+              <PopoverMenuItem
+                icon={<ChevronRight class="size-4" aria-hidden="true" />}
+                disabled={!target.canMoveRight}
+                onSelect={() => onMove("right")}
+              >
+                {t("tabs.menu.moveRight")}
+              </PopoverMenuItem>
+            </>
+          )}
           <PopoverMenuItem
-            icon={<ChevronRight className="size-4" aria-hidden="true" />}
-            disabled={!target.canMoveRight}
-            onSelect={() => onMove("right")}
+            icon={<Copy class="size-4" aria-hidden="true" />}
+            onSelect={onDuplicate}
           >
-            {t("tabs.menu.moveRight")}
+            {t("common.duplicate")}
           </PopoverMenuItem>
-        </>
-      )}
-      <PopoverMenuItem
-        icon={<Copy className="size-4" aria-hidden="true" />}
-        onSelect={onDuplicate}
-      >
-        {t("common.duplicate")}
-      </PopoverMenuItem>
-      {target.canDelete && (
-        <>
-          <PopoverMenuSeparator />
-          <PopoverMenuItem
-            icon={<Trash2 className="size-4" aria-hidden="true" />}
-            danger
-            onSelect={onDelete}
-          >
-            {t("common.delete")}
-          </PopoverMenuItem>
-        </>
-      )}
-    </PopoverMenu>
-  );
-}
+          {target.canDelete && (
+            <>
+              <PopoverMenuSeparator />
+              <PopoverMenuItem
+                icon={<Trash2 class="size-4" aria-hidden="true" />}
+                danger
+                onSelect={onDelete}
+              >
+                {t("common.delete")}
+              </PopoverMenuItem>
+            </>
+          )}
+        </PopoverMenu>
+      );
+    };
+  }
+);

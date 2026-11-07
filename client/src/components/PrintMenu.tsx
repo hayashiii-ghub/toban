@@ -1,4 +1,5 @@
-import { Printer } from "lucide-react";
+import { defineView } from "@/lib/vue";
+import { Printer } from "@lucide/vue";
 import { useT } from "@/i18n";
 
 const BUTTON_CLASS =
@@ -8,22 +9,26 @@ interface PrintMenuProps {
   onPrint: () => void;
 }
 
-export function PrintMenu({ onPrint }: PrintMenuProps) {
+export const PrintMenu = defineView<PrintMenuProps>(["onPrint"], props => {
   const t = useT();
-  return (
-    <button
-      type="button"
-      onClick={onPrint}
-      data-onboarding="print-button"
-      className={BUTTON_CLASS}
-      style={{
-        backgroundColor: "var(--dt-button-bg)",
-        borderRadius: "var(--dt-border-radius-sm)",
-      }}
-      aria-label={t("print.printAria")}
-    >
-      <Printer className="size-4" aria-hidden="true" />
-      {t("print.print")}
-    </button>
-  );
-}
+  return () => {
+    const { onPrint } = props;
+
+    return (
+      <button
+        type="button"
+        onClick={onPrint}
+        data-onboarding="print-button"
+        class={BUTTON_CLASS}
+        style={{
+          backgroundColor: "var(--dt-button-bg)",
+          borderRadius: "var(--dt-border-radius-sm)",
+        }}
+        aria-label={t("print.printAria")}
+      >
+        <Printer class="size-4" aria-hidden="true" />
+        {t("print.print")}
+      </button>
+    );
+  };
+});

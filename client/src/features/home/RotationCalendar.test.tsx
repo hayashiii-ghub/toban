@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, cleanup, fireEvent } from "@testing-library/react";
+import { render, cleanup, fireEvent } from "@/test/vue";
 import { LanguageProvider } from "@/i18n";
 import { RotationCalendar } from "./RotationCalendar";
 import type { Member, RotationConfig, TaskGroup } from "@shared/types";
@@ -42,14 +42,14 @@ describe("RotationCalendar", () => {
     vi.useRealTimers();
   });
 
-  it("renders current month in header", () => {
+  it("renders current month in header", async () => {
     const { container } = render(
       <RotationCalendar groups={groups} members={members} rotation={0} />
     );
     expect(container.textContent).toContain("2026年3月");
   });
 
-  it("renders weekday headers", () => {
+  it("renders weekday headers", async () => {
     const { container } = render(
       <RotationCalendar groups={groups} members={members} rotation={0} />
     );
@@ -59,7 +59,7 @@ describe("RotationCalendar", () => {
     expect(text).toContain("土");
   });
 
-  it("navigates to next and previous months", () => {
+  it("navigates to next and previous months", async () => {
     const { container } = render(
       <RotationCalendar groups={groups} members={members} rotation={0} />
     );
@@ -70,17 +70,17 @@ describe("RotationCalendar", () => {
       )!;
 
     // Go to next month
-    fireEvent.click(getBtn("▶"));
+    await fireEvent.click(getBtn("▶"));
     expect(container.textContent).toContain("2026年4月");
 
     // Go back two months (re-query after each render)
-    fireEvent.click(getBtn("◀"));
+    await fireEvent.click(getBtn("◀"));
     expect(container.textContent).toContain("2026年3月");
-    fireEvent.click(getBtn("◀"));
+    await fireEvent.click(getBtn("◀"));
     expect(container.textContent).toContain("2026年2月");
   });
 
-  it("shows 今月 button when not on current month and navigates back", () => {
+  it("shows 今月 button when not on current month and navigates back", async () => {
     const { container } = render(
       <RotationCalendar groups={groups} members={members} rotation={0} />
     );
@@ -95,7 +95,7 @@ describe("RotationCalendar", () => {
     const nextBtn = Array.from(container.querySelectorAll("button")).find(
       b => b.textContent === "▶"
     )!;
-    fireEvent.click(nextBtn);
+    await fireEvent.click(nextBtn);
 
     // Now 今月 button should appear
     todayBtn = Array.from(container.querySelectorAll("button")).find(
@@ -104,18 +104,18 @@ describe("RotationCalendar", () => {
     expect(todayBtn).toBeDefined();
 
     // Click it to go back
-    fireEvent.click(todayBtn!);
+    await fireEvent.click(todayBtn!);
     expect(container.textContent).toContain("2026年3月");
   });
 
-  it("shows manual mode badge when not in date mode", () => {
+  it("shows manual mode badge when not in date mode", async () => {
     const { container } = render(
       <RotationCalendar groups={groups} members={members} rotation={0} />
     );
     expect(container.textContent).toContain("手動切り替え：当番は固定です");
   });
 
-  it("does not show manual mode badge in date mode", () => {
+  it("does not show manual mode badge in date mode", async () => {
     const config: RotationConfig = {
       mode: "date",
       startDate: "2026-03-01",
@@ -132,7 +132,7 @@ describe("RotationCalendar", () => {
     expect(container.textContent).not.toContain("手動切り替え：当番は固定です");
   });
 
-  it("開始日より前の日には当番を出さない", () => {
+  it("開始日より前の日には当番を出さない", async () => {
     const config: RotationConfig = {
       mode: "date",
       startDate: "2026-03-10",
@@ -150,7 +150,7 @@ describe("RotationCalendar", () => {
     expect(container.querySelectorAll("[aria-pressed]")).toHaveLength(22);
   });
 
-  it("renders legend with group emojis and task names", () => {
+  it("renders legend with group emojis and task names", async () => {
     const { container } = render(
       <RotationCalendar groups={groups} members={members} rotation={0} />
     );
@@ -160,7 +160,7 @@ describe("RotationCalendar", () => {
     expect(container.textContent).toContain("給食");
   });
 
-  it("displays member names in calendar day cells", () => {
+  it("displays member names in calendar day cells", async () => {
     const { container } = render(
       <RotationCalendar groups={groups} members={members} rotation={0} />
     );
@@ -168,7 +168,7 @@ describe("RotationCalendar", () => {
     expect(container.textContent).toContain("田中");
   });
 
-  it("shows holiday names (春分の日 on March 20, 2026)", () => {
+  it("shows holiday names (春分の日 on March 20, 2026)", async () => {
     const { container } = render(
       <RotationCalendar groups={groups} members={members} rotation={0} />
     );
@@ -177,7 +177,7 @@ describe("RotationCalendar", () => {
   });
 });
 
-it("shows English holiday labels while preserving user-entered roster text", () => {
+it("shows English holiday labels while preserving user-entered roster text", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2026, 8, 1));
   localStorage.setItem("toban-lang", "en");

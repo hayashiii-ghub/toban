@@ -1,12 +1,14 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import {
+  computed,
+  inject,
+  provide,
+  ref,
+  watch,
+  type InjectionKey,
+  type Ref,
+} from "vue";
 import { safeGetItem, safeSetItem } from "@/lib/storage";
+import { defineView } from "@/lib/vue";
 import {
   DEFAULT_LOCALE,
   detectLocale,
@@ -18,84 +20,65 @@ import { ja, type MessageKey } from "./locales/ja";
 import { en } from "./locales/en";
 
 export type { MessageKey };
-
 const LANG_STORAGE_KEY = "toban-lang";
-
 const dicts: Record<Locale, Record<string, string>> = { ja, en };
-
 interface I18nContextType {
-  locale: Locale;
+  locale: Ref<Locale>;
   setLocale: (locale: Locale) => void;
   t: (key: MessageKey, params?: Record<string, string | number>) => string;
 }
+const I18nContext: InjectionKey<I18nContextType> = Symbol("toban-language");
 
-const I18nContext = createContext<I18nContextType | undefined>(undefined);
-
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocale] = useState<Locale>(() =>
+export const LanguageProvider = defineView<object>([], (_props, { slots }) => {
+  const locale = ref<Locale>(
     detectLocale(
       safeGetItem(LANG_STORAGE_KEY),
       typeof navigator !== "undefined" ? navigator.language : undefined
     )
   );
-
-  useEffect(() => {
-    document.documentElement.lang = locale;
-    safeSetItem(LANG_STORAGE_KEY, locale);
-  }, [locale]);
-
-  const t = useCallback(
-    (key: MessageKey, params?: Record<string, string | number>) =>
-      translate(dicts, locale, key, params),
-    [locale]
+  const value: I18nContextType = {
+    locale,
+    setLocale: next => {
+      locale.value = next;
+    },
+    t: (key, params) => translate(dicts, locale.value, key, params),
+  };
+  provide(I18nContext, value);
+  watch(
+    locale,
+    next => {
+      document.documentElement.lang = next;
+      safeSetItem(LANG_STORAGE_KEY, next);
+    },
+    { immediate: true, flush: "sync" }
   );
+  return () => slots.default?.();
+});
 
-  const value = useMemo<I18nContextType>(
-    () => ({ locale, setLocale, t }),
-    [locale, t]
-  );
-
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
-}
-
-// Provider 未提供時の fallback（既定言語 ja・setLocale は no-op）。
-// アプリ root は常に LanguageProvider で包むため、これが効くのは
-// 単体テストでコンポーネントを isolation render したときだけ。
-const FALLBACK_CONTEXT: I18nContextType = {
-  locale: DEFAULT_LOCALE,
+const fallback: I18nContextType = {
+  locale: ref(DEFAULT_LOCALE),
   setLocale: () => {},
   t: (key, params) => translate(dicts, DEFAULT_LOCALE, key, params),
 };
-
 function useI18n(): I18nContextType {
-  return useContext(I18nContext) ?? FALLBACK_CONTEXT;
+  return inject(I18nContext, fallback);
 }
-
-export function useLocale(): {
-  locale: Locale;
-  setLocale: (locale: Locale) => void;
-} {
+export function useLocale() {
   const { locale, setLocale } = useI18n();
   return { locale, setLocale };
 }
-
 export function useT(): I18nContextType["t"] {
   return useI18n().t;
 }
-
-// 日付整形用の BCP47 タグ（Intl 系 API に渡す）。
-export function useDateLocale(): string {
-  return useI18n().locale === "ja" ? "ja-JP" : "en-US";
+export function useDateLocale() {
+  const { locale } = useI18n();
+  return computed(() => (locale.value === "ja" ? "ja-JP" : "en-US"));
 }
-
-// hook を使えない場所（class component の ErrorBoundary、純関数の lib）向けの翻訳。
-// Provider が document.documentElement.lang を同期しているのでそこから locale を読む。
 export function tStandalone(
   key: MessageKey,
   params?: Record<string, string | number>
 ): string {
   const lang =
     typeof document !== "undefined" ? document.documentElement.lang : "";
-  const locale = isLocale(lang) ? lang : DEFAULT_LOCALE;
-  return translate(dicts, locale, key, params);
+  return translate(dicts, isLocale(lang) ? lang : DEFAULT_LOCALE, key, params);
 }

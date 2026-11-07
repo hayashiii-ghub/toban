@@ -1,4 +1,10 @@
-import { useMemo, useSyncExternalStore } from "react";
+import {
+  computed,
+  onMounted,
+  onScopeDispose,
+  shallowRef,
+  type ComputedRef,
+} from "vue";
 import { formatIsoDateLocal, parseIsoDateLocal } from "@/rotation/dateUtils";
 
 const listeners = new Set<() => void>();
@@ -44,7 +50,15 @@ function subscribe(listener: () => void) {
 }
 
 /** 深夜と画面復帰で更新する、端末の今日。複数の表示で同じ日付を使う。 */
-export function useLocalToday(): Date {
-  const day = useSyncExternalStore(subscribe, getDay, getDay);
-  return useMemo(() => parseIsoDateLocal(day)!, [day]);
+export function useLocalToday(): ComputedRef<Date> {
+  const day = shallowRef(getDay());
+  let unsubscribe: (() => void) | undefined;
+  onMounted(() => {
+    day.value = getDay();
+    unsubscribe = subscribe(() => {
+      day.value = getDay();
+    });
+  });
+  onScopeDispose(() => unsubscribe?.());
+  return computed(() => parseIsoDateLocal(day.value)!);
 }

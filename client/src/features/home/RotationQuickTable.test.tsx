@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { act, render, cleanup } from "@testing-library/react";
+import { act, render, cleanup } from "@/test/vue";
 import { RotationQuickTable } from "./RotationQuickTable";
 import type { Member, RotationConfig, TaskGroup } from "@shared/types";
 
@@ -45,7 +45,7 @@ describe("RotationQuickTable", () => {
     makeGroup("g2", "🍽", ["給食"]),
   ];
 
-  it("日付で交代するときは、今の順番から日付の順に並べる", () => {
+  it("日付で交代するときは、今の順番から日付の順に並べる", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 2, 15)); // 3/15(日)
     const config: RotationConfig = {
@@ -71,7 +71,7 @@ describe("RotationQuickTable", () => {
     vi.useRealTimers();
   });
 
-  it("renders correct number of group rows", () => {
+  it("renders correct number of group rows", async () => {
     const { container } = render(
       <RotationQuickTable groups={groups} members={members} rotation={0} />
     );
@@ -82,7 +82,7 @@ describe("RotationQuickTable", () => {
     expect(bodyRows.length).toBe(2);
   });
 
-  it("同じ表を表示したまま画面に戻ると、早見表の日付を更新する", () => {
+  it("同じ表を表示したまま画面に戻ると、早見表の日付を更新する", async () => {
     vi.stubEnv("TZ", "Asia/Tokyo");
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 9, 1, 23, 59));
@@ -100,14 +100,14 @@ describe("RotationQuickTable", () => {
         .map(th => th.textContent?.replace("◀", "").trim());
     expect(headings()).toEqual(["10/1(木)", "10/2(金)", "10/3(土)"]);
 
-    act(() => {
+    await act(() => {
       vi.setSystemTime(new Date(2026, 9, 2, 0, 1));
       window.dispatchEvent(new Event("focus"));
     });
     expect(headings()).toEqual(["10/2(金)", "10/3(土)", "10/4(日)"]);
   });
 
-  it("renders one column per active member plus header column", () => {
+  it("renders one column per active member plus header column", async () => {
     const { container } = render(
       <RotationQuickTable groups={groups} members={members} rotation={0} />
     );
@@ -116,7 +116,7 @@ describe("RotationQuickTable", () => {
     expect(headerCells.length).toBe(4);
   });
 
-  it("shows ◀ indicator on current rotation column", () => {
+  it("shows ◀ indicator on current rotation column", async () => {
     const { container } = render(
       <RotationQuickTable groups={groups} members={members} rotation={1} />
     );
@@ -132,7 +132,7 @@ describe("RotationQuickTable", () => {
     expect(marker(headerCells[1]).style.visibility).toBe("hidden");
   });
 
-  it("keeps column borders reserved on non-current cells (layout stability)", () => {
+  it("keeps column borders reserved on non-current cells (layout stability)", async () => {
     const { container } = render(
       <RotationQuickTable groups={groups} members={members} rotation={1} />
     );
@@ -145,7 +145,7 @@ describe("RotationQuickTable", () => {
     expect(firstRowCells[2].style.borderLeft).toBe("2.5px solid transparent");
   });
 
-  it("excludes skipped members from columns", () => {
+  it("excludes skipped members from columns", async () => {
     const membersWithSkip = [
       ...members,
       { ...makeMember("m4", "鈴木"), skipped: true },
@@ -162,7 +162,7 @@ describe("RotationQuickTable", () => {
     expect(headerCells.length).toBe(4);
   });
 
-  it("scrolls current column into view when rotation changes and table overflows", () => {
+  it("scrolls current column into view when rotation changes and table overflows", async () => {
     const { container, rerender } = render(
       <RotationQuickTable groups={groups} members={members} rotation={0} />
     );
@@ -178,7 +178,7 @@ describe("RotationQuickTable", () => {
       configurable: true,
     });
 
-    rerender(
+    await rerender(
       <RotationQuickTable groups={groups} members={members} rotation={2} />
     );
 
@@ -191,7 +191,7 @@ describe("RotationQuickTable", () => {
       value: 100,
       configurable: true,
     });
-    rerender(
+    await rerender(
       <RotationQuickTable groups={groups} members={members} rotation={1} />
     );
 
@@ -200,7 +200,7 @@ describe("RotationQuickTable", () => {
     expect(lastCall.left).toBeGreaterThanOrEqual(0);
   });
 
-  it("does not scroll when table fits without overflow", () => {
+  it("does not scroll when table fits without overflow", async () => {
     const { container, rerender } = render(
       <RotationQuickTable groups={groups} members={members} rotation={0} />
     );
@@ -216,14 +216,14 @@ describe("RotationQuickTable", () => {
       configurable: true,
     });
 
-    rerender(
+    await rerender(
       <RotationQuickTable groups={groups} members={members} rotation={1} />
     );
 
     expect(scrollTo).not.toHaveBeenCalled();
   });
 
-  it("has correct aria-label on table", () => {
+  it("has correct aria-label on table", async () => {
     const { container } = render(
       <RotationQuickTable groups={groups} members={members} rotation={0} />
     );
@@ -231,7 +231,7 @@ describe("RotationQuickTable", () => {
     expect(table?.getAttribute("aria-label")).toBe("ローテーション早見表");
   });
 
-  it("displays group emoji and task names in row headers", () => {
+  it("displays group emoji and task names in row headers", async () => {
     const { container } = render(
       <RotationQuickTable groups={groups} members={members} rotation={0} />
     );

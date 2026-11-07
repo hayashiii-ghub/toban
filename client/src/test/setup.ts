@@ -1,17 +1,27 @@
 import "@testing-library/jest-dom/vitest";
-import { MotionGlobalConfig } from "framer-motion";
-import { beforeEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
+import { cleanup } from "@testing-library/vue";
+afterEach(cleanup);
 
-// 本物の framer-motion を描画し、アニメーションだけ即時に終わらせる。
-// アプリは LazyMotion で包んだ m を使うが、単体テストは包まずに描画するので、
-// 機能を同梱した motion を m として渡す。
-MotionGlobalConfig.skipAnimations = true;
-vi.mock("framer-motion", async importOriginal => {
-  const actual = await importOriginal<typeof import("framer-motion")>();
-  return { ...actual, m: actual.motion };
+// jsdom has no layout tree. Keep actual Motion and focus handling able to see
+// connected, displayed elements instead of treating every mounted node as hidden.
+Object.defineProperty(HTMLElement.prototype, "offsetParent", {
+  configurable: true,
+  get() {
+    if (!this.isConnected || this.closest("[hidden]")) return null;
+    if (getComputedStyle(this).display === "none") return null;
+    for (
+      let element: HTMLElement | null = this.parentElement;
+      element;
+      element = element.parentElement
+    ) {
+      if (getComputedStyle(element).display === "none") return null;
+    }
+    return this.parentElement;
+  },
 });
 
-// framer-motion が matchMedia を参照するため stub
+// Motion のブラウザ設定を既存のテスト条件にそろえる。
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { render, cleanup, within } from "@testing-library/react";
+import { render, cleanup, within } from "@/test/vue";
 import { RotationDisc } from "./RotationDisc";
 import type { Member, TaskGroup } from "@shared/types";
 
@@ -34,7 +34,7 @@ const members = [
 const groups = [grp("g1", ["掃除"]), grp("g2", ["配膳"]), grp("g3", ["日直"])];
 
 describe("RotationDisc", () => {
-  it("表現可能な構成では円盤を3枚（全体/外円/内円）描画し全メンバー名を載せる", () => {
+  it("表現可能な構成では円盤を3枚（全体/外円/内円）描画し全メンバー名を載せる", async () => {
     const { container } = render(
       <RotationDisc
         groups={groups}
@@ -46,13 +46,13 @@ describe("RotationDisc", () => {
     // 全体・外円・内円 の3枚。画面では全体のみ、外円/内円は印刷専用。
     expect(container.querySelectorAll("svg")).toHaveLength(3);
     expect(container.querySelectorAll(".rotation-print-only")).toHaveLength(2);
-    const view = within(container);
+    const view = within(container as HTMLElement);
     // 担当者名は全体＋内円の2枚に載る（外円には載らない）
     expect(view.getAllByText("田中")).toHaveLength(2);
     expect(view.getAllByText("高橋")).toHaveLength(2);
   });
 
-  it("役割名は盤面ではなく凡例にテキスト表示される（外周はみ出し回避）", () => {
+  it("役割名は盤面ではなく凡例にテキスト表示される（外周はみ出し回避）", async () => {
     const { container } = render(
       <RotationDisc
         groups={groups}
@@ -61,14 +61,14 @@ describe("RotationDisc", () => {
         assignmentMode="member"
       />
     );
-    const view = within(container);
+    const view = within(container as HTMLElement);
     // 役割タスク文字列は独立ノードとして凡例に出る
     expect(view.getByText("掃除")).toBeInTheDocument();
     expect(view.getByText("配膳")).toBeInTheDocument();
     expect(view.getByText("日直")).toBeInTheDocument();
   });
 
-  it("各扇形に hover/a11y 用の <title>（役割：メンバー）を持つ", () => {
+  it("各扇形に hover/a11y 用の <title>（役割：メンバー）を持つ", async () => {
     const { container } = render(
       <RotationDisc
         groups={groups}
@@ -85,7 +85,7 @@ describe("RotationDisc", () => {
     expect(titles).toContain("💤 おやすみ：高橋");
   });
 
-  it("役割数 < メンバー数では凡例に「おやすみ」を表示する", () => {
+  it("役割数 < メンバー数では凡例に「おやすみ」を表示する", async () => {
     const { container } = render(
       <RotationDisc
         groups={groups}
@@ -95,10 +95,12 @@ describe("RotationDisc", () => {
       />
     );
     // groups 3 < members 4 → 1人がおやすみ
-    expect(within(container).getByText("おやすみ")).toBeInTheDocument();
+    expect(
+      within(container as HTMLElement).getByText("おやすみ")
+    ).toBeInTheDocument();
   });
 
-  it("グループ専用メンバー(memberIds)があると円盤化できず注記を出しSVGを描かない", () => {
+  it("グループ専用メンバー(memberIds)があると円盤化できず注記を出しSVGを描かない", async () => {
     const pooled = [
       grp("g1", ["掃除"], "🧹", { memberIds: ["m1", "m2"] }),
       grp("g2", ["配膳"]),
@@ -111,11 +113,13 @@ describe("RotationDisc", () => {
         assignmentMode="member"
       />
     );
-    expect(within(container).getByText(/円盤にできません/)).toBeInTheDocument();
+    expect(
+      within(container as HTMLElement).getByText(/円盤にできません/)
+    ).toBeInTheDocument();
     expect(container.querySelector("svg")).not.toBeInTheDocument();
   });
 
-  it("役割数 > メンバー数では円盤化できず、現在の人数・タスク数を添えた直し方を出す", () => {
+  it("役割数 > メンバー数では円盤化できず、現在の人数・タスク数を添えた直し方を出す", async () => {
     const tooManyRoles = [
       grp("g1", ["A"]),
       grp("g2", ["B"]),
@@ -134,10 +138,10 @@ describe("RotationDisc", () => {
     );
     // 原因の羅列ではなく行動できる文言＋現在数（担当者2人・タスク5個）を埋め込む。
     expect(
-      within(container).getByText(/担当者の数 ≧ タスクの数/)
+      within(container as HTMLElement).getByText(/担当者の数 ≧ タスクの数/)
     ).toBeInTheDocument();
     expect(
-      within(container).getByText(/担当者2人・タスク5個/)
+      within(container as HTMLElement).getByText(/担当者2人・タスク5個/)
     ).toBeInTheDocument();
     expect(container.querySelector("svg")).not.toBeInTheDocument();
   });

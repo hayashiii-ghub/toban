@@ -1,17 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-
+import { renderHook, act } from "@/test/vue";
 vi.mock("@/lib/api", () => ({
   deleteSchedule: vi.fn(() => Promise.resolve()),
 }));
-
-vi.mock("sonner", () => ({
+vi.mock("vue-sonner", () => ({
   toast: { error: vi.fn() },
 }));
-
 import { useScheduleManager } from "./useScheduleManager";
 import type { Schedule, ScheduleTemplate } from "@/rotation/types";
-
 const makeTemplate = (name = "テスト"): ScheduleTemplate => ({
   name,
   emoji: "🧹",
@@ -33,12 +29,10 @@ const makeTemplate = (name = "テスト"): ScheduleTemplate => ({
     },
   ],
 });
-
 describe("useScheduleManager", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
-
   it("localStorageが空のときデフォルト状態を返す", () => {
     const { result } = renderHook(() => useScheduleManager());
     expect(result.current.state.schedules.length).toBeGreaterThanOrEqual(1);
@@ -47,103 +41,84 @@ describe("useScheduleManager", () => {
       result.current.state.schedules[0].id
     );
   });
-
-  it("handleAddScheduleでスケジュールを追加しアクティブにする", () => {
+  it("handleAddScheduleでスケジュールを追加しアクティブにする", async () => {
     const { result } = renderHook(() => useScheduleManager());
     const initialCount = result.current.state.schedules.length;
-
     let newSchedule: Schedule | undefined;
-    act(() => {
+    await act(() => {
       newSchedule = result.current.handleAddSchedule(makeTemplate("新規当番"));
     });
-
     expect(result.current.state.schedules.length).toBe(initialCount + 1);
     expect(result.current.state.activeScheduleId).toBe(newSchedule!.id);
     expect(result.current.activeSchedule?.name).toBe("新規当番");
   });
-
-  it("handleDeleteScheduleでスケジュールを削除する（最後の1つは削除しない）", () => {
+  it("handleDeleteScheduleでスケジュールを削除する（最後の1つは削除しない）", async () => {
     const { result } = renderHook(() => useScheduleManager());
-
     // 2つ目を追加
     let second: Schedule | undefined;
-    act(() => {
+    await act(() => {
       second = result.current.handleAddSchedule(makeTemplate("削除用"));
     });
     const countBefore = result.current.state.schedules.length;
-
     // 2つ目を削除
-    act(() => {
+    await act(() => {
       result.current.handleDeleteSchedule(second!.id);
     });
     expect(result.current.state.schedules.length).toBe(countBefore - 1);
     expect(
       result.current.state.schedules.find(s => s.id === second!.id)
     ).toBeUndefined();
-
     // 最後の1つは削除できない
     const lastId = result.current.state.schedules[0].id;
     const countAfterLast = result.current.state.schedules.length;
-    act(() => {
+    await act(() => {
       result.current.handleDeleteSchedule(lastId);
     });
     expect(result.current.state.schedules.length).toBe(countAfterLast);
   });
-
-  it("selectScheduleでactiveScheduleIdを切り替える", () => {
+  it("selectScheduleでactiveScheduleIdを切り替える", async () => {
     const { result } = renderHook(() => useScheduleManager());
-
     let second: Schedule | undefined;
-    act(() => {
+    await act(() => {
       second = result.current.handleAddSchedule(makeTemplate("2番目"));
     });
-
     // 最初のスケジュールに切り替え
     const firstId = result.current.state.schedules[0].id;
-    act(() => {
+    await act(() => {
       result.current.selectSchedule(firstId);
     });
     expect(result.current.state.activeScheduleId).toBe(firstId);
-
     // 2番目に戻す
-    act(() => {
+    await act(() => {
       result.current.selectSchedule(second!.id);
     });
     expect(result.current.state.activeScheduleId).toBe(second!.id);
   });
-
-  it("handleTabDropでスケジュールの並び順を変更する", () => {
+  it("handleTabDropでスケジュールの並び順を変更する", async () => {
     const { result } = renderHook(() => useScheduleManager());
-
     let _s2: Schedule | undefined;
     let s3: Schedule | undefined;
-    act(() => {
+    await act(() => {
       _s2 = result.current.handleAddSchedule(makeTemplate("B"));
     });
-    act(() => {
+    await act(() => {
       s3 = result.current.handleAddSchedule(makeTemplate("C"));
     });
-
     const firstId = result.current.state.schedules[0].id;
-
     // s3をfirstIdの位置にドロップ
-    act(() => {
+    await act(() => {
       result.current.handleTabDrop(s3!.id, firstId);
     });
-
     const ids = result.current.state.schedules.map(s => s.id);
     expect(ids.indexOf(s3!.id)).toBeLessThan(ids.indexOf(firstId));
   });
-
-  it("handleDuplicateScheduleでアクティブスケジュールをコピーする", () => {
+  it("handleDuplicateScheduleでアクティブスケジュールをコピーする", async () => {
     const { result } = renderHook(() => useScheduleManager());
     const originalName = result.current.activeSchedule!.name;
     const countBefore = result.current.state.schedules.length;
-
-    act(() => {
+    await act(() => {
       result.current.handleDuplicateSchedule();
     });
-
     expect(result.current.state.schedules.length).toBe(countBefore + 1);
     expect(result.current.activeSchedule?.name).toBe(
       `${originalName}（コピー）`
@@ -152,10 +127,8 @@ describe("useScheduleManager", () => {
     const ids = result.current.state.schedules.map(s => s.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
-
-  it("handleSaveSettingsでアクティブスケジュールのフィールドを更新する", () => {
+  it("handleSaveSettingsでアクティブスケジュールのフィールドを更新する", async () => {
     const { result } = renderHook(() => useScheduleManager());
-
     const newGroups = [{ id: "g_new", tasks: ["新タスク"], emoji: "🎯" }];
     const newMembers = [
       {
@@ -166,8 +139,7 @@ describe("useScheduleManager", () => {
         textColor: "#900",
       },
     ];
-
-    act(() => {
+    await act(() => {
       result.current.handleSaveSettings({
         name: "更新後の名前",
         groups: newGroups,
@@ -178,7 +150,6 @@ describe("useScheduleManager", () => {
         designThemeId: "chalkboard",
       });
     });
-
     const active = result.current.activeSchedule!;
     expect(active.name).toBe("更新後の名前");
     expect(active.groups).toEqual(newGroups);

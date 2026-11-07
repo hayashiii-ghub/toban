@@ -1,4 +1,11 @@
-import { createContext, useEffect, useMemo } from "react";
+import {
+  computed,
+  provide,
+  watch,
+  type InjectionKey,
+  type ComputedRef,
+} from "vue";
+import { defineView } from "@/lib/vue";
 import {
   getThemeById,
   DEFAULT_HEADER_BG,
@@ -8,12 +15,11 @@ import { applyFont, getFontById, getSavedFontId } from "@/fonts";
 import type { FontId } from "@shared/appearance";
 
 interface DesignThemeContextType {
-  theme: DesignTheme;
+  theme: ComputedRef<DesignTheme>;
 }
 
-const DesignThemeContext = createContext<DesignThemeContextType | undefined>(
-  undefined
-);
+const DesignThemeContext: InjectionKey<DesignThemeContextType> =
+  Symbol("toban-theme");
 
 // フォントは色テーマと独立した軸で、Provider が当番表ごとの fontId を適用する。
 // theme.typography は旧テーマ互換のため残しているが現状未使用。
@@ -75,29 +81,19 @@ export function applyThemeToRoot(theme: DesignTheme) {
 interface DesignThemeProviderProps {
   themeId: string | undefined;
   fontId?: FontId;
-  children: React.ReactNode;
 }
 
-export function DesignThemeProvider({
-  themeId,
-  fontId,
-  children,
-}: DesignThemeProviderProps) {
-  const theme = useMemo(() => getThemeById(themeId), [themeId]);
-
-  useEffect(() => {
-    applyThemeToRoot(theme);
-  }, [theme]);
-
-  useEffect(() => {
-    applyFont(getFontById(fontId ?? getSavedFontId()));
-  }, [fontId]);
-
-  const value = useMemo(() => ({ theme }), [theme]);
-
-  return (
-    <DesignThemeContext.Provider value={value}>
-      {children}
-    </DesignThemeContext.Provider>
-  );
-}
+export const DesignThemeProvider = defineView<DesignThemeProviderProps>(
+  ["themeId", "fontId"],
+  (props, { slots }) => {
+    const theme = computed(() => getThemeById(props.themeId));
+    provide(DesignThemeContext, { theme });
+    watch(theme, applyThemeToRoot, { immediate: true, flush: "sync" });
+    watch(
+      () => props.fontId,
+      id => applyFont(getFontById(id ?? getSavedFontId())),
+      { immediate: true, flush: "sync" }
+    );
+    return () => slots.default?.();
+  }
+);

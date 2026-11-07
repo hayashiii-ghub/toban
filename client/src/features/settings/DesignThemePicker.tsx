@@ -1,4 +1,6 @@
-import { Printer } from "lucide-react";
+import { defineView } from "@/lib/vue";
+import { computed, type VNodeChild, type CSSProperties } from "vue";
+import { Printer } from "@lucide/vue";
 import {
   THEME_COLORS,
   THEME_TEXTURES,
@@ -7,161 +9,160 @@ import {
   splitThemeId,
 } from "@/rotation/designThemes";
 import { useT } from "@/i18n";
-
 interface DesignThemePickerProps {
   selectedThemeId: string | undefined;
   onSelect: (themeId: string) => void;
 }
-
-/** 質感・色それぞれのミニプレビュー。実際のカードと同じ変数で描くので見たままが出る */
-function MiniCard({
-  textureId,
-  colorId,
-}: {
+const MiniCard = defineView<{
   textureId: string;
   colorId: string;
-}) {
-  const theme = composeTheme(textureId, colorId);
-  return (
+}>(["textureId", "colorId"], (props, _viewContext) => {
+  const theme = computed(() => composeTheme(props.textureId, props.colorId));
+  return () => (
     <div
-      className="w-full h-11 mb-1.5 overflow-hidden flex flex-col"
+      class="w-full h-11 mb-1.5 overflow-hidden flex flex-col"
       style={{
-        backgroundColor: theme.preview.bgColor,
-        borderRadius: theme.borders.radius,
+        backgroundColor: theme.value.preview.bgColor,
+        borderRadius: theme.value.borders.radius,
       }}
     >
       <div
-        className="h-3.5 w-full shrink-0"
-        style={{ backgroundColor: theme.preview.primaryColor }}
+        class="h-3.5 w-full shrink-0"
+        style={{ backgroundColor: theme.value.preview.primaryColor }}
       />
-      <div className="flex-1 flex items-center justify-center px-2">
+      <div class="flex-1 flex items-center justify-center px-2">
         <div
-          className="w-full h-5"
+          class="w-full h-5"
           style={{
-            backgroundColor: theme.colors.cardBg,
-            backgroundImage: theme.surface?.texture,
-            borderRadius: theme.borders.radiusSm,
-            border: `${theme.borders.width} solid ${theme.colors.borderColor}`,
-            boxShadow: theme.shadows.cardSm,
+            backgroundColor: theme.value.colors.cardBg,
+            backgroundImage: theme.value.surface?.texture,
+            borderRadius: theme.value.borders.radiusSm,
+            border: `${theme.value.borders.width} solid ${theme.value.colors.borderColor}`,
+            boxShadow: theme.value.shadows.cardSm,
           }}
         />
       </div>
     </div>
   );
-}
-
-function PickerButton({
-  isSelected,
-  label,
-  ariaLabel,
-  onClick,
-  children,
-}: {
+});
+const PickerButton = defineView<{
   isSelected: boolean;
-  label: React.ReactNode;
+  label: VNodeChild;
   ariaLabel: string;
   onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
+  children?: VNodeChild;
+}>(["isSelected", "label", "ariaLabel", "onClick"], (props, viewContext) => {
+  return () => (
     <button
       type="button"
-      onClick={onClick}
-      className={`relative theme-border p-2 text-left transition-all duration-150 flex flex-col justify-start ${
-        isSelected ? "ring-2 ring-offset-1" : "hover:opacity-80"
-      }`}
+      onClick={props.onClick}
+      class={`relative theme-border p-2 text-left transition-all duration-150 flex flex-col justify-start ${props.isSelected ? "ring-2 ring-offset-1" : "hover:opacity-80"}`}
       style={{
         borderRadius: "var(--dt-border-radius-sm)",
         backgroundColor: "var(--dt-card-bg)",
-        ...(isSelected
+        ...(props.isSelected
           ? ({
               "--tw-ring-color": "var(--dt-current-highlight)",
-            } as React.CSSProperties)
+            } as CSSProperties)
           : {}),
       }}
-      aria-pressed={isSelected}
-      aria-label={ariaLabel}
+      aria-pressed={props.isSelected}
+      aria-label={props.ariaLabel}
     >
-      {children}
-      <div className="flex items-center gap-1">
-        <span className="text-xs font-bold" style={{ color: "var(--dt-text)" }}>
-          {label}
+      {viewContext.slots.default?.()}
+      <div class="flex items-center gap-1">
+        <span class="text-xs font-bold" style={{ color: "var(--dt-text)" }}>
+          {props.label}
         </span>
       </div>
     </button>
   );
-}
+});
+export const DesignThemePicker = defineView<DesignThemePickerProps>(
+  ["selectedThemeId", "onSelect"],
+  (props, _viewContext) => {
+    const t = useT();
+    const _derived0 = computed(() => splitThemeId(props.selectedThemeId));
+    return () => (
+      <div class="flex flex-col gap-3 p-0.5">
+        <section>
+          <h3
+            class="text-xs font-bold mb-1.5"
+            style={{ color: "var(--dt-text-secondary)" }}
+          >
+            {t("theme.textureLabel")}
+          </h3>
+          <div class="grid grid-cols-3 gap-2">
+            {THEME_TEXTURES.map(texture => (
+              <PickerButton
+                key={texture.id}
+                isSelected={texture.id === _derived0.value.textureId}
+                label={t(texture.labelKey)}
+                ariaLabel={t("theme.selectAria", {
+                  name: t(texture.labelKey),
+                })}
+                onClick={() =>
+                  props.onSelect(
+                    composeThemeId(texture.id, _derived0.value.colorId)
+                  )
+                }
+              >
+                <MiniCard
+                  textureId={texture.id}
+                  colorId={_derived0.value.colorId}
+                />
+              </PickerButton>
+            ))}
+          </div>
+        </section>
 
-export function DesignThemePicker({
-  selectedThemeId,
-  onSelect,
-}: DesignThemePickerProps) {
-  const t = useT();
-  // 旧テーマの単体IDは、対応する質感（なければ既定）× その色として選択状態を表示する
-  const { textureId, colorId } = splitThemeId(selectedThemeId);
+        <section>
+          <h3
+            class="text-xs font-bold mb-1.5"
+            style={{ color: "var(--dt-text-secondary)" }}
+          >
+            {t("theme.colorLabel")}
+          </h3>
+          <div class="grid grid-cols-3 gap-2">
+            {THEME_COLORS.map(color => (
+              <PickerButton
+                key={color.id}
+                isSelected={color.id === _derived0.value.colorId}
+                label={
+                  <>
+                    {t(color.labelKey)}
+                    {color.id === "whiteboard" && (
+                      <Printer
+                        class="inline size-3 ml-1 align-[-1px]"
+                        style={{ color: "var(--dt-text-muted)" }}
+                        aria-label={t("theme.forPrint")}
+                      />
+                    )}
+                  </>
+                }
+                ariaLabel={t("theme.selectAria", { name: t(color.labelKey) })}
+                onClick={() =>
+                  props.onSelect(
+                    composeThemeId(_derived0.value.textureId, color.id)
+                  )
+                }
+              >
+                <MiniCard
+                  textureId={_derived0.value.textureId}
+                  colorId={color.id}
+                />
+              </PickerButton>
+            ))}
+          </div>
+        </section>
 
-  return (
-    <div className="flex flex-col gap-3 p-0.5">
-      <section>
-        <h3
-          className="text-xs font-bold mb-1.5"
-          style={{ color: "var(--dt-text-secondary)" }}
-        >
-          {t("theme.textureLabel")}
-        </h3>
-        <div className="grid grid-cols-3 gap-2">
-          {THEME_TEXTURES.map(texture => (
-            <PickerButton
-              key={texture.id}
-              isSelected={texture.id === textureId}
-              label={t(texture.labelKey)}
-              ariaLabel={t("theme.selectAria", {
-                name: t(texture.labelKey),
-              })}
-              onClick={() => onSelect(composeThemeId(texture.id, colorId))}
-            >
-              <MiniCard textureId={texture.id} colorId={colorId} />
-            </PickerButton>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <h3
-          className="text-xs font-bold mb-1.5"
-          style={{ color: "var(--dt-text-secondary)" }}
-        >
-          {t("theme.colorLabel")}
-        </h3>
-        <div className="grid grid-cols-3 gap-2">
-          {THEME_COLORS.map(color => (
-            <PickerButton
-              key={color.id}
-              isSelected={color.id === colorId}
-              label={
-                <>
-                  {t(color.labelKey)}
-                  {color.id === "whiteboard" && (
-                    <Printer
-                      className="inline size-3 ml-1 align-[-1px]"
-                      style={{ color: "var(--dt-text-muted)" }}
-                      aria-label={t("theme.forPrint")}
-                    />
-                  )}
-                </>
-              }
-              ariaLabel={t("theme.selectAria", { name: t(color.labelKey) })}
-              onClick={() => onSelect(composeThemeId(textureId, color.id))}
-            >
-              <MiniCard textureId={textureId} colorId={color.id} />
-            </PickerButton>
-          ))}
-        </div>
-      </section>
-
-      <p className="text-[10px]" style={{ color: "var(--dt-text-muted)" }}>
-        {composeTheme(textureId, colorId).description}
-      </p>
-    </div>
-  );
-}
+        <p class="text-[10px]" style={{ color: "var(--dt-text-muted)" }}>
+          {
+            composeTheme(_derived0.value.textureId, _derived0.value.colorId)
+              .description
+          }
+        </p>
+      </div>
+    );
+  }
+);

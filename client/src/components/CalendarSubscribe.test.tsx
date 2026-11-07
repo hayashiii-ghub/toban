@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@/test/vue";
 import { LanguageProvider } from "@/i18n";
-import { CalendarSubscribe } from "./CalendarSubscribe";
+import {
+  CalendarSubscribe,
+  type CalendarSubscribeProps,
+} from "./CalendarSubscribe";
 import { calendarFeedUrl } from "@/lib/calendarLinks";
 
 const member = {
@@ -12,7 +15,7 @@ const member = {
   textColor: "#1E3A5F",
 };
 
-function renderIt(props: Partial<Parameters<typeof CalendarSubscribe>[0]>) {
+function renderIt(props: Partial<CalendarSubscribeProps>) {
   render(
     <LanguageProvider>
       <CalendarSubscribe slug="abcdefghij" {...props} />
@@ -29,7 +32,7 @@ const origin = window.location.origin;
 const host = origin.replace(/^https?:/, "webcal:");
 
 describe("CalendarSubscribe", () => {
-  it("名前を選んだ人には、まず自分の当番だけの購読を出す", () => {
+  it("名前を選んだ人には、まず自分の当番だけの購読を出す", async () => {
     renderIt({ member });
     expect(screen.getByRole("button", { name: "佐藤の当番" })).toHaveAttribute(
       "aria-pressed",
@@ -47,15 +50,15 @@ describe("CalendarSubscribe", () => {
     );
   });
 
-  it("全員の当番に切り替えられる", () => {
+  it("全員の当番に切り替えられる", async () => {
     renderIt({ member });
-    fireEvent.click(screen.getByRole("button", { name: "全員の当番" }));
+    await fireEvent.click(screen.getByRole("button", { name: "全員の当番" }));
     expect(
       screen.getByRole("link", { name: "Apple カレンダー" })
     ).toHaveAttribute("href", `${host}/api/schedules/abcdefghij/calendar.ics`);
   });
 
-  it("名前を選んでいなければ、全員の当番だけ", () => {
+  it("名前を選んでいなければ、全員の当番だけ", async () => {
     renderIt({});
     expect(screen.queryByRole("button", { name: "全員の当番" })).toBeNull();
     expect(
@@ -65,7 +68,7 @@ describe("CalendarSubscribe", () => {
 });
 
 describe("calendarFeedUrl", () => {
-  it("英語なら lang=en を付ける", () => {
+  it("英語なら lang=en を付ける", async () => {
     expect(calendarFeedUrl("https://toban.app", "abcdefghij", "m1", "en")).toBe(
       "https://toban.app/api/schedules/abcdefghij/calendar.ics?member=m1&lang=en"
     );

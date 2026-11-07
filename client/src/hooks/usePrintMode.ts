@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { nextTick, onMounted, onScopeDispose } from "vue";
+import { toast } from "vue-sonner";
 import { viewOrientation } from "@/features/home/viewTabsConfig";
 import { usePrintDateString } from "@/hooks/usePrintDateString";
 import { useT } from "@/i18n";
@@ -30,55 +30,58 @@ export function usePrintMode(): {
     viewTab: string,
     scheduleName?: string,
     rotationLabel?: string
-  ) => void;
+  ) => Promise<void>;
 } {
   const t = useT();
   const printDate = usePrintDateString();
-  const previousTitleRef = useRef<string | null>(null);
+  let previousTitle: string | null = null;
+  let disposed = false;
 
-  useEffect(() => {
-    const cleanupPrintState = () => {
-      document.getElementById("print-orientation")?.remove();
-      if (previousTitleRef.current !== null) {
-        document.title = previousTitleRef.current;
-        previousTitleRef.current = null;
-      }
-    };
-    window.addEventListener("afterprint", cleanupPrintState);
-    return () => {
-      window.removeEventListener("afterprint", cleanupPrintState);
-      cleanupPrintState();
-    };
-  }, []);
+  const cleanupPrintState = () => {
+    document.getElementById("print-orientation")?.remove();
+    if (previousTitle !== null) {
+      document.title = previousTitle;
+      previousTitle = null;
+    }
+  };
+  onMounted(() => window.addEventListener("afterprint", cleanupPrintState));
+  onScopeDispose(() => {
+    disposed = true;
+    window.removeEventListener("afterprint", cleanupPrintState);
+    cleanupPrintState();
+  });
 
-  const handlePrint = useCallback(
-    (viewTab: string, scheduleName?: string, rotationLabel?: string) => {
-      if (typeof window.print !== "function") {
-        toast.error(t("shared.printUnsupported"));
-        return;
-      }
-      const orientation = viewOrientation(viewTab);
-      const style = document.createElement("style");
-      style.id = "print-orientation";
-      style.textContent = `@page { size: A4 ${orientation}; }`;
-      document.head.appendChild(style);
+  const handlePrint = async (
+    viewTab: string,
+    scheduleName?: string,
+    rotationLabel?: string
+  ) => {
+    await nextTick();
+    if (disposed) return;
+    if (typeof window.print !== "function") {
+      toast.error(t("shared.printUnsupported"));
+      return;
+    }
+    const orientation = viewOrientation(viewTab);
+    const style = document.createElement("style");
+    style.id = "print-orientation";
+    style.textContent = `@page { size: A4 ${orientation}; }`;
+    document.head.appendChild(style);
 
-      const filename = buildPrintFilename(
-        scheduleName,
-        rotationLabel,
-        printDate
-      );
-      if (filename) {
-        // 再入（afterprint 前の再呼び出し）で元タイトルを失わないよう、退避は未セット時のみ
-        if (previousTitleRef.current === null) {
-          previousTitleRef.current = document.title;
-        }
-        document.title = filename;
+    const filename = buildPrintFilename(
+      scheduleName,
+      rotationLabel,
+      printDate.value
+    );
+    if (filename) {
+      // 再入（afterprint 前の再呼び出し）で元タイトルを失わないよう、退避は未セット時のみ
+      if (previousTitle === null) {
+        previousTitle = document.title;
       }
-      window.print();
-    },
-    [t, printDate]
-  );
+      document.title = filename;
+    }
+    window.print();
+  };
 
   return { handlePrint };
 }

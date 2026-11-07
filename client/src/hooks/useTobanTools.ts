@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { onMounted, onScopeDispose, toValue, type MaybeRefOrGetter } from "vue";
 import { z } from "zod";
 import { LIMITS } from "@shared/limits";
 import type { useHomeState } from "@/hooks/useHomeState";
@@ -831,16 +831,15 @@ export function buildTobanTools(
       "Show the active roster as cards, table, calendar or disc. For calendar, month (YYYY-MM) selects the month to display and print. Omitting month keeps the selected month. This never changes rotation or the start date. Returns after the view and month are committed, so they can then be printed.",
       z.strictObject({ view: z.enum(VIEW_VALUES), month: isoMonth.optional() }),
       false,
-      input => {
+      async input => {
         if (input.month !== undefined && input.view !== "calendar")
           invalid(
             "month はカレンダー表示でのみ指定できます。",
             "month is only supported for the calendar view."
           );
-        const saved =
-          input.month === undefined
-            ? get().changeTabForTool(input.view)
-            : get().changeTabForTool(input.view, input.month);
+        const saved = await (input.month === undefined
+          ? get().changeTabForTool(input.view)
+          : get().changeTabForTool(input.view, input.month));
         return {
           ok: saved,
           code: saved ? "OK" : "PERSISTENCE_FAILED",
@@ -1243,7 +1242,7 @@ export function buildTobanTools(
       "Request the browser print dialog for the active roster's committed view. This does not confirm printing or PDF saving. If the client blocks printing, use the visible Print button.",
       z.strictObject({}),
       false,
-      () => {
+      async () => {
         const s = selected({});
         if (typeof window.print !== "function")
           throw new ToolError(
@@ -1265,7 +1264,7 @@ export function buildTobanTools(
                 1
               )[0]
             : undefined;
-        h.handlePrint(
+        await h.handlePrint(
           h.viewTab,
           s.name,
           dateTurn
@@ -1274,6 +1273,11 @@ export function buildTobanTools(
               ? say("初期", "Start")
               : say(`${rotation}回目`, `Turn ${rotation}`)
         );
+        if (signal?.aborted)
+          throw new ToolError(
+            "PAGE_CLOSED",
+            say("ページを閉じたため中止しました。", "The page was closed.")
+          );
         return {
           ok: true,
           code: "PRINT_REQUESTED",
@@ -1290,22 +1294,21 @@ export function buildTobanTools(
   ];
 }
 
-export function useTobanTools(s: HomeState): void {
-  const ref = useRef(s);
-  useLayoutEffect(() => {
-    ref.current = s;
-  });
-  useEffect(() => {
+export function useTobanTools(source: MaybeRefOrGetter<HomeState>): void {
+  const controller = new AbortController();
+  onMounted(() => {
     const mc = document.modelContext ?? navigator.modelContext;
     if (!mc) return;
-    const controller = new AbortController();
-    for (const tool of buildTobanTools(() => ref.current, controller.signal)) {
+    for (const tool of buildTobanTools(
+      () => toValue(source),
+      controller.signal
+    )) {
       try {
         mc.registerTool(tool, { signal: controller.signal });
       } catch (error) {
         console.warn(`[webmcp] registerTool failed: ${tool.name}`, error);
       }
     }
-    return () => controller.abort();
-  }, []);
+  });
+  onScopeDispose(() => controller.abort());
 }

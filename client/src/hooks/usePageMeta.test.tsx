@@ -1,15 +1,16 @@
-import { render } from "@testing-library/react";
+import { defineView } from "@/lib/vue";
+import { render } from "@/test/vue";
 import { describe, expect, it } from "vitest";
 import { usePageMeta } from "./usePageMeta";
 
-function MetaFixture() {
+const MetaFixture = defineView<object>([], () => {
   usePageMeta({
     title: "ページタイトル",
     description: "ページの説明",
     path: "/templates/example",
   });
-  return null;
-}
+  return () => null;
+});
 
 describe("usePageMeta", () => {
   it("現在ページの title・description・canonical・OGP を同期する", () => {

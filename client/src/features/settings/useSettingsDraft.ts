@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { computed, reactive, shallowRef } from "vue";
 import type { ScheduleSettings } from "@/hooks/useScheduleManager";
 import type { RotationConfig } from "@/rotation/types";
 import { getSavedFontId } from "@/fonts";
@@ -9,44 +9,35 @@ import {
 } from "./settingsDraft";
 
 export function useSettingsDraft(settings: ScheduleSettings) {
-  const [initial] = useState(() =>
-    createSettingsDraft(settings, getSavedFontId())
-  );
-  const [draft, setDraft] = useState(initial);
-  const initialJson = useMemo(() => JSON.stringify(initial), [initial]);
-  const isDirty = useMemo(
-    () => JSON.stringify(draft) !== initialJson,
-    [draft, initialJson]
-  );
+  const initial = createSettingsDraft(settings, getSavedFontId());
+  const draft = shallowRef(initial);
+  const initialJson = JSON.stringify(initial);
+  const isDirty = computed(() => JSON.stringify(draft.value) !== initialJson);
 
-  // 人と仕事の変更が同じ操作で続いても、最新の下書きへ両方を適用する。
-  const applyPatch = useCallback((patch: Partial<SettingsDraft>) => {
-    setDraft(current => ({ ...current, ...patch }));
-  }, []);
-  const updateRotationConfig = useCallback(
-    (updater: (current: RotationConfig) => RotationConfig) => {
-      setDraft(current => ({
-        ...current,
-        rotationConfig: updater(current.rotationConfig),
-      }));
-    },
-    []
-  );
-  const changeAssignmentMode = useCallback(
-    (mode: SettingsDraft["assignmentMode"], newTaskName: string) => {
-      setDraft(current =>
-        changeDraftAssignmentMode(current, mode, newTaskName)
-      );
-    },
-    []
-  );
+  const applyPatch = (patch: Partial<SettingsDraft>) => {
+    draft.value = { ...draft.value, ...patch };
+  };
+  const updateRotationConfig = (
+    updater: (current: RotationConfig) => RotationConfig
+  ) => {
+    draft.value = {
+      ...draft.value,
+      rotationConfig: updater(draft.value.rotationConfig),
+    };
+  };
+  const changeAssignmentMode = (
+    mode: SettingsDraft["assignmentMode"],
+    newTaskName: string
+  ) => {
+    draft.value = changeDraftAssignmentMode(draft.value, mode, newTaskName);
+  };
 
-  return {
+  return reactive({
     draft,
     initial,
     isDirty,
     applyPatch,
     updateRotationConfig,
     changeAssignmentMode,
-  };
+  });
 }

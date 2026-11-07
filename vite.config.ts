@@ -1,21 +1,26 @@
 /// <reference types="vitest/config" />
 import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
-import { existsSync } from "node:fs";
+import vueJsx from "@vitejs/plugin-vue-jsx";
+import vue from "@vitejs/plugin-vue";
 import path from "node:path";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { LOCAL_STATE_PATH } from "./scripts/cloudflare.ts";
 
-// 本番ビルドは、D1 の ID を差し込んだ wrangler.deploy.jsonc（scripts/prepare-wrangler-config.mjs が作る）を読む
-const deployConfig = path.resolve(import.meta.dirname, "wrangler.deploy.jsonc");
-const devConfig = path.resolve(import.meta.dirname, "wrangler.jsonc");
+const clientAssetsDirectory = path.resolve(
+  import.meta.dirname,
+  "client/.cloudflare/output/v0/workers/default/assets"
+);
 
-export default defineConfig(({ command }) => ({
+export default defineConfig({
+  cacheDir: "node_modules/.vite-vue",
   plugins: [
-    react(),
+    vue(),
+    vueJsx({ mergeProps: false }),
     tailwindcss(),
     ...VitePWA({
+      outDir: clientAssetsDirectory,
       registerType: "autoUpdate",
       manifest: {
         // アプリのウィンドウでは、Chrome がこの名前をページの題名の前に付ける。題名とかぶらないよう名前だけにする
@@ -57,14 +62,11 @@ export default defineConfig(({ command }) => ({
       ? []
       : [
           cloudflare({
-            // Vite の root は client/ なので、wrangler の CLI と同じリポジトリ直下の状態を使う
+            // D1 の CLI と Vite は、旧環境のデータを同じ場所で読む。
             persistState: {
-              path: path.resolve(import.meta.dirname, ".wrangler/state"),
+              path: LOCAL_STATE_PATH,
             },
-            configPath:
-              command === "build" && existsSync(deployConfig)
-                ? deployConfig
-                : devConfig,
+            types: { includeRuntime: false },
           }),
         ]),
   ],
@@ -77,7 +79,7 @@ export default defineConfig(({ command }) => ({
   envDir: path.resolve(import.meta.dirname),
   root: path.resolve(import.meta.dirname, "client"),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist"),
+    outDir: clientAssetsDirectory,
     emptyOutDir: true,
   },
   test: {
@@ -92,7 +94,7 @@ export default defineConfig(({ command }) => ({
     coverage: {
       provider: "v8",
       include: [
-        "client/src/**/*.{ts,tsx}",
+        "client/src/**/*.{ts,tsx,vue}",
         "server/**/*.{ts,tsx}",
         "shared/**/*.{ts,tsx}",
       ],
@@ -124,4 +126,4 @@ export default defineConfig(({ command }) => ({
       deny: ["**/.*"],
     },
   },
-}));
+});
