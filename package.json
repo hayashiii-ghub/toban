@@ -75,8 +75,14 @@
       "sharp"
     ],
     "overrides": {
+      "@rollup/plugin-node-resolve@16.0.3>deepmerge": "-",
+      "glob@>=9.0.0 <14.0.2": "14.0.3",
+      "minimatch@>=7.0.0 <11.0.1": "11.0.3",
       "miniflare@5.20261012.0-beta>undici": "7.30.1",
       "miniflare@5.20261012.1-beta>undici": "7.30.1"
+    },
+    "patchedDependencies": {
+      "@rollup/plugin-node-resolve@16.0.3": "patches/@rollup__plugin-node-resolve@16.0.3.patch"
     }
   }
 }
