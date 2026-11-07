@@ -1,7 +1,9 @@
-import { lazy, Suspense } from "react";
-import { LazyMotion, MotionConfig, domAnimation } from "framer-motion";
+import { defineAsyncComponent, h, type Component } from "vue";
+import { RouterView } from "vue-router";
+import { MotionConfig } from "motion-v";
 import { Toaster } from "@/components/ui/sonner";
-import { Route, Switch, useLocation } from "wouter";
+import { defineView } from "@/lib/vue";
+import { createAppRouter, useLocation } from "@/lib/router";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { LanguageProvider, useT } from "./i18n";
@@ -9,86 +11,82 @@ import LanguageSwitcher from "./components/LanguageSwitcher";
 import { SITE_LINKS } from "./components/siteLinks";
 import Home from "./pages/Home";
 
-const LandingPage = lazy(() => import("./pages/LandingPage"));
-const TemplatesPage = lazy(() => import("./pages/TemplatesPage"));
-const TemplateDetailPage = lazy(() => import("./pages/TemplateDetailPage"));
-const SharedScheduleView = lazy(() => import("./pages/SharedScheduleView"));
-const Transfer = lazy(() => import("./pages/Transfer"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-
-function Router() {
-  // Route を追加・変更したら server/handlers/seo.ts の KNOWN_APP_ROUTES も更新すること。
-  // 同期が漏れると bot に 404 が返り、新ページが検索に index されない。
-  return (
-    <Suspense fallback={<LoadingScreen />}>
-      <Switch>
-        <Route path={"/"} component={Home} />
-        <Route path={"/about"} component={LandingPage} />
-        <Route path={"/templates"} component={TemplatesPage} />
-        <Route path={"/templates/:slug"} component={TemplateDetailPage} />
-        <Route path={"/s/:slug"} component={SharedScheduleView} />
-        <Route path={"/transfer"} component={Transfer} />
-        <Route path={"/404"} component={NotFound} />
-        {/* Final fallback route */}
-        <Route component={NotFound} />
-      </Switch>
-    </Suspense>
-  );
-}
-
+const lazyPage = (loader: () => Promise<{ default: Component }>) => {
+  const Page = defineAsyncComponent({
+    loader,
+    loadingComponent: LoadingScreen,
+    delay: 0,
+  });
+  // Preserve the existing loading screen after the URL has changed.
+  return defineView<object>([], () => () => h(Page));
+};
+// Keep these paths aligned with server/handlers/seo.ts and the service worker.
+export const router = createAppRouter([
+  { path: "/", component: Home },
+  { path: "/about", component: lazyPage(() => import("./pages/LandingPage")) },
+  {
+    path: "/templates",
+    component: lazyPage(() => import("./pages/TemplatesPage")),
+  },
+  {
+    path: "/templates/:slug",
+    component: lazyPage(() => import("./pages/TemplateDetailPage")),
+  },
+  {
+    path: "/s/:slug",
+    component: lazyPage(() => import("./pages/SharedScheduleView")),
+  },
+  { path: "/transfer", component: lazyPage(() => import("./pages/Transfer")) },
+  {
+    path: "/:pathMatch(.*)*",
+    component: lazyPage(() => import("./pages/NotFound")),
+  },
+]);
 const FOOTER_ITEM_CLASS =
   "flex items-center gap-1.5 px-2 h-8 rounded-full text-sm whitespace-nowrap text-muted-foreground/60 hover:text-muted-foreground/80 hover:bg-muted/40 transition-colors";
-
-function AppFooter() {
+const AppFooter = defineView<object>([], () => {
   const [location] = useLocation();
   const t = useT();
-  // アプリ本体と共有ページのみ表示
-  const showFooter = location === "/" || location.startsWith("/s/");
-  if (!showFooter) return null;
-
-  return (
-    <footer
-      // ホームのスマホ表示では出さない（言語はタイトルの右上、ほかは編集画面の「くわしい設定」にある）
-      className={`px-3 pt-6 pb-[calc(1rem+var(--home-toolbar-space,0px))] print:hidden ${location === "/" ? "max-sm:hidden" : ""}`}
-      style={{
-        backgroundColor: "var(--dt-page-bg)",
-        backgroundImage: "var(--dt-page-texture, none)",
-      }}
-    >
-      <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-end gap-1">
-        <LanguageSwitcher className={FOOTER_ITEM_CLASS} />
-        {SITE_LINKS.map(link => (
-          <a
-            key={link.href}
-            href={link.href}
-            {...(link.newTab
-              ? { target: "_blank", rel: "noopener noreferrer" }
-              : {})}
-            className={FOOTER_ITEM_CLASS}
-          >
-            {link.icon}
-            <span>{t(link.labelKey)}</span>
-          </a>
-        ))}
-      </div>
-    </footer>
-  );
-}
-
-function App() {
-  return (
-    <ErrorBoundary>
-      <LazyMotion features={domAnimation} strict>
-        <MotionConfig reducedMotion="user">
-          <LanguageProvider>
-            <Toaster />
-            <Router />
-            <AppFooter />
-          </LanguageProvider>
-        </MotionConfig>
-      </LazyMotion>
-    </ErrorBoundary>
-  );
-}
-
+  return () => {
+    if (location.value !== "/" && !location.value.startsWith("/s/"))
+      return null;
+    return (
+      <footer
+        class={`px-3 pt-6 pb-[calc(1rem+var(--home-toolbar-space,0px))] print:hidden ${location.value === "/" ? "max-sm:hidden" : ""}`}
+        style={{
+          backgroundColor: "var(--dt-page-bg)",
+          backgroundImage: "var(--dt-page-texture, none)",
+        }}
+      >
+        <div class="max-w-4xl mx-auto flex flex-wrap items-center justify-end gap-1">
+          <LanguageSwitcher class={FOOTER_ITEM_CLASS} />
+          {SITE_LINKS.map(link => (
+            <a
+              key={link.href}
+              href={link.href}
+              {...(link.newTab
+                ? { target: "_blank", rel: "noopener noreferrer" }
+                : {})}
+              class={FOOTER_ITEM_CLASS}
+            >
+              {link.icon}
+              <span>{t(link.labelKey)}</span>
+            </a>
+          ))}
+        </div>
+      </footer>
+    );
+  };
+});
+const App = defineView<object>([], () => () => (
+  <ErrorBoundary>
+    <MotionConfig reducedMotion="user">
+      <LanguageProvider>
+        <Toaster />
+        <RouterView />
+        <AppFooter />
+      </LanguageProvider>
+    </MotionConfig>
+  </ErrorBoundary>
+));
 export default App;

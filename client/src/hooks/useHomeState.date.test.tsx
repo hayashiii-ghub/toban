@@ -1,5 +1,6 @@
+import { reactive } from "vue";
 import { afterEach, expect, it, vi } from "vitest";
-import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { act, cleanup, renderHook, waitFor } from "@/test/vue";
 import { LanguageProvider } from "@/i18n";
 import { STORAGE_KEY } from "@/rotation/constants";
 import { DEFAULT_APP_STATE } from "@/rotation/defaultState";
@@ -7,7 +8,6 @@ import type { Schedule } from "@/rotation/types";
 import { useHomeState } from "./useHomeState";
 import { useTurnLabel } from "./useTurnLabel";
 import { usePrintDateString } from "./usePrintDateString";
-
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
@@ -15,7 +15,6 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
 });
-
 it("同じ保存済み表を引き直しても、画面復帰で今日の担当・期間・印刷日へ更新する", async () => {
   vi.stubEnv("TZ", "Asia/Tokyo");
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -45,19 +44,18 @@ it("同じ保存済み表を引き直しても、画面復帰で今日の担当�
     })
   );
   vi.stubGlobal("fetch", fetchMock);
-
   const { result } = renderHook(
     () => {
       const home = useHomeState();
-      return {
+      return reactive({
         home,
         turn: useTurnLabel(
-          home.activeSchedule?.rotationConfig,
-          home.members,
-          home.effectiveRotation
+          () => home.activeSchedule?.rotationConfig,
+          () => home.members,
+          () => home.effectiveRotation
         ),
         printDate: usePrintDateString(),
-      };
+      });
     },
     { wrapper: LanguageProvider }
   );
@@ -66,13 +64,11 @@ it("同じ保存済み表を引き直しても、画面復帰で今日の担当�
   const saved = localStorage.getItem(STORAGE_KEY);
   expect(result.current.home.assignments[0].member.name).toBe("佐藤");
   expect(result.current.turn.label).toBe("10/1(木)の当番");
-
   await act(async () => {
     vi.setSystemTime(new Date(2026, 9, 2, 0, 1));
     document.dispatchEvent(new Event("visibilitychange"));
   });
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-
   expect(result.current.home.activeSchedule).toBe(before);
   expect(result.current.home.effectiveRotation).toBe(1);
   expect(result.current.home.assignments[0].member.name).toBe("鈴木");

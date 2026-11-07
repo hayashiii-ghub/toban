@@ -1,4 +1,11 @@
-import { createContext, use } from "react";
+import {
+  computed,
+  inject,
+  provide,
+  type ComputedRef,
+  type InjectionKey,
+} from "vue";
+import { defineView } from "@/lib/vue";
 import type { Member } from "@/rotation/types";
 
 /** 並べ替えで動かしているもの。仕事の順・仕事の中の行・仕事の担当者の順 */
@@ -46,25 +53,34 @@ export interface GroupCardContextValue {
   onSetExplicitMembers: (gIdx: number) => void;
   onResetToAllMembers: (gIdx: number) => void;
   onReorderMember: (gIdx: number, mIdx: number, direction: -1 | 1) => void;
-  // 並べ替え（つまむ印の onPointerDown。usePointerDrag）
+  // 並べ替え（つまむ印の onPointerdown。usePointerDrag）
   dragHandle: (item: EditorDragItem) => {
-    onPointerDown: (e: React.PointerEvent<HTMLElement>) => void;
+    onPointerdown: (e: PointerEvent) => void;
   };
   dragging: EditorDragItem | null;
   dropTarget: DropMark | null;
   dropMemberTarget: DropMark | null;
 }
 
-const GroupCardContext = createContext<GroupCardContextValue | null>(null);
+const GroupCardContext: InjectionKey<ComputedRef<GroupCardContextValue>> =
+  Symbol("GroupCardContext");
 
-export const GroupCardProvider = GroupCardContext.Provider;
+export const GroupCardProvider = defineView<{ value: GroupCardContextValue }>(
+  ["value"],
+  (props, context) => {
+    provide(
+      GroupCardContext,
+      computed(() => props.value)
+    );
+    return () => context.slots.default?.();
+  }
+);
 
-export function useGroupCardContext(): GroupCardContextValue {
-  const ctx = use(GroupCardContext);
-  if (!ctx) {
+export function useGroupCardContext(): ComputedRef<GroupCardContextValue> {
+  const context = inject(GroupCardContext);
+  if (!context)
     throw new Error(
       "useGroupCardContext must be used within a GroupCardProvider"
     );
-  }
-  return ctx;
+  return context;
 }

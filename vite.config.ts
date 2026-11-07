@@ -1,7 +1,8 @@
 /// <reference types="vitest/config" />
 import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
+import vueJsx from "@vitejs/plugin-vue-jsx";
+import vue from "@vitejs/plugin-vue";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { defineConfig } from "vite";
@@ -12,8 +13,10 @@ const deployConfig = path.resolve(import.meta.dirname, "wrangler.deploy.jsonc");
 const devConfig = path.resolve(import.meta.dirname, "wrangler.jsonc");
 
 export default defineConfig(({ command }) => ({
+  cacheDir: "node_modules/.vite-vue",
   plugins: [
-    react(),
+    vue(),
+    vueJsx({ mergeProps: false }),
     tailwindcss(),
     ...VitePWA({
       registerType: "autoUpdate",
@@ -92,7 +95,7 @@ export default defineConfig(({ command }) => ({
     coverage: {
       provider: "v8",
       include: [
-        "client/src/**/*.{ts,tsx}",
+        "client/src/**/*.{ts,tsx,vue}",
         "server/**/*.{ts,tsx}",
         "shared/**/*.{ts,tsx}",
       ],

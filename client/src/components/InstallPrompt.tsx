@@ -1,5 +1,12 @@
-import { useState, useEffect, type ReactNode } from "react";
-import { X, Download, Share } from "lucide-react";
+import {
+  onMounted,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  type VNodeChild,
+} from "vue";
+import { defineView } from "@/lib/vue";
+import { X, Download, Share } from "@lucide/vue";
 import { safeGetItem, safeSetItem } from "@/lib/storage";
 import { useT } from "@/i18n";
 
@@ -33,134 +40,136 @@ function isStandalone(): boolean {
 
 const DISMISS_KEY = "toban-install-dismissed";
 
-function Banner({
-  icon,
-  title,
-  description,
-  action,
-  onDismiss,
-}: {
-  icon: ReactNode;
+interface BannerProps {
+  icon: VNodeChild;
   title: string;
   description: string;
-  action?: ReactNode;
+  action?: VNodeChild;
   onDismiss: () => void;
-}) {
-  const t = useT();
-  return (
-    <div
-      className="fixed bottom-[calc(1rem+var(--home-toolbar-space,0px)+env(safe-area-inset-bottom,0px))] left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 theme-border theme-shadow p-3 flex items-center gap-3"
-      style={{
-        backgroundColor: "var(--dt-current-highlight)",
-        borderRadius: "var(--dt-border-radius)",
-      }}
-    >
-      {icon}
-      <div className="flex-1">
-        <div className="text-sm font-bold" style={{ color: "var(--dt-text)" }}>
-          {title}
-        </div>
-        <div
-          className="text-xs font-medium"
-          style={{ color: "var(--dt-text-secondary)" }}
-        >
-          {description}
-        </div>
-      </div>
-      {action}
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="p-1 hover:bg-yellow-400 rounded-lg transition-colors shrink-0"
-        aria-label={t("common.close")}
-      >
-        <X className="size-4" />
-      </button>
-    </div>
-  );
 }
-
-export function InstallPrompt() {
-  const t = useT();
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [dismissed, setDismissed] = useState(
-    () => safeGetItem(DISMISS_KEY) === "1"
-  );
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
-
-  if (dismissed) return null;
-
-  const handleDismiss = () => {
-    setDismissed(true);
-    safeSetItem(DISMISS_KEY, "1");
-  };
-  const iconClass = "size-5 shrink-0";
-  const iconStyle = { color: "var(--dt-text)" };
-
-  // Chrome / Edge（Android と PC）: ブラウザのインストール画面を呼ぶ
-  if (deferredPrompt) {
-    const handleInstall = async () => {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") {
-        setDeferredPrompt(null);
-      }
-    };
-    const isMobile = /Android|Mobi/.test(navigator.userAgent);
-
-    return (
-      <Banner
-        icon={<Download className={iconClass} style={iconStyle} />}
-        title={t("install.promptTitle")}
-        description={t(isMobile ? "install.mobileDesc" : "install.desktopDesc")}
-        action={
+const Banner = defineView<BannerProps>(
+  ["icon", "title", "description", "action", "onDismiss"],
+  props => {
+    const t = useT();
+    return () => {
+      const { icon, title, description, action, onDismiss } = props;
+      return (
+        <div
+          class="fixed bottom-[calc(1rem+var(--home-toolbar-space,0px)+env(safe-area-inset-bottom,0px))] left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 theme-border theme-shadow p-3 flex items-center gap-3"
+          style={{
+            backgroundColor: "var(--dt-current-highlight)",
+            borderRadius: "var(--dt-border-radius)",
+          }}
+        >
+          {icon}
+          <div class="flex-1">
+            <div class="text-sm font-bold" style={{ color: "var(--dt-text)" }}>
+              {title}
+            </div>
+            <div
+              class="text-xs font-medium"
+              style={{ color: "var(--dt-text-secondary)" }}
+            >
+              {description}
+            </div>
+          </div>
+          {action}
           <button
             type="button"
-            onClick={handleInstall}
-            className="theme-border px-3 py-1.5 text-xs font-bold transition-all hover:translate-y-[-1px]"
-            style={{
-              backgroundColor: "var(--dt-card-bg)",
-              borderRadius: "6px",
-            }}
+            onClick={onDismiss}
+            class="p-1 hover:bg-yellow-400 rounded-lg transition-colors shrink-0"
+            aria-label={t("common.close")}
           >
-            {t("install.add")}
+            <X class="size-4" />
           </button>
+        </div>
+      );
+    };
+  }
+);
+
+export const InstallPrompt = defineView<object>([], () => {
+  const t = useT();
+  const deferredPromptRef = shallowRef<BeforeInstallPromptEvent | null>(null);
+  const dismissedRef = ref(safeGetItem(DISMISS_KEY) === "1");
+  function handlePrompt(event: Event) {
+    event.preventDefault();
+    deferredPromptRef.value = event as BeforeInstallPromptEvent;
+  }
+  onMounted(() => window.addEventListener("beforeinstallprompt", handlePrompt));
+  onScopeDispose(() =>
+    window.removeEventListener("beforeinstallprompt", handlePrompt)
+  );
+  return () => {
+    const dismissed = dismissedRef.value;
+    const deferredPrompt = deferredPromptRef.value;
+    if (dismissed) return null;
+
+    const handleDismiss = () => {
+      dismissedRef.value = true;
+      safeSetItem(DISMISS_KEY, "1");
+    };
+    const iconClass = "size-5 shrink-0";
+    const iconStyle = { color: "var(--dt-text)" };
+
+    // Chrome / Edge（Android と PC）: ブラウザのインストール画面を呼ぶ
+    if (deferredPrompt) {
+      const handleInstall = async () => {
+        await deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === "accepted") {
+          deferredPromptRef.value = null;
         }
-        onDismiss={handleDismiss}
-      />
-    );
-  }
+      };
+      const isMobile = /Android|Mobi/.test(navigator.userAgent);
 
-  const guide = isStandalone() ? null : detectSafariGuide();
-  if (guide === "ios") {
-    return (
-      <Banner
-        icon={<Share className={iconClass} style={iconStyle} />}
-        title={t("install.iosTitle")}
-        description={t("install.iosDesc")}
-        onDismiss={handleDismiss}
-      />
-    );
-  }
-  if (guide === "macSafari") {
-    return (
-      <Banner
-        icon={<Download className={iconClass} style={iconStyle} />}
-        title={t("install.macSafariTitle")}
-        description={t("install.macSafariDesc")}
-        onDismiss={handleDismiss}
-      />
-    );
-  }
+      return (
+        <Banner
+          icon={<Download class={iconClass} style={iconStyle} />}
+          title={t("install.promptTitle")}
+          description={t(
+            isMobile ? "install.mobileDesc" : "install.desktopDesc"
+          )}
+          action={
+            <button
+              type="button"
+              onClick={handleInstall}
+              class="theme-border px-3 py-1.5 text-xs font-bold transition-all hover:translate-y-[-1px]"
+              style={{
+                backgroundColor: "var(--dt-card-bg)",
+                borderRadius: "6px",
+              }}
+            >
+              {t("install.add")}
+            </button>
+          }
+          onDismiss={handleDismiss}
+        />
+      );
+    }
 
-  return null;
-}
+    const guide = isStandalone() ? null : detectSafariGuide();
+    if (guide === "ios") {
+      return (
+        <Banner
+          icon={<Share class={iconClass} style={iconStyle} />}
+          title={t("install.iosTitle")}
+          description={t("install.iosDesc")}
+          onDismiss={handleDismiss}
+        />
+      );
+    }
+    if (guide === "macSafari") {
+      return (
+        <Banner
+          icon={<Download class={iconClass} style={iconStyle} />}
+          title={t("install.macSafariTitle")}
+          description={t("install.macSafariDesc")}
+          onDismiss={handleDismiss}
+        />
+      );
+    }
+
+    return null;
+  };
+});

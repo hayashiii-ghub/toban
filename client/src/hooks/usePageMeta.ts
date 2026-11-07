@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { toValue, watchEffect, type MaybeRefOrGetter } from "vue";
 
 type PageMeta = {
   title: string;
@@ -14,8 +14,9 @@ type HeadTarget = {
   value: string;
 };
 
-export function usePageMeta({ title, description, path }: PageMeta): void {
-  useEffect(() => {
+export function usePageMeta(meta: MaybeRefOrGetter<PageMeta>): void {
+  watchEffect(onCleanup => {
+    const { title, description, path } = toValue(meta);
     const previousTitle = document.title;
     const url = new URL(path, window.location.origin).href;
     const targets: HeadTarget[] = [
@@ -88,7 +89,7 @@ export function usePageMeta({ title, description, path }: PageMeta): void {
       element.setAttribute(target.valueAttribute, target.value);
     }
 
-    return () => {
+    onCleanup(() => {
       document.title = previousTitle;
       for (const [element, previousValue] of previousAttributes) {
         if (createdElements.includes(element)) {
@@ -102,6 +103,6 @@ export function usePageMeta({ title, description, path }: PageMeta): void {
             element.setAttribute(target.valueAttribute, previousValue);
         }
       }
-    };
-  }, [description, path, title]);
+    });
+  });
 }

@@ -1,3 +1,4 @@
+import { defineView } from "@/lib/vue";
 import type {
   Assignment,
   AssignmentMode,
@@ -37,62 +38,83 @@ interface ScheduleViewsProps {
  * viewTab に応じた表示の出し分け。Home と SharedScheduleView で共有し、
  * view 追加時の片ページ更新漏れを防ぐ。状態は持たない presentational。
  */
-export function ScheduleViews({
-  viewTab,
-  assignments,
-  groups,
-  members,
-  rotation,
-  rotationConfig,
-  assignmentMode,
-  scheduleId,
-  calendarMonth,
-  onCalendarMonthChange,
-  direction,
-  stagger,
-  highlightMemberId,
-}: ScheduleViewsProps) {
-  return (
-    <>
-      {viewTab === "cards" && (
-        <AssignmentsGrid
-          assignments={assignments}
-          direction={direction}
-          rotation={rotation}
-          scheduleId={scheduleId}
-          stagger={stagger}
-          assignmentMode={assignmentMode}
-          highlightMemberId={highlightMemberId}
-        />
-      )}
-      {viewTab === "table" && (
-        <RotationQuickTable
-          groups={groups}
-          members={members}
-          rotation={rotation}
-          assignmentMode={assignmentMode}
-          rotationConfig={rotationConfig}
-        />
-      )}
-      {viewTab === "calendar" && (
-        <RotationCalendar
-          month={calendarMonth}
-          onMonthChange={onCalendarMonthChange}
-          groups={groups}
-          members={members}
-          rotation={rotation}
-          rotationConfig={rotationConfig}
-          assignmentMode={assignmentMode}
-        />
-      )}
-      {viewTab === "disc" && (
-        <RotationDisc
-          groups={groups}
-          members={members}
-          rotation={rotation}
-          assignmentMode={assignmentMode}
-        />
-      )}
-    </>
-  );
-}
+export const ScheduleViews = defineView<ScheduleViewsProps>(
+  [
+    "viewTab",
+    "assignments",
+    "groups",
+    "members",
+    "rotation",
+    "rotationConfig",
+    "assignmentMode",
+    "scheduleId",
+    "calendarMonth",
+    "onCalendarMonthChange",
+    "direction",
+    "stagger",
+    "highlightMemberId",
+  ],
+  props => {
+    return () => {
+      const {
+        viewTab,
+        assignments,
+        groups,
+        members,
+        rotation,
+        rotationConfig,
+        assignmentMode,
+        scheduleId,
+        calendarMonth,
+        onCalendarMonthChange,
+        direction,
+        stagger,
+        highlightMemberId,
+      } = props;
+
+      return (
+        <>
+          {viewTab === "cards" && (
+            <AssignmentsGrid
+              assignments={assignments}
+              direction={direction}
+              rotation={rotation}
+              scheduleId={scheduleId}
+              stagger={stagger}
+              assignmentMode={assignmentMode}
+              highlightMemberId={highlightMemberId}
+            />
+          )}
+          {viewTab === "table" && (
+            <RotationQuickTable
+              groups={groups}
+              members={members}
+              rotation={rotation}
+              assignmentMode={assignmentMode}
+              rotationConfig={rotationConfig}
+            />
+          )}
+          {viewTab === "calendar" && (
+            <RotationCalendar
+              month={calendarMonth}
+              onMonthChange={onCalendarMonthChange}
+              groups={groups}
+              members={members}
+              rotation={rotation}
+              rotationConfig={rotationConfig}
+              assignmentMode={assignmentMode}
+            />
+          )}
+          {viewTab === "disc" && (
+            <RotationDisc
+              groups={groups}
+              members={members}
+              rotation={rotation}
+              assignmentMode={assignmentMode}
+            />
+          )}
+        </>
+      );
+    };
+  }
+);

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, renderHook } from "@testing-library/react";
+import { act, cleanup, renderHook } from "@/test/vue";
 import { LanguageProvider, useLocale } from "@/i18n";
 import { STORAGE_KEY } from "@/rotation/constants";
 import {
@@ -11,7 +11,6 @@ import { createSchedule, updateSchedule, publishSchedule } from "@/lib/api";
 import { clearPendingSync } from "@/lib/syncManager";
 import { useHomeState } from "./useHomeState";
 import { buildTobanTools } from "./useTobanTools";
-
 vi.mock("@/lib/api", async importOriginal => ({
   ...(await importOriginal<typeof import("@/lib/api")>()),
   createSchedule: vi.fn(),
@@ -20,7 +19,6 @@ vi.mock("@/lib/api", async importOriginal => ({
   getScheduleForEdit: vi.fn(() => new Promise(() => {})),
   publishSchedule: vi.fn(),
 }));
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});
@@ -33,14 +31,12 @@ beforeEach(() => {
   vi.mocked(updateSchedule).mockResolvedValue(undefined);
   vi.mocked(publishSchedule).mockResolvedValue(undefined);
 });
-
 afterEach(() => {
   cleanup();
   clearPendingSync("s_default_1");
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
-
 function seedGuide(cloud = false): AppState {
   const state = structuredClone(DEFAULT_APP_STATE);
   if (cloud)
@@ -51,24 +47,20 @@ function seedGuide(cloud = false): AppState {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   return state;
 }
-
 function renderHome() {
   return renderHook(() => ({ home: useHomeState(), language: useLocale() }), {
     wrapper: LanguageProvider,
   });
 }
-
 function savedState(): AppState {
   return JSON.parse(localStorage.getItem(STORAGE_KEY)!);
 }
-
 describe("built-in guide language", () => {
   it("localizes an existing backed-up guide without saving or syncing the translation", async () => {
     vi.useFakeTimers();
     seedGuide(true);
     const { result } = renderHome();
     const saved = localStorage.getItem(STORAGE_KEY);
-
     expect(result.current.home.activeSchedule).toMatchObject({
       ...DEFAULT_APP_STATE_EN.schedules[0],
       slug: "existing-guide",
@@ -76,42 +68,37 @@ describe("built-in guide language", () => {
     expect(result.current.home.getToolState()).toEqual(
       result.current.home.state
     );
-    act(() => result.current.language.setLocale("ja"));
+    await act(() => result.current.language.setLocale("ja"));
     expect(result.current.home.activeSchedule?.name).toBe("掃除当番（見本）");
-    act(() => result.current.language.setLocale("en"));
+    await act(() => result.current.language.setLocale("en"));
     expect(result.current.home.activeSchedule?.groups[3].tasks).toEqual(
       DEFAULT_APP_STATE_EN.schedules[0].groups[3].tasks
     );
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10000);
     });
-
     expect(localStorage.getItem(STORAGE_KEY)).toBe(saved);
     expect(createSchedule).not.toHaveBeenCalled();
     expect(updateSchedule).not.toHaveBeenCalled();
   });
-
   it.each(["edited guide", "ordinary roster"])(
     "preserves an %s when switching languages",
-    kind => {
+    async kind => {
       const state = seedGuide();
       if (kind === "edited guide")
         state.schedules[0].groups[0].tasks[0] = "私の手順";
       else state.schedules[0].id = state.activeScheduleId = "my-roster";
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       const { result } = renderHome();
-
       expect(result.current.home.activeSchedule).toEqual(state.schedules[0]);
-      act(() => result.current.language.setLocale("ja"));
-      act(() => result.current.language.setLocale("en"));
+      await act(() => result.current.language.setLocale("ja"));
+      await act(() => result.current.language.setLocale("en"));
       expect(result.current.home.activeSchedule).toEqual(state.schedules[0]);
     }
   );
-
   it("gives tools localized content while persisting only explicit content edits", async () => {
     seedGuide();
     const { result } = renderHome();
-
     await act(async () => {
       const outcome = await result.current.home.commitToolState(state => ({
         ...state,
@@ -123,7 +110,6 @@ describe("built-in guide language", () => {
       name: "掃除当番（見本）",
       rotation: 1,
     });
-
     await act(async () => {
       await result.current.home.commitToolState(state => ({
         ...state,
@@ -138,11 +124,10 @@ describe("built-in guide language", () => {
       members: DEFAULT_APP_STATE_EN.schedules[0].members,
       groups: DEFAULT_APP_STATE_EN.schedules[0].groups,
     });
-    act(() => result.current.language.setLocale("ja"));
+    await act(() => result.current.language.setLocale("ja"));
     expect(result.current.home.activeSchedule?.name).toBe("My instructions");
     expect(result.current.home.activeSchedule?.members[0].name).toBe("Alex");
   });
-
   it("syncs the stored language when a tool rotates the guide in another tab", async () => {
     vi.useFakeTimers();
     const initial = seedGuide(true);
@@ -172,24 +157,21 @@ describe("built-in guide language", () => {
     );
     expect(savedState().schedules[0].name).toBe("掃除当番（見本）");
   });
-
-  it("duplicates the displayed English guide without changing the saved original", () => {
+  it("duplicates the displayed English guide without changing the saved original", async () => {
     seedGuide();
     const { result } = renderHome();
-    act(() => result.current.home.onDuplicateSchedule());
-
+    await act(() => result.current.home.onDuplicateSchedule());
     expect(result.current.home.activeSchedule).toMatchObject({
       name: "Cleaning duty (sample) (copy)",
       groups: DEFAULT_APP_STATE_EN.schedules[0].groups,
       members: DEFAULT_APP_STATE_EN.schedules[0].members,
     });
     expect(savedState().schedules[0]).toEqual(DEFAULT_APP_STATE.schedules[0]);
-    act(() => result.current.language.setLocale("ja"));
+    await act(() => result.current.language.setLocale("ja"));
     expect(result.current.home.activeSchedule?.name).toBe(
       "Cleaning duty (sample) (copy)"
     );
   });
-
   it("explicitly shares the displayed language and keeps later language switches local", async () => {
     vi.useFakeTimers();
     seedGuide(true);
@@ -197,7 +179,6 @@ describe("built-in guide language", () => {
     await act(async () => {
       await result.current.home.handleShare();
     });
-
     expect(updateSchedule).toHaveBeenCalledWith(
       "existing-guide",
       "synthetic-token",
@@ -212,8 +193,8 @@ describe("built-in guide language", () => {
       "synthetic-token"
     );
     expect(savedState().schedules[0].name).toBe("Cleaning duty (sample)");
-    act(() => result.current.home.setShowShare(false));
-    act(() => result.current.language.setLocale("ja"));
+    await act(() => result.current.home.setShowShare(false));
+    await act(() => result.current.language.setLocale("ja"));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10000);
     });

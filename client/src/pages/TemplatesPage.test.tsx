@@ -1,4 +1,4 @@
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, render } from "@/test/vue";
 import { afterEach, describe, expect, it } from "vitest";
 import TemplatesPage from "./TemplatesPage";
 import { renderTemplateListHtml } from "../../../server/handlers/seo";
@@ -38,10 +38,10 @@ describe("TemplatesPage の構造化データ", () => {
   });
 
   it("bot 向けプリレンダと同じテンプレートを同じ順序で列挙する", () => {
-    // React と bot で別々に組み立てているため、片方だけ並び替えると
+    // 画面と bot で別々に組み立てているため、片方だけ並び替えると
     // クローラーと利用者に違う一覧を見せることになる。
     const { container } = render(<TemplatesPage />);
-    const reactList = JSON.parse(
+    const pageList = JSON.parse(
       container.querySelector('script[type="application/ld+json"]')!.innerHTML
     ).find((s: { "@type": string }) => s["@type"] === "ItemList");
 
@@ -53,6 +53,6 @@ describe("TemplatesPage の構造化データ", () => {
     const slugs = (list: { itemListElement: { url: string }[] }) =>
       list.itemListElement.map(el => el.url.split("/templates/")[1]);
 
-    expect(slugs(reactList)).toEqual(slugs(botList));
+    expect(slugs(pageList)).toEqual(slugs(botList));
   });
 });

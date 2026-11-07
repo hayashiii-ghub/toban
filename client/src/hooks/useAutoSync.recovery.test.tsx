@@ -1,21 +1,19 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { act, cleanup, renderHook } from "@testing-library/react";
-import { useState } from "react";
+import { act, cleanup, renderHook } from "@/test/vue";
+import { shallowRef } from "vue";
+import { stateSetter } from "@/lib/vue";
 import type { Schedule } from "@/rotation/types";
-
 const { get, update } = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn() }));
 vi.mock("@/lib/api", async importOriginal => ({
   ...(await importOriginal<typeof import("@/lib/api")>()),
   getScheduleForEdit: get,
   updateSchedule: update,
 }));
-
 afterEach(() => {
   cleanup();
   vi.clearAllTimers();
   vi.useRealTimers();
 });
-
 it("再起動で未送信のローカル本文を先にPUTし、古いGETによる巻き戻しを防ぐ", async () => {
   vi.useFakeTimers();
   const local: Schedule = {
@@ -44,14 +42,13 @@ it("再起動で未送信のローカル本文を先にPUTし、古いGETによ�
   update.mockResolvedValue(undefined);
   const { useAutoSync } = await import("./useAutoSync");
   const { result } = renderHook(() => {
-    const [current, setCurrent] = useState(local);
-    useAutoSync(current, setCurrent);
+    const current = shallowRef(local);
+    useAutoSync(current, stateSetter(current));
     return current;
   });
   await act(async () => {});
   expect(get).not.toHaveBeenCalled();
   expect(result.current.name).toBe(local.name);
-
   await act(async () => {
     await vi.advanceTimersByTimeAsync(3000);
   });

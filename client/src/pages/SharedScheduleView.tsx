@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams, useLocation } from "wouter";
-import { toast } from "sonner";
+import {
+  computed,
+  defineComponent,
+  onScopeDispose,
+  shallowRef,
+  watch,
+  watchEffect,
+} from "vue";
+import { useParams, useLocation } from "@/lib/router";
+import { toast } from "vue-sonner";
 import { getSchedule, ApiError, InvalidApiResponseError } from "@/lib/api";
 import type { ScheduleDTO } from "@/rotation/types";
 import {
@@ -12,7 +19,7 @@ import { loadState, saveState } from "@/lib/appState";
 import { ScheduleViews } from "@/features/home/ScheduleViews";
 import { ViewTabs, type ViewTabValue } from "@/features/home/ViewTabs";
 import { DesignThemeProvider } from "@/contexts/DesignThemeContext";
-import { Copy } from "lucide-react";
+import { Copy } from "@lucide/vue";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { DEFAULT_THEME_ID } from "@/rotation/defaultState";
 import { PrintMenu } from "@/components/PrintMenu";
@@ -25,336 +32,347 @@ import { useT, type MessageKey } from "@/i18n";
 import { getSavedFontId } from "@/fonts";
 import "./home.css";
 
-export default function SharedScheduleView() {
-  const { slug } = useParams<{ slug: string }>();
+export default defineComponent(() => {
+  const params = useParams<{ slug: string }>();
+  const slug = computed(() => params.slug);
   const [, navigate] = useLocation();
   const t = useT();
   const today = useLocalToday();
-  // 取得した slug ごと結果を持ち、表示中の slug と違えば読み込み中とみなす
-  const [loaded, setLoaded] = useState<{
+  // Keep responses keyed by slug so an older request never renders another roster.
+  const loaded = shallowRef<{
     slug: string;
     schedule: ScheduleDTO | null;
     errorKey: MessageKey | null;
   } | null>(null);
-  const current = loaded?.slug === slug ? loaded : null;
-  const loading = !current;
-  const schedule = current?.schedule ?? null;
-  const errorKey = current?.errorKey ?? null;
-  const [viewTab, setViewTab] = useState<ViewTabValue>("cards");
-  // 受け取った人が選んだ自分の名前（当番表ごとにこの端末に覚えておく）
-  const [meBySlug, setMeBySlug] = useState<Record<string, string | null>>({});
-  const meId = slug
-    ? slug in meBySlug
-      ? meBySlug[slug]
-      : loadSharedMe(slug)
-    : null;
+  const current = computed(() =>
+    loaded.value?.slug === slug.value ? loaded.value : null
+  );
+  const loading = computed(() => !current.value);
+  const schedule = computed(() => current.value?.schedule ?? null);
+  const errorKey = computed(() => current.value?.errorKey ?? null);
+  const viewTab = shallowRef<ViewTabValue>("cards");
+  const setViewTab = (value: ViewTabValue) => {
+    viewTab.value = value;
+  };
+  const meBySlug = shallowRef<Record<string, string | null>>({});
+  const meId = computed(() =>
+    slug.value
+      ? slug.value in meBySlug.value
+        ? meBySlug.value[slug.value]
+        : loadSharedMe(slug.value)
+      : null
+  );
   const chooseMe = (memberId: string | null) => {
-    if (!slug) return;
-    saveSharedMe(slug, memberId);
-    setMeBySlug(prev => ({ ...prev, [slug]: memberId }));
+    const currentSlug = slug.value;
+    if (!currentSlug) return;
+    saveSharedMe(currentSlug, memberId);
+    meBySlug.value = { ...meBySlug.value, [currentSlug]: memberId };
   };
   const printDate = usePrintDateString();
-
-  // 印刷は Home と同じ usePrintMode に集約（printMode 設定・@page 向き注入・afterprint cleanup を一括）。
   const { handlePrint } = usePrintMode();
-
-  useEffect(() => {
-    if (!slug) return;
-    let cancelled = false;
-    getSchedule(slug)
-      .then(data => {
-        if (cancelled) return;
-        setLoaded({ slug, schedule: data, errorKey: null });
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        let key: MessageKey = "shared.error.network";
-        if (err instanceof ApiError) {
-          if (err.status === 404) key = "shared.error.notFound";
-          else if (err.status >= 500) key = "shared.error.server";
-          else key = "shared.error.fetch";
-        } else if (err instanceof InvalidApiResponseError) {
-          // 上限超過などで形が合わない。zod の英語文は出さず、取得失敗として見せる。
-          key = "shared.error.fetch";
-        }
-        setLoaded({ slug, schedule: null, errorKey: key });
+  watch(
+    slug,
+    (value, _previous, onCleanup) => {
+      if (!value) return;
+      let cancelled = false;
+      onCleanup(() => {
+        cancelled = true;
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
-
-  const scheduleName = schedule?.name;
-  useEffect(() => {
-    document.title = scheduleName
-      ? `${scheduleName} - toban`
+      getSchedule(value)
+        .then(data => {
+          if (!cancelled)
+            loaded.value = { slug: value, schedule: data, errorKey: null };
+        })
+        .catch((error: unknown) => {
+          if (cancelled) return;
+          let key: MessageKey = "shared.error.network";
+          if (error instanceof ApiError)
+            key =
+              error.status === 404
+                ? "shared.error.notFound"
+                : error.status >= 500
+                  ? "shared.error.server"
+                  : "shared.error.fetch";
+          else if (error instanceof InvalidApiResponseError)
+            key = "shared.error.fetch";
+          loaded.value = { slug: value, schedule: null, errorKey: key };
+        });
+    },
+    { immediate: true }
+  );
+  watchEffect(() => {
+    document.title = schedule.value?.name
+      ? `${schedule.value.name} - toban`
       : t("lp.docTitle");
-    return () => {
-      document.title = t("lp.docTitle");
-    };
-  }, [scheduleName, t]);
-
-  const effectiveRotation = useMemo(() => {
-    if (!schedule) return 0;
-    if (schedule.rotationConfig?.mode === "date") {
-      const activeMembers = schedule.members.filter(m => !m.skipped);
+  });
+  onScopeDispose(() => {
+    document.title = t("lp.docTitle");
+  });
+  const effectiveRotation = computed(() => {
+    const current = schedule.value;
+    if (!current) return 0;
+    if (current.rotationConfig?.mode === "date")
       return computeDateRotationForDate(
-        schedule.rotationConfig,
-        activeMembers.length,
-        today
+        current.rotationConfig,
+        current.members.filter(member => !member.skipped).length,
+        today.value
       );
-    }
-    return schedule.rotation;
-  }, [schedule, today]);
+    return current.rotation;
+  });
   const turn = useTurnLabel(
-    schedule?.rotationConfig,
-    schedule?.members ?? [],
+    () => schedule.value?.rotationConfig,
+    () => schedule.value?.members ?? [],
     effectiveRotation
   );
-
-  const assignments = useMemo(() => {
-    if (!schedule) return [];
-    return computeAssignments(
-      schedule.groups,
-      schedule.members,
-      effectiveRotation,
-      schedule.assignmentMode
-    );
-  }, [schedule, effectiveRotation]);
-
-  const handleImport = useCallback(() => {
-    if (!schedule) return;
-
+  const assignments = computed(() =>
+    schedule.value
+      ? computeAssignments(
+          schedule.value.groups,
+          schedule.value.members,
+          effectiveRotation.value,
+          schedule.value.assignmentMode
+        )
+      : []
+  );
+  function handleImport() {
+    const current = schedule.value;
+    if (!current) return;
     const state = loadState();
-    // メンバーIDマッピング（旧ID → 新ID）
     const memberIdMap = new Map<string, string>();
-    const newMembers = schedule.members.map(m => {
-      const newId = generateId("m");
-      memberIdMap.set(m.id, newId);
-      return { ...m, id: newId };
+    const members = current.members.map(member => {
+      const id = generateId("m");
+      memberIdMap.set(member.id, id);
+      return { ...member, id };
     });
-
-    const newSchedule = {
+    const copied = {
       id: generateId("s"),
-      name: schedule.name,
-      rotation: schedule.rotation,
-      groups: schedule.groups.map(g => ({
-        ...g,
+      name: current.name,
+      rotation: current.rotation,
+      groups: current.groups.map(group => ({
+        ...group,
         id: generateId("g"),
-        // グループ専用メンバーIDも新IDに変換
-        memberIds: g.memberIds?.map(id => memberIdMap.get(id) ?? id),
+        memberIds: group.memberIds?.map(id => memberIdMap.get(id) ?? id),
       })),
-      members: newMembers,
-      assignmentMode: schedule.assignmentMode,
-      rotationConfig: schedule.rotationConfig,
-      designThemeId: schedule.designThemeId,
-      fontId: schedule.fontId ?? getSavedFontId(),
+      members,
+      assignmentMode: current.assignmentMode,
+      rotationConfig: current.rotationConfig,
+      designThemeId: current.designThemeId,
+      fontId: current.fontId ?? getSavedFontId(),
     };
-
-    const newState = {
-      schedules: [...state.schedules, newSchedule],
-      activeScheduleId: newSchedule.id,
-    };
-    if (!saveState(newState)) {
+    if (
+      !saveState({
+        schedules: [...state.schedules, copied],
+        activeScheduleId: copied.id,
+      })
+    ) {
       toast.error(t("summary.saveFailed"));
       return;
     }
     toast.success(t("shared.copied"));
-    navigate("/");
-  }, [schedule, navigate, t]);
+    void navigate("/");
+  }
+  return () => {
+    const loadingValue = loading.value;
+    const scheduleValue = schedule.value;
+    const errorValue = errorKey.value;
+    const viewValue = viewTab.value;
+    const meValue = meId.value;
+    const printValue = printDate.value;
+    const rotationValue = effectiveRotation.value;
+    const assignmentValues = assignments.value;
+    if (loadingValue) return <LoadingScreen />;
 
-  if (loading) return <LoadingScreen />;
-
-  if (errorKey || !schedule) {
-    const key = errorKey ?? "shared.error.notFound";
-    const isNotFound = key === "shared.error.notFound";
-    return (
-      <DesignThemeProvider themeId={DEFAULT_THEME_ID}>
-        <div
-          className="rotation-page flex-1 flex items-center justify-center p-4"
-          style={{ backgroundColor: "var(--dt-page-bg)" }}
-        >
+    if (errorValue || !scheduleValue) {
+      const key = errorValue ?? "shared.error.notFound";
+      const isNotFound = key === "shared.error.notFound";
+      return (
+        <DesignThemeProvider themeId={DEFAULT_THEME_ID}>
           <div
-            className="theme-border theme-shadow w-full max-w-md p-8 text-center"
-            style={{
-              borderRadius: "var(--dt-border-radius)",
-              backgroundColor: "var(--dt-card-bg)",
-            }}
+            class="rotation-page flex-1 flex items-center justify-center p-4"
+            style={{ backgroundColor: "var(--dt-page-bg)" }}
           >
-            {/* 受け取った人の過失ではないので、404 ページと同じく警告色を使わない */}
             <div
-              className="theme-border size-16 mx-auto mb-5 flex items-center justify-center text-3xl"
+              class="theme-border theme-shadow w-full max-w-md p-8 text-center"
               style={{
-                borderRadius: "50%",
-                backgroundColor: "var(--dt-current-highlight)",
+                borderRadius: "var(--dt-border-radius)",
+                backgroundColor: "var(--dt-card-bg)",
               }}
-              aria-hidden="true"
             >
-              {isNotFound ? "🔍" : "📡"}
-            </div>
-            <h1
-              className="text-lg font-bold mb-2"
-              style={{ color: "var(--dt-text)" }}
-            >
-              {t(key)}
-            </h1>
-            <p
-              className="text-sm mb-6 leading-relaxed"
-              style={{ color: "var(--dt-text-secondary)" }}
-            >
-              {t(
-                isNotFound
-                  ? "shared.error.notFoundHint"
-                  : "shared.error.retryHint"
-              )}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              {!isNotFound && (
-                <button
-                  type="button"
-                  onClick={() => window.location.reload()}
-                  className="theme-border theme-shadow-sm inline-flex items-center justify-center gap-2 px-5 py-2.5 font-bold text-sm transition-all duration-150 theme-hover-lift"
+              {/* 受け取った人の過失ではないので、404 ページと同じく警告色を使わない */}
+              <div
+                class="theme-border size-16 mx-auto mb-5 flex items-center justify-center text-3xl"
+                style={{
+                  borderRadius: "50%",
+                  backgroundColor: "var(--dt-current-highlight)",
+                }}
+                aria-hidden="true"
+              >
+                {isNotFound ? "🔍" : "📡"}
+              </div>
+              <h1
+                class="text-lg font-bold mb-2"
+                style={{ color: "var(--dt-text)" }}
+              >
+                {t(key)}
+              </h1>
+              <p
+                class="text-sm mb-6 leading-relaxed"
+                style={{ color: "var(--dt-text-secondary)" }}
+              >
+                {t(
+                  isNotFound
+                    ? "shared.error.notFoundHint"
+                    : "shared.error.retryHint"
+                )}
+              </p>
+              <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                {!isNotFound && (
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    class="theme-border theme-shadow-sm inline-flex items-center justify-center gap-2 px-5 py-2.5 font-bold text-sm transition-all duration-150 theme-hover-lift"
+                    style={{
+                      backgroundColor: "var(--dt-control-bar-bg)",
+                      color: "var(--dt-control-bar-text)",
+                      borderRadius: "10px",
+                    }}
+                  >
+                    {t("error.reload")}
+                  </button>
+                )}
+                <a
+                  href="/"
+                  class="theme-border theme-shadow-sm inline-flex items-center justify-center gap-2 px-5 py-2.5 font-bold text-sm transition-all duration-150 theme-hover-lift"
                   style={{
-                    backgroundColor: "var(--dt-control-bar-bg)",
-                    color: "var(--dt-control-bar-text)",
+                    backgroundColor: "var(--dt-button-bg)",
+                    color: "var(--dt-text)",
                     borderRadius: "10px",
                   }}
                 >
-                  {t("error.reload")}
-                </button>
+                  {t("shared.createYourOwn")}
+                </a>
+              </div>
+            </div>
+          </div>
+        </DesignThemeProvider>
+      );
+    }
+
+    const rotationLabel = turn.label;
+
+    return (
+      <DesignThemeProvider
+        themeId={scheduleValue?.designThemeId}
+        fontId={scheduleValue?.fontId}
+      >
+        <main
+          class="rotation-page flex-1"
+          style={{ backgroundColor: "var(--dt-page-bg)" }}
+        >
+          <header class="rotation-print-header pt-6 sm:pt-8 pb-6 sm:pb-8 px-3 sm:px-4">
+            <div class="max-w-4xl mx-auto text-center">
+              <h1
+                class="text-2xl sm:text-3xl font-extrabold rotation-no-print"
+                style={{ color: "var(--dt-text)" }}
+              >
+                {scheduleValue.name}
+              </h1>
+              <div
+                class="rotation-print-only text-2xl sm:text-3xl md:text-4xl tracking-tight"
+                style={{
+                  color: "var(--dt-text)",
+                  fontWeight: "var(--dt-font-weight-extra)",
+                }}
+                aria-hidden="true"
+              >
+                {scheduleValue.name}
+              </div>
+              {/* 手動の「初期」「3回目」は受け取った人には意味が伝わらないので、日付モードだけ出す */}
+              {turn.isDateMode && (
+                <p
+                  class="text-sm sm:text-base font-bold mt-2 rotation-no-print"
+                  style={{ color: "var(--dt-text-secondary)" }}
+                >
+                  {rotationLabel}
+                </p>
               )}
+              <div
+                class="rotation-print-only mt-3 pt-2 text-sm font-bold"
+                style={{
+                  color: "var(--dt-text-secondary)",
+                  borderBottom: "3px solid var(--dt-border-color)",
+                }}
+              >
+                <span class="inline-block pb-2">
+                  {t(
+                    turn.isDateMode
+                      ? "shared.printHeaderDate"
+                      : "shared.printHeader",
+                    { label: rotationLabel, date: printValue }
+                  )}
+                </span>
+              </div>
+            </div>
+          </header>
+
+          <MyDuty
+            slug={scheduleValue.slug}
+            meId={meValue}
+            groups={scheduleValue.groups}
+            members={scheduleValue.members}
+            rotation={rotationValue}
+            rotationConfig={scheduleValue.rotationConfig}
+            assignmentMode={scheduleValue.assignmentMode}
+            onChange={chooseMe}
+          />
+
+          <ViewTabs viewTab={viewValue} onChangeTab={setViewTab} />
+
+          <ScheduleViews
+            highlightMemberId={meValue}
+            viewTab={viewValue}
+            assignments={assignmentValues}
+            groups={scheduleValue.groups}
+            members={scheduleValue.members}
+            rotation={rotationValue}
+            rotationConfig={scheduleValue.rotationConfig}
+            assignmentMode={scheduleValue.assignmentMode}
+            scheduleId={scheduleValue.slug}
+            direction="forward"
+            stagger={false}
+          />
+
+          <div class="px-3 sm:px-4 pb-8 sm:pb-12 rotation-no-print">
+            <div class="max-w-4xl mx-auto text-center flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
+              <PrintMenu
+                onPrint={() =>
+                  handlePrint(viewValue, scheduleValue.name, turn.fileLabel)
+                }
+              />
+              <button
+                type="button"
+                onClick={handleImport}
+                class="theme-border theme-shadow-sm inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 font-bold text-sm transition-all duration-150 theme-hover-lift"
+                style={{
+                  backgroundColor: "var(--dt-control-bar-bg)",
+                  color: "var(--dt-control-bar-text)",
+                  borderRadius: "var(--dt-border-radius-sm)",
+                }}
+              >
+                <Copy class="size-4" />
+                {t("shared.copyToMine")}
+              </button>
               <a
                 href="/"
-                className="theme-border theme-shadow-sm inline-flex items-center justify-center gap-2 px-5 py-2.5 font-bold text-sm transition-all duration-150 theme-hover-lift"
-                style={{
-                  backgroundColor: "var(--dt-button-bg)",
-                  color: "var(--dt-text)",
-                  borderRadius: "10px",
-                }}
+                class="inline-flex items-center justify-center px-2 py-2 text-sm font-bold underline underline-offset-4"
+                style={{ color: "var(--dt-text-secondary)" }}
               >
                 {t("shared.createYourOwn")}
               </a>
             </div>
           </div>
-        </div>
+        </main>
       </DesignThemeProvider>
     );
-  }
-
-  const rotationLabel = turn.label;
-
-  return (
-    <DesignThemeProvider
-      themeId={schedule?.designThemeId}
-      fontId={schedule?.fontId}
-    >
-      <main
-        className="rotation-page flex-1"
-        style={{ backgroundColor: "var(--dt-page-bg)" }}
-      >
-        <header className="rotation-print-header pt-6 sm:pt-8 pb-6 sm:pb-8 px-3 sm:px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1
-              className="text-2xl sm:text-3xl font-extrabold rotation-no-print"
-              style={{ color: "var(--dt-text)" }}
-            >
-              {schedule.name}
-            </h1>
-            <div
-              className="rotation-print-only text-2xl sm:text-3xl md:text-4xl tracking-tight"
-              style={{
-                color: "var(--dt-text)",
-                fontWeight: "var(--dt-font-weight-extra)",
-              }}
-              aria-hidden="true"
-            >
-              {schedule.name}
-            </div>
-            {/* 手動の「初期」「3回目」は受け取った人には意味が伝わらないので、日付モードだけ出す */}
-            {turn.isDateMode && (
-              <p
-                className="text-sm sm:text-base font-bold mt-2 rotation-no-print"
-                style={{ color: "var(--dt-text-secondary)" }}
-              >
-                {rotationLabel}
-              </p>
-            )}
-            <div
-              className="rotation-print-only mt-3 pt-2 text-sm font-bold"
-              style={{
-                color: "var(--dt-text-secondary)",
-                borderBottom: "3px solid var(--dt-border-color)",
-              }}
-            >
-              <span className="inline-block pb-2">
-                {t(
-                  turn.isDateMode
-                    ? "shared.printHeaderDate"
-                    : "shared.printHeader",
-                  { label: rotationLabel, date: printDate }
-                )}
-              </span>
-            </div>
-          </div>
-        </header>
-
-        <MyDuty
-          slug={schedule.slug}
-          meId={meId}
-          groups={schedule.groups}
-          members={schedule.members}
-          rotation={effectiveRotation}
-          rotationConfig={schedule.rotationConfig}
-          assignmentMode={schedule.assignmentMode}
-          onChange={chooseMe}
-        />
-
-        <ViewTabs viewTab={viewTab} onChangeTab={setViewTab} />
-
-        <ScheduleViews
-          highlightMemberId={meId}
-          viewTab={viewTab}
-          assignments={assignments}
-          groups={schedule.groups}
-          members={schedule.members}
-          rotation={effectiveRotation}
-          rotationConfig={schedule.rotationConfig}
-          assignmentMode={schedule.assignmentMode}
-          scheduleId={schedule.slug}
-          direction="forward"
-          stagger={false}
-        />
-
-        <div className="px-3 sm:px-4 pb-8 sm:pb-12 rotation-no-print">
-          <div className="max-w-4xl mx-auto text-center flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
-            <PrintMenu
-              onPrint={() =>
-                handlePrint(viewTab, schedule.name, turn.fileLabel)
-              }
-            />
-            <button
-              type="button"
-              onClick={handleImport}
-              className="theme-border theme-shadow-sm inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 font-bold text-sm transition-all duration-150 theme-hover-lift"
-              style={{
-                backgroundColor: "var(--dt-control-bar-bg)",
-                color: "var(--dt-control-bar-text)",
-                borderRadius: "var(--dt-border-radius-sm)",
-              }}
-            >
-              <Copy className="size-4" />
-              {t("shared.copyToMine")}
-            </button>
-            <a
-              href="/"
-              className="inline-flex items-center justify-center px-2 py-2 text-sm font-bold underline underline-offset-4"
-              style={{ color: "var(--dt-text-secondary)" }}
-            >
-              {t("shared.createYourOwn")}
-            </a>
-          </div>
-        </div>
-      </main>
-    </DesignThemeProvider>
-  );
-}
+  };
+});

@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import { Route, Router } from "wouter";
-import { memoryLocation } from "wouter/memory-location";
-import { toast } from "sonner";
+import { act, cleanup, screen, waitFor } from "@/test/vue";
+import { renderAt } from "@/test/router";
+import { toast } from "vue-sonner";
 import { STORAGE_KEY } from "@/rotation/constants";
 import { DEFAULT_APP_STATE } from "@/rotation/defaultState";
 import { loadState, saveState } from "@/lib/appState";
@@ -22,19 +21,16 @@ const fetched: ScheduleResponse = {
   updatedAt: "2026-09-30T00:00:00Z",
 };
 
-function renderTransfer(response = fetched) {
+async function renderTransfer(response = fetched) {
   const data = encodeShareTransferData(
     JSON.stringify({ slug, editToken, name: response.name })
   );
   const path = `/transfer?data=${encodeURIComponent(data)}`;
-  const location = memoryLocation({ path, record: true });
   const fetchMock = vi.fn<typeof fetch>(async () => Response.json(response));
   vi.stubGlobal("fetch", fetchMock);
-  render(
-    <Router hook={location.hook}>
-      <Route path="/transfer" component={Transfer} />
-    </Router>
-  );
+  const location = await renderAt(path, [
+    { path: "/transfer", component: Transfer },
+  ]);
   return { location, path, fetchMock };
 }
 
@@ -67,9 +63,36 @@ afterEach(() => {
 });
 
 describe("Transfer の端末への保存", () => {
+  it("別ページへ移った後に届く転送応答を保存しない", async () => {
+    const initial = seedState(false);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    let finish!: (response: Response) => void;
+    const pending = new Promise<Response>(resolve => {
+      finish = resolve;
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>(() => pending)
+    );
+    const data = encodeShareTransferData(
+      JSON.stringify({ slug, editToken, name: fetched.name })
+    );
+    const location = await renderAt(
+      `/transfer?data=${encodeURIComponent(data)}`,
+      [{ path: "/transfer", component: Transfer }]
+    );
+    await location.navigate("/elsewhere");
+
+    await act(() => finish(Response.json(fetched)));
+    expect(loadState()).toEqual(initial);
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(saved);
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(location.history.at(-1)).toBe("/elsewhere");
+  });
+
   it("編集リンクの本文を実際に保存してから、成功を知らせホームへ移る", async () => {
     const initial = seedState(false);
-    const { location, fetchMock } = renderTransfer();
+    const { location, fetchMock } = await renderTransfer();
 
     await waitFor(() => expect(location.history?.at(-1)).toBe("/"));
     expect(fetchMock).toHaveBeenCalledWith(
@@ -98,7 +121,10 @@ describe("Transfer の端末への保存", () => {
 
   it("同じ表の編集リンクを取り込み直すと、IDと固定設定を保って更新する", async () => {
     const initial = seedState(true);
-    const { location } = renderTransfer({ ...fetched, fontId: undefined });
+    const { location } = await renderTransfer({
+      ...fetched,
+      fontId: undefined,
+    });
 
     await waitFor(() => expect(location.history?.at(-1)).toBe("/"));
     const stored = loadState();
@@ -135,7 +161,7 @@ describe("Transfer の端末への保存", () => {
         setItem(key, value);
       });
       vi.spyOn(console, "warn").mockImplementation(() => {});
-      const { location, path } = renderTransfer();
+      const { location, path } = await renderTransfer();
 
       expect(
         await screen.findByRole("heading", {

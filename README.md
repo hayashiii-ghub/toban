@@ -18,4 +18,6 @@ corepack pnpm dev
 
 通常は http://localhost:3000 で開きます。変更・検証・公開の手順は [AGENTS.md](./AGENTS.md)、コマンド一覧は [package.json](./package.json) を参照してください。
 
+フロントエンドは Vue 3 と TypeScript、API は Cloudflare Workers と D1 を使っています。開発時の API はローカル D1 に接続します。
+
 [MIT License](./LICENSE) — Copyright (c) 2026 hayashiii-ghub

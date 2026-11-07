@@ -1,72 +1,63 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act } from "@/test/vue";
 import { useRotationAnimation } from "./useRotationAnimation";
 import { ANIMATION_DURATION_MS } from "@/rotation/constants";
-
 describe("useRotationAnimation", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
-
   afterEach(() => {
     vi.useRealTimers();
   });
-
   // Dispatch として渡しつつ .mock で呼び出し引数も見たいので、両方の型を持たせる
   const createSetState = () =>
-    vi.fn() as unknown as React.Dispatch<
-      React.SetStateAction<import("@shared/types").AppState>
+    vi.fn() as unknown as import("@/lib/vue").StateSetter<
+      import("@shared/types").AppState
     > &
       ReturnType<typeof vi.fn>;
-
   it("初期状態: isAnimating=false, direction='forward'", () => {
     const setState = createSetState();
     const { result } = renderHook(() => useRotationAnimation(setState));
     expect(result.current.isAnimating).toBe(false);
     expect(result.current.direction).toBe("forward");
   });
-
-  it("handleRotate('forward')でisAnimating=true, direction='forward'になる", () => {
+  it("handleRotate('forward')でisAnimating=true, direction='forward'になる", async () => {
     const setState = createSetState();
     const { result } = renderHook(() => useRotationAnimation(setState));
-    act(() => result.current.handleRotate("forward"));
+    await act(() => result.current.handleRotate("forward"));
     expect(result.current.isAnimating).toBe(true);
     expect(result.current.direction).toBe("forward");
   });
-
-  it("handleRotate('backward')でdirection='backward'になる", () => {
+  it("handleRotate('backward')でdirection='backward'になる", async () => {
     const setState = createSetState();
     const { result } = renderHook(() => useRotationAnimation(setState));
-    act(() => result.current.handleRotate("backward"));
+    await act(() => result.current.handleRotate("backward"));
     expect(result.current.isAnimating).toBe(true);
     expect(result.current.direction).toBe("backward");
   });
-
-  it("isAnimating中はhandleRotateが無視される", () => {
+  it("isAnimating中はhandleRotateが無視される", async () => {
     const setState = createSetState();
     const { result } = renderHook(() => useRotationAnimation(setState));
-    act(() => result.current.handleRotate("forward"));
+    await act(() => result.current.handleRotate("forward"));
     expect(setState).toHaveBeenCalledTimes(1);
-    act(() => result.current.handleRotate("backward"));
+    await act(() => result.current.handleRotate("backward"));
     expect(setState).toHaveBeenCalledTimes(1);
     expect(result.current.direction).toBe("forward");
   });
-
-  it("ANIMATION_DURATION_MS後にisAnimatingがfalseに戻る", () => {
+  it("ANIMATION_DURATION_MS後にisAnimatingがfalseに戻る", async () => {
     const setState = createSetState();
     const { result } = renderHook(() => useRotationAnimation(setState));
-    act(() => result.current.handleRotate("forward"));
+    await act(() => result.current.handleRotate("forward"));
     expect(result.current.isAnimating).toBe(true);
-    act(() => {
+    await act(() => {
       vi.advanceTimersByTime(ANIMATION_DURATION_MS);
     });
     expect(result.current.isAnimating).toBe(false);
   });
-
-  it("setStateが正しい更新関数で呼ばれる", () => {
+  it("setStateが正しい更新関数で呼ばれる", async () => {
     const setState = createSetState();
     const { result } = renderHook(() => useRotationAnimation(setState));
-    act(() => result.current.handleRotate("forward"));
+    await act(() => result.current.handleRotate("forward"));
     expect(setState).toHaveBeenCalledTimes(1);
     const updater = setState.mock.calls[0][0] as (
       prev: import("@shared/types").AppState

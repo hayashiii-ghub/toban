@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup } from "@/test/vue";
 import { TaskLegend } from "./TaskLegend";
 import { RotationCalendar } from "./RotationCalendar";
 import { RotationDisc } from "./RotationDisc";
@@ -24,12 +24,12 @@ const members = [mk("m1", "田中"), mk("m2", "鈴木"), mk("m3", "佐藤")];
 const groups = [grp("g1", ["掃除"]), grp("g2", ["配膳"], "🍽")];
 
 /** 凡例のチップ（li）を取り出す。凡例はどちらのビューでも唯一の ul。 */
-function chips(container: HTMLElement) {
+function chips(container: Element) {
   return [...container.querySelectorAll("ul > li")];
 }
 
 describe("TaskLegend", () => {
-  it("チップに theme-border を付ける", () => {
+  it("チップに theme-border を付ける", async () => {
     // テーマの pageBg と cardBg はほぼ同色（しろばんは両方 #ffffff）で、
     // 塗りだけに頼るとチップの枠が消えて文字の羅列になる。
     const { container } = render(<TaskLegend groups={groups} />);
@@ -38,7 +38,7 @@ describe("TaskLegend", () => {
     }
   });
 
-  it("当番名と絵文字を出し、絵文字は読み上げ対象にしない", () => {
+  it("当番名と絵文字を出し、絵文字は読み上げ対象にしない", async () => {
     const { container } = render(<TaskLegend groups={groups} />);
     expect(container.textContent).toContain("掃除");
     expect(container.textContent).toContain("配膳");
@@ -47,7 +47,7 @@ describe("TaskLegend", () => {
     );
   });
 
-  it("showOffDuty のときだけ「おやすみ」を足す", () => {
+  it("showOffDuty のときだけ「おやすみ」を足す", async () => {
     const { container: without } = render(<TaskLegend groups={groups} />);
     expect(without.textContent).not.toContain("おやすみ");
     cleanup();
@@ -58,7 +58,7 @@ describe("TaskLegend", () => {
     expect(chips(withOff)).toHaveLength(groups.length + 1);
   });
 
-  it("align=center で中央寄せ、既定は左寄せ", () => {
+  it("align=center で中央寄せ、既定は左寄せ", async () => {
     const { container: centered } = render(
       <TaskLegend groups={groups} align="center" />
     );
@@ -79,7 +79,7 @@ describe("カレンダーと円盤の凡例", () => {
       .filter(c => !c.startsWith("rounded"))
       .join(" ");
 
-  it("角丸以外の見た目を共有する", () => {
+  it("角丸以外の見た目を共有する", async () => {
     // 片方だけ手で書き換えると同じ情報が別物に見えるため、見た目をここで固定する。
     const { container: cal } = render(
       <RotationCalendar groups={groups} members={members} rotation={0} />
@@ -94,7 +94,7 @@ describe("カレンダーと円盤の凡例", () => {
     expect(withoutCorner(calChip)).toBe(withoutCorner(discChip));
   });
 
-  it("角は盤面の形に合わせる", () => {
+  it("角は盤面の形に合わせる", async () => {
     // 円盤は盤面が円なので丸、カレンダーは四角いセルとその中の
     // 担当者チップに合わせる。ここが揃うと片方が浮く。
     const { container: cal } = render(

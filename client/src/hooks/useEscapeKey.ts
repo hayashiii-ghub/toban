@@ -1,11 +1,8 @@
-import { useEffect } from "react";
-
+import { onMounted, onScopeDispose } from "vue";
 export function useEscapeKey(onEscape: () => void) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onEscape();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onEscape]);
+  const handler = (event: KeyboardEvent) => {
+    if (event.key === "Escape") onEscape();
+  };
+  onMounted(() => document.addEventListener("keydown", handler));
+  onScopeDispose(() => document.removeEventListener("keydown", handler));
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { render, cleanup, waitFor, within } from "@testing-library/react";
+import { render, cleanup, waitFor, within } from "@/test/vue";
 import { AssignmentsGrid } from "./AssignmentsGrid";
 import type {
   Assignment,
@@ -48,7 +48,7 @@ const sampleAssignments: Assignment[] = [
 ];
 
 describe("AssignmentsGrid", () => {
-  it("正しい数のカードが表示される", () => {
+  it("正しい数のカードが表示される", async () => {
     const { container } = render(
       <AssignmentsGrid {...baseProps} assignments={sampleAssignments} />
     );
@@ -56,21 +56,21 @@ describe("AssignmentsGrid", () => {
     expect(cards).toHaveLength(sampleAssignments.length);
   });
 
-  it("各カードにメンバー名が表示される", () => {
+  it("各カードにメンバー名が表示される", async () => {
     const { container } = render(
       <AssignmentsGrid {...baseProps} assignments={sampleAssignments} />
     );
-    const view = within(container);
+    const view = within(container as HTMLElement);
     expect(view.getByText("田中太郎")).toBeInTheDocument();
     expect(view.getByText("鈴木花子")).toBeInTheDocument();
     expect(view.getByText("佐藤次郎")).toBeInTheDocument();
   });
 
-  it("各カードにタスク名が表示される", () => {
+  it("各カードにタスク名が表示される", async () => {
     const { container } = render(
       <AssignmentsGrid {...baseProps} assignments={sampleAssignments} />
     );
-    const view = within(container);
+    const view = within(container as HTMLElement);
     expect(view.getByText("掃除")).toBeInTheDocument();
     expect(view.getByText("ゴミ捨て")).toBeInTheDocument();
     expect(view.getByText("配膳")).toBeInTheDocument();
@@ -98,7 +98,7 @@ describe("AssignmentsGrid", () => {
     );
   });
 
-  it("空のassignments配列で空の状態が表示される", () => {
+  it("空のassignments配列で空の状態が表示される", async () => {
     const { container } = render(
       <AssignmentsGrid {...baseProps} assignments={[]} />
     );

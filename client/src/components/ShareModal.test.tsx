@@ -1,12 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@/test/vue";
 import { ShareModal } from "./ShareModal";
 
 Object.assign(navigator, {
   clipboard: { writeText: vi.fn(() => Promise.resolve()) },
 });
-
-vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const defaultProps = {
   slug: "test-slug",
@@ -18,39 +16,39 @@ const defaultProps = {
 afterEach(() => cleanup());
 
 describe("ShareModal", () => {
-  it("共有URLが表示される", () => {
+  it("共有URLが表示される", async () => {
     render(<ShareModal {...defaultProps} />);
     expect(screen.getByText(/\/s\/test-slug/)).toBeTruthy();
   });
 
-  it("コピーボタンでclipboard APIが呼ばれる", () => {
+  it("コピーボタンでclipboard APIが呼ばれる", async () => {
     render(<ShareModal {...defaultProps} />);
-    fireEvent.click(screen.getByText("URLをコピー"));
+    await fireEvent.click(screen.getByText("URLをコピー"));
     expect(navigator.clipboard.writeText).toHaveBeenCalled();
   });
 
-  it("閉じるボタンでonCloseが呼ばれる", () => {
+  it("閉じるボタンでonCloseが呼ばれる", async () => {
     const onClose = vi.fn();
     render(<ShareModal {...defaultProps} onClose={onClose} />);
-    fireEvent.click(screen.getByLabelText("閉じる"));
+    await fireEvent.click(screen.getByLabelText("閉じる"));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
   // 共有元の端末では自分のQRを読めないので、既定は畳んである
-  it("QRコードは初期状態では表示されず、トグルで開く", () => {
+  it("QRコードは初期状態では表示されず、トグルで開く", async () => {
     render(<ShareModal {...defaultProps} />);
-    // react-qr-code は size の値を width に出す（lucide のアイコンは 24）
+    // QR は size の値を width に出す（アイコンは 24）。
     const qr = () => document.querySelector('svg[width="140"]');
     expect(qr()).toBeNull();
 
-    fireEvent.click(screen.getByText("QRコードを表示"));
+    await fireEvent.click(screen.getByText("QRコードを表示"));
     expect(qr()?.querySelector("path")).not.toBeNull();
   });
 
   // 編集URLを渡す前に警告を読ませたいので、コピー操作より上に出す
-  it("編集タブでは警告がコピーボタンより前にある", () => {
+  it("編集タブでは警告がコピーボタンより前にある", async () => {
     render(<ShareModal {...defaultProps} />);
-    fireEvent.click(screen.getByText("✏️ 編集もできる"));
+    await fireEvent.click(screen.getByText("✏️ 編集もできる"));
 
     const warning = screen.getByText(/信頼できる相手にのみ共有/);
     const copyButton = screen.getByText("URLをコピー");
@@ -60,13 +58,15 @@ describe("ShareModal", () => {
     ).toBeTruthy();
   });
 
-  it("日付で交代する表だけ「カレンダー」のタブがあり、下のボタンが Google と Apple に替わる", () => {
+  it("日付で交代する表だけ「カレンダー」のタブがあり、下のボタンが Google と Apple に替わる", async () => {
     const { unmount } = render(<ShareModal {...defaultProps} />);
     expect(screen.queryByRole("button", { name: /カレンダー/ })).toBeNull();
     unmount();
 
     render(<ShareModal {...defaultProps} canAddToCalendar />);
-    fireEvent.click(screen.getByRole("button", { name: "📅 カレンダー" }));
+    await fireEvent.click(
+      screen.getByRole("button", { name: "📅 カレンダー" })
+    );
     expect(screen.queryByText("URLをコピー")).toBeNull();
     expect(
       screen.getByRole("link", { name: "Google カレンダー" })
@@ -84,7 +84,7 @@ describe("ShareModal", () => {
   });
 
   // 共有した当番表は放置すると自動削除される。共有する画面で必ず伝える。
-  it("保存期間が表示される", () => {
+  it("保存期間が表示される", async () => {
     render(<ShareModal {...defaultProps} />);
     expect(
       screen.getByText(

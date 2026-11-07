@@ -1,5 +1,6 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { m, AnimatePresence } from "framer-motion";
+import { computed, ref, watch } from "vue";
+import { defineView } from "@/lib/vue";
+import { motion as m, AnimatePresence } from "motion-v";
 import type {
   AssignmentMode,
   Member,
@@ -12,7 +13,7 @@ import {
 } from "@/rotation/utils";
 import { getHolidaysForMonth } from "@/rotation/holidays";
 import { useT, useDateLocale, useLocale } from "@/i18n";
-import { parseIsoDateLocal } from "@/rotation/dateUtils";
+import { formatIsoDateLocal, parseIsoDateLocal } from "@/rotation/dateUtils";
 import { formatTaskNames } from "@/rotation/taskFormatting";
 import { TaskLegend } from "@/features/home/TaskLegend";
 import { useLocalToday } from "@/hooks/useLocalToday";
@@ -88,7 +89,7 @@ function HolidayLabel({ name, locale }: { name: string; locale: "ja" | "en" }) {
   if (locale === "ja") {
     return (
       <span
-        className="text-[8px] sm:text-[10px] leading-tight truncate"
+        class="text-[8px] sm:text-[10px] leading-tight truncate"
         style={{ color: HOLIDAY_COLOR }}
         title={name}
       >
@@ -99,18 +100,18 @@ function HolidayLabel({ name, locale }: { name: string; locale: "ja" | "en" }) {
 
   return (
     <span
-      className="text-[8px] sm:text-[10px] leading-tight w-full overflow-hidden whitespace-normal [overflow-wrap:normal] [word-break:normal]"
+      class="text-[8px] sm:text-[10px] leading-tight w-full overflow-hidden whitespace-normal [overflow-wrap:normal] [word-break:normal]"
       style={{ color: HOLIDAY_COLOR }}
       title={name}
     >
-      <span className="sr-only">{name}</span>
+      <span class="sr-only">{name}</span>
       <span
-        className="sm:hidden block max-w-full truncate whitespace-nowrap"
+        class="sm:hidden block max-w-full truncate whitespace-nowrap"
         aria-hidden="true"
       >
         {COMPACT_ENGLISH_HOLIDAYS[name] ?? name}
       </span>
-      <span className="hidden sm:inline" aria-hidden="true">
+      <span class="hidden sm:inline" aria-hidden="true">
         {name}
       </span>
     </span>
@@ -133,10 +134,10 @@ function DayNumber({
 }) {
   return (
     <div
-      className={`flex ${locale === "en" && holidayName ? "flex-col items-start" : "items-center"} gap-0.5 mb-0.5 min-h-[16px] sm:min-h-[20px]`}
+      class={`flex ${locale === "en" && holidayName ? "flex-col items-start" : "items-center"} gap-0.5 mb-0.5 min-h-[16px] sm:min-h-[20px]`}
     >
       <span
-        className={`text-xs sm:text-sm font-bold leading-none shrink-0 ${
+        class={`text-xs sm:text-sm font-bold leading-none shrink-0 ${
           isToday
             ? "rounded-full min-w-[1rem] sm:min-w-[1.25rem] h-4 sm:h-5 flex items-center justify-center px-0.5"
             : ""
@@ -155,422 +156,444 @@ function DayNumber({
   );
 }
 
-export function RotationCalendar({
-  groups,
-  members,
-  rotation,
-  rotationConfig,
-  assignmentMode,
-  month: controlledMonth,
-  onMonthChange,
-}: RotationCalendarProps) {
-  const t = useT();
-  const dateLocale = useDateLocale();
-  const { locale } = useLocale();
-  const weekdayLabels = [
-    t("cal.wd0"),
-    t("cal.wd1"),
-    t("cal.wd2"),
-    t("cal.wd3"),
-    t("cal.wd4"),
-    t("cal.wd5"),
-    t("cal.wd6"),
-  ];
-  const today = useLocalToday();
-
-  const [localViewDate, setLocalViewDate] = useState(
-    () => new Date(today.getFullYear(), today.getMonth(), 1)
-  );
-  const viewDate =
-    (controlledMonth && parseIsoDateLocal(`${controlledMonth}-01`)) ||
-    localViewDate;
-  const [selection, setSelection] = useState<{
-    month: string;
-    index: number;
-  } | null>(null);
-  const setViewDate = (date: Date) => {
-    setLocalViewDate(date);
-    onMonthChange?.(
-      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+export const RotationCalendar = defineView<RotationCalendarProps>(
+  [
+    "groups",
+    "members",
+    "rotation",
+    "rotationConfig",
+    "assignmentMode",
+    "month",
+    "onMonthChange",
+  ],
+  props => {
+    const t = useT();
+    const dateLocale = useDateLocale();
+    const { locale: localeRef } = useLocale();
+    const todayRef = useLocalToday();
+    const localViewDate = ref(
+      new Date(todayRef.value.getFullYear(), todayRef.value.getMonth(), 1)
     );
-  };
-  const popoverRef = useRef<HTMLDivElement>(null);
-
-  const year = viewDate.getFullYear();
-  const month = viewDate.getMonth();
-  const monthKey = `${year}-${month}`;
-  const selectedDayIdx = selection?.month === monthKey ? selection.index : null;
-  const monthLabel = new Date(year, month, 1).toLocaleDateString(dateLocale, {
-    year: "numeric",
-    month: "long",
-  });
-  const isDateMode = rotationConfig?.mode === "date";
-  const startDate = rotationConfig?.startDate
-    ? parseIsoDateLocal(rotationConfig.startDate)
-    : null;
-
-  const activeMembers = useMemo(
-    () => members.filter(m => !m.skipped),
-    [members]
-  );
-
-  const calendarDays = useMemo(
-    () => getCalendarDays(year, month),
-    [year, month]
-  );
-  const holidayMap = useMemo(
-    () => getHolidaysForMonth(year, month, locale),
-    [year, month, locale]
-  );
-
-  const dayAssignments = useMemo(() => {
-    return calendarDays.map(day => {
-      if (!day) return null;
-      const rot =
-        rotationConfig?.mode === "date"
-          ? computeDateRotationForDate(
-              rotationConfig,
-              activeMembers.length,
-              day
-            )
-          : rotation;
-      return computeAssignments(groups, members, rot, assignmentMode);
-    });
-  }, [
-    calendarDays,
-    rotation,
-    rotationConfig,
-    activeMembers.length,
-    groups,
-    members,
-    assignmentMode,
-  ]);
-
-  const prevMonth = () => {
-    setViewDate(new Date(year, month - 1, 1));
-    setSelection(null);
-  };
-  const nextMonth = () => {
-    setViewDate(new Date(year, month + 1, 1));
-    setSelection(null);
-  };
-  const goToday = () => {
-    setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
-    setSelection(null);
-  };
-
-  const handleDayClick = useCallback(
-    (idx: number) => {
-      setSelection(prev =>
-        prev?.month === monthKey && prev.index === idx
-          ? null
-          : { month: monthKey, index: idx }
+    const viewDate = computed(
+      () =>
+        (props.month && parseIsoDateLocal(`${props.month}-01`)) ||
+        localViewDate.value
+    );
+    const selection = ref<{ month: string; index: number } | null>(null);
+    const monthKey = computed(
+      () => `${viewDate.value.getFullYear()}-${viewDate.value.getMonth()}`
+    );
+    const selectedDayIdxRef = computed(() =>
+      selection.value?.month === monthKey.value ? selection.value.index : null
+    );
+    const activeMembers = computed(() =>
+      props.members.filter(member => !member.skipped)
+    );
+    const calendarDaysRef = computed(() =>
+      getCalendarDays(viewDate.value.getFullYear(), viewDate.value.getMonth())
+    );
+    const holidayMapRef = computed(() =>
+      getHolidaysForMonth(
+        viewDate.value.getFullYear(),
+        viewDate.value.getMonth(),
+        localeRef.value
+      )
+    );
+    const dayAssignmentsRef = computed(() =>
+      calendarDaysRef.value.map(day => {
+        if (!day) return null;
+        const rotation =
+          props.rotationConfig?.mode === "date"
+            ? computeDateRotationForDate(
+                props.rotationConfig,
+                activeMembers.value.length,
+                day
+              )
+            : props.rotation;
+        return computeAssignments(
+          props.groups,
+          props.members,
+          rotation,
+          props.assignmentMode
+        );
+      })
+    );
+    function setViewDate(date: Date) {
+      localViewDate.value = date;
+      props.onMonthChange?.(
+        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
       );
-    },
-    [monthKey]
-  );
+    }
+    function prevMonth() {
+      setViewDate(
+        new Date(viewDate.value.getFullYear(), viewDate.value.getMonth() - 1, 1)
+      );
+      selection.value = null;
+    }
+    function nextMonth() {
+      setViewDate(
+        new Date(viewDate.value.getFullYear(), viewDate.value.getMonth() + 1, 1)
+      );
+      selection.value = null;
+    }
+    function goToday() {
+      setViewDate(
+        new Date(todayRef.value.getFullYear(), todayRef.value.getMonth(), 1)
+      );
+      selection.value = null;
+    }
+    function handleDayClick(index: number) {
+      selection.value =
+        selection.value?.month === monthKey.value &&
+        selection.value.index === index
+          ? null
+          : { month: monthKey.value, index };
+    }
+    const popoverRef = ref<HTMLElement | null>(null);
+    function setPopoverElement(node: unknown) {
+      popoverRef.value =
+        node instanceof HTMLElement
+          ? node
+          : ((node as { $el?: HTMLElement } | null)?.$el ?? null);
+    }
+    watch(
+      selectedDayIdxRef,
+      (index, _, onCleanup) => {
+        if (index === null) return;
+        const handleClickOutside = (event: MouseEvent) => {
+          if (
+            popoverRef.value &&
+            !popoverRef.value.contains(event.target as Node)
+          )
+            selection.value = null;
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        onCleanup(() =>
+          document.removeEventListener("mousedown", handleClickOutside)
+        );
+      },
+      { flush: "post" }
+    );
 
-  useEffect(() => {
-    if (selectedDayIdx === null) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        popoverRef.current &&
-        !popoverRef.current.contains(e.target as Node)
-      ) {
-        setSelection(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [selectedDayIdx]);
-
-  return (
-    <div className="px-3 sm:px-4 py-3 sm:py-4 pb-8 sm:pb-12 rotation-print-calendar-section">
-      <div className="max-w-4xl mx-auto">
-        <m.div
-          className="theme-border theme-shadow-sm theme-surface p-3 sm:p-5 rotation-print-card"
-          style={{
-            borderRadius: "var(--dt-border-radius)",
-          }}
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.15, duration: 0.25 }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h2
-              className="text-sm tracking-wider uppercase"
+    return () => {
+      const { groups, rotationConfig } = props;
+      const locale = localeRef.value;
+      const today = todayRef.value;
+      const year = viewDate.value.getFullYear();
+      const month = viewDate.value.getMonth();
+      const selectedDayIdx = selectedDayIdxRef.value;
+      const monthLabel = new Date(year, month, 1).toLocaleDateString(
+        dateLocale.value,
+        { year: "numeric", month: "long" }
+      );
+      const isDateMode = rotationConfig?.mode === "date";
+      const startDate = rotationConfig?.startDate
+        ? parseIsoDateLocal(rotationConfig.startDate)
+        : null;
+      const weekdayLabels = [
+        t("cal.wd0"),
+        t("cal.wd1"),
+        t("cal.wd2"),
+        t("cal.wd3"),
+        t("cal.wd4"),
+        t("cal.wd5"),
+        t("cal.wd6"),
+      ];
+      const calendarDays = calendarDaysRef.value;
+      const holidayMap = holidayMapRef.value;
+      const dayAssignments = dayAssignmentsRef.value;
+      return (
+        <div class="px-3 sm:px-4 py-3 sm:py-4 pb-8 sm:pb-12 rotation-print-calendar-section">
+          <div class="max-w-4xl mx-auto">
+            <m.div
+              class="theme-border theme-shadow-sm theme-surface p-3 sm:p-5 rotation-print-card"
               style={{
-                color: "var(--dt-text-secondary)",
-                fontWeight: "var(--dt-font-weight-extra)",
+                borderRadius: "var(--dt-border-radius)",
               }}
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.15, duration: 0.25 }}
             >
-              {t("view.calendar")}
-            </h2>
-            {!isDateMode && (
-              <span
-                className="text-xs font-bold px-2 py-1 rounded-md rotation-no-print"
-                style={{
-                  backgroundColor:
-                    "color-mix(in srgb, var(--dt-current-highlight) 20%, var(--dt-card-bg))",
-                  color: "var(--dt-text-secondary)",
-                }}
-              >
-                {t("cal.manualNote")}
-              </span>
-            )}
-          </div>
-
-          {/* Month navigation */}
-          <div className="flex items-center justify-between mb-3">
-            <button
-              type="button"
-              onClick={prevMonth}
-              className="theme-border px-3 py-1.5 font-bold text-sm theme-hover-lift transition-all duration-150 rotation-no-print"
-              style={{
-                backgroundColor: "var(--dt-button-bg)",
-                borderRadius: "var(--dt-border-radius-sm)",
-              }}
-            >
-              ◀
-            </button>
-            <div className="flex items-center gap-2">
-              <span
-                className="text-base sm:text-lg"
-                style={{
-                  color: "var(--dt-text)",
-                  fontWeight: "var(--dt-font-weight-extra)",
-                }}
-              >
-                {monthLabel}
-              </span>
-              {(year !== today.getFullYear() || month !== today.getMonth()) && (
-                <button
-                  type="button"
-                  onClick={goToday}
-                  className="theme-border px-2 py-1 font-bold text-xs theme-hover-lift transition-all duration-150 rotation-no-print"
+              {/* Header */}
+              <div class="flex items-center justify-between mb-3 sm:mb-4">
+                <h2
+                  class="text-sm tracking-wider uppercase"
                   style={{
-                    backgroundColor: "var(--dt-current-highlight)",
-                    borderRadius: "6px",
+                    color: "var(--dt-text-secondary)",
+                    fontWeight: "var(--dt-font-weight-extra)",
                   }}
                 >
-                  {t("cal.thisMonth")}
-                </button>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={nextMonth}
-              className="theme-border px-3 py-1.5 font-bold text-sm theme-hover-lift transition-all duration-150 rotation-no-print"
-              style={{
-                backgroundColor: "var(--dt-button-bg)",
-                borderRadius: "var(--dt-border-radius-sm)",
-              }}
-            >
-              ▶
-            </button>
-          </div>
-
-          {/* Weekday headers */}
-          <div className="grid grid-cols-7 mb-1">
-            {weekdayLabels.map((label, i) => (
-              <div
-                key={label}
-                className="text-center py-1.5 text-xs"
-                style={{
-                  color: weekendColor(i) ?? "var(--dt-text-secondary)",
-                  fontWeight: "var(--dt-font-weight-extra)",
-                }}
-              >
-                {label}
+                  {t("view.calendar")}
+                </h2>
+                {!isDateMode && (
+                  <span
+                    class="text-xs font-bold px-2 py-1 rounded-md rotation-no-print"
+                    style={{
+                      backgroundColor:
+                        "color-mix(in srgb, var(--dt-current-highlight) 20%, var(--dt-card-bg))",
+                      color: "var(--dt-text-secondary)",
+                    }}
+                  >
+                    {t("cal.manualNote")}
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
 
-          {/* Calendar grid */}
-          <div
-            className="grid grid-cols-7"
-            style={{ border: `1px solid var(--dt-table-border-strong)` }}
-          >
-            {calendarDays.map((day, idx) => {
-              const isToday = day && isSameDay(day, today);
-              const dow = idx % 7;
-              const assignments = dayAssignments[idx];
-              const holidayName = day
-                ? holidayMap.get(day.getDate())
-                : undefined;
-
-              // 開始日より前は、まだ当番が始まっていないので休みの日と同じく空ける
-              const isSkipped = !!(
-                day &&
-                isDateMode &&
-                ((rotationConfig?.skipSaturday && dow === 6) ||
-                  (rotationConfig?.skipSunday && dow === 0) ||
-                  (rotationConfig?.skipHolidays && holidayName) ||
-                  (startDate && day < startDate))
-              );
-              const isSelected = selectedDayIdx === idx;
-              const interactive = day && !isSkipped;
-              const cellStyle = {
-                borderRight: `1px solid var(--dt-table-border-light)`,
-                borderBottom: `1px solid var(--dt-table-border-light)`,
-                backgroundColor: !day
-                  ? "color-mix(in srgb, var(--dt-page-bg) 50%, var(--dt-card-bg))"
-                  : isSelected
-                    ? "color-mix(in srgb, var(--dt-current-highlight) 15%, var(--dt-card-bg))"
-                    : isToday
-                      ? "color-mix(in srgb, var(--dt-current-highlight) 8%, var(--dt-card-bg))"
-                      : "var(--dt-card-bg)",
-              };
-              const cellKey = day ? day.toISOString() : `empty-${idx}`;
-              const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleDayClick(idx);
-                }
-              };
-              return interactive ? (
-                <div
-                  key={cellKey}
-                  className="min-h-[68px] sm:min-h-[84px] p-1 sm:p-1.5 flex flex-col relative cursor-pointer"
-                  style={cellStyle}
-                  role="button"
-                  tabIndex={0}
-                  aria-pressed={isSelected}
-                  onClick={() => handleDayClick(idx)}
-                  onKeyDown={onKeyDown}
+              {/* Month navigation */}
+              <div class="flex items-center justify-between mb-3">
+                <button
+                  type="button"
+                  onClick={prevMonth}
+                  class="theme-border px-3 py-1.5 font-bold text-sm theme-hover-lift transition-all duration-150 rotation-no-print"
+                  style={{
+                    backgroundColor: "var(--dt-button-bg)",
+                    borderRadius: "var(--dt-border-radius-sm)",
+                  }}
                 >
-                  {day && (
-                    <>
-                      <DayNumber
-                        date={day}
-                        dow={dow}
-                        isToday={isToday}
-                        holidayName={holidayName}
-                        locale={locale}
-                      />
-                      {!isSkipped && assignments && (
-                        <div className="flex flex-col gap-px flex-1 overflow-hidden">
-                          {assignments.map(({ group, member }) => (
-                            <div
-                              key={group.id}
-                              className="text-[11px] sm:text-xs leading-tight font-bold truncate rounded px-0.5"
-                              style={{
-                                backgroundColor: member.bgColor,
-                                color: member.textColor,
-                              }}
-                              title={`${group.emoji} ${formatTaskNames(group.tasks, locale)}${locale === "en" ? ": " : "："}${member.name}`}
-                            >
-                              <span className="hidden sm:inline">
-                                {group.emoji} {member.name}
-                              </span>
-                              {/* スマホは 1 マスが狭いので頭文字だけ。日付を押すと詳しく出る */}
-                              <span className="sm:hidden" aria-hidden="true">
-                                {Array.from(member.name)[0]}
-                              </span>
-                              <span className="sr-only sm:hidden">
-                                {member.name}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {/* Day detail popover */}
-                      <AnimatePresence>
-                        {isSelected && !isSkipped && assignments && (
-                          <m.div
-                            ref={popoverRef}
-                            className="rotation-no-print absolute z-20 theme-border theme-shadow-sm p-2.5 min-w-[min(160px,80vw)]"
-                            style={{
-                              backgroundColor: "var(--dt-card-bg)",
-                              borderRadius: "var(--dt-border-radius-sm)",
-                              top: "100%",
-                              left: dow >= 5 ? "auto" : "0",
-                              right: dow >= 5 ? "0" : "auto",
-                              marginTop: "4px",
-                            }}
-                            initial={{ opacity: 0, y: -4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -4 }}
-                            transition={{ duration: 0.15 }}
-                            onClick={e => e.stopPropagation()}
-                          >
-                            <div
-                              className="text-xs mb-1.5"
-                              style={{
-                                color: "var(--dt-text)",
-                                fontWeight: "var(--dt-font-weight-extra)",
-                              }}
-                            >
-                              {t("cal.dayLabel", {
-                                month: day.getMonth() + 1,
-                                day: day.getDate(),
-                                weekday: weekdayLabels[dow],
-                              })}
-                              {holidayName && (
-                                <span style={{ color: HOLIDAY_COLOR }}>
-                                  {" "}
-                                  {holidayName}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex flex-col gap-1">
+                  ◀
+                </button>
+                <div class="flex items-center gap-2">
+                  <span
+                    class="text-base sm:text-lg"
+                    style={{
+                      color: "var(--dt-text)",
+                      fontWeight: "var(--dt-font-weight-extra)",
+                    }}
+                  >
+                    {monthLabel}
+                  </span>
+                  {(year !== today.getFullYear() ||
+                    month !== today.getMonth()) && (
+                    <button
+                      type="button"
+                      onClick={goToday}
+                      class="theme-border px-2 py-1 font-bold text-xs theme-hover-lift transition-all duration-150 rotation-no-print"
+                      style={{
+                        backgroundColor: "var(--dt-current-highlight)",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      {t("cal.thisMonth")}
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={nextMonth}
+                  class="theme-border px-3 py-1.5 font-bold text-sm theme-hover-lift transition-all duration-150 rotation-no-print"
+                  style={{
+                    backgroundColor: "var(--dt-button-bg)",
+                    borderRadius: "var(--dt-border-radius-sm)",
+                  }}
+                >
+                  ▶
+                </button>
+              </div>
+
+              {/* Weekday headers */}
+              <div class="grid grid-cols-7 mb-1">
+                {weekdayLabels.map((label, i) => (
+                  <div
+                    key={label}
+                    class="text-center py-1.5 text-xs"
+                    style={{
+                      color: weekendColor(i) ?? "var(--dt-text-secondary)",
+                      fontWeight: "var(--dt-font-weight-extra)",
+                    }}
+                  >
+                    {label}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar grid */}
+              <div
+                class="grid grid-cols-7"
+                style={{ border: `1px solid var(--dt-table-border-strong)` }}
+              >
+                {calendarDays.map((day, idx) => {
+                  const isToday = day && isSameDay(day, today);
+                  const dow = idx % 7;
+                  const assignments = dayAssignments[idx];
+                  const holidayName = day
+                    ? holidayMap.get(day.getDate())
+                    : undefined;
+
+                  // 開始日より前は、まだ当番が始まっていないので休みの日と同じく空ける
+                  const isSkipped = !!(
+                    day &&
+                    isDateMode &&
+                    ((rotationConfig?.skipSaturday && dow === 6) ||
+                      (rotationConfig?.skipSunday && dow === 0) ||
+                      (rotationConfig?.skipHolidays && holidayName) ||
+                      (startDate && day < startDate))
+                  );
+                  const isSelected = selectedDayIdx === idx;
+                  const interactive = day && !isSkipped;
+                  const cellStyle = {
+                    borderRight: `1px solid var(--dt-table-border-light)`,
+                    borderBottom: `1px solid var(--dt-table-border-light)`,
+                    backgroundColor: !day
+                      ? "color-mix(in srgb, var(--dt-page-bg) 50%, var(--dt-card-bg))"
+                      : isSelected
+                        ? "color-mix(in srgb, var(--dt-current-highlight) 15%, var(--dt-card-bg))"
+                        : isToday
+                          ? "color-mix(in srgb, var(--dt-current-highlight) 8%, var(--dt-card-bg))"
+                          : "var(--dt-card-bg)",
+                  };
+                  const cellKey = day
+                    ? formatIsoDateLocal(day)
+                    : `empty-${idx}`;
+                  const onKeydown = (e: KeyboardEvent) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleDayClick(idx);
+                    }
+                  };
+                  return interactive ? (
+                    <div
+                      key={cellKey}
+                      class="min-h-[68px] sm:min-h-[84px] p-1 sm:p-1.5 flex flex-col relative cursor-pointer"
+                      style={cellStyle}
+                      role="button"
+                      tabindex={0}
+                      aria-pressed={isSelected}
+                      onClick={() => handleDayClick(idx)}
+                      onKeydown={onKeydown}
+                    >
+                      {day && (
+                        <>
+                          <DayNumber
+                            date={day}
+                            dow={dow}
+                            isToday={isToday}
+                            holidayName={holidayName}
+                            locale={locale}
+                          />
+                          {!isSkipped && assignments && (
+                            <div class="flex flex-col gap-px flex-1 overflow-hidden">
                               {assignments.map(({ group, member }) => (
                                 <div
                                   key={group.id}
-                                  className="flex items-center gap-1.5"
+                                  class="text-[11px] sm:text-xs leading-tight font-bold truncate rounded px-0.5"
+                                  style={{
+                                    backgroundColor: member.bgColor,
+                                    color: member.textColor,
+                                  }}
+                                  title={`${group.emoji} ${formatTaskNames(group.tasks, locale)}${locale === "en" ? ": " : "："}${member.name}`}
                                 >
-                                  <span
-                                    className="text-xs font-bold px-1.5 py-0.5 rounded"
-                                    style={{
-                                      backgroundColor: member.bgColor,
-                                      color: member.textColor,
-                                    }}
-                                  >
-                                    {member.name}
+                                  <span class="hidden sm:inline">
+                                    {group.emoji} {member.name}
                                   </span>
-                                  <span
-                                    className="text-xs"
-                                    style={{
-                                      color: "var(--dt-text-secondary)",
-                                    }}
-                                  >
-                                    {group.emoji}{" "}
-                                    {formatTaskNames(group.tasks, locale)}
+                                  {/* スマホは 1 マスが狭いので頭文字だけ。日付を押すと詳しく出る */}
+                                  <span class="sm:hidden" aria-hidden="true">
+                                    {Array.from(member.name)[0]}
+                                  </span>
+                                  <span class="sr-only sm:hidden">
+                                    {member.name}
                                   </span>
                                 </div>
                               ))}
                             </div>
-                          </m.div>
-                        )}
-                      </AnimatePresence>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div
-                  key={cellKey}
-                  className="min-h-[68px] sm:min-h-[84px] p-1 sm:p-1.5 flex flex-col relative"
-                  style={cellStyle}
-                >
-                  {day && (
-                    <DayNumber
-                      date={day}
-                      dow={dow}
-                      isToday={isToday}
-                      holidayName={holidayName}
-                      locale={locale}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                          )}
+                          {/* Day detail popover */}
+                          <AnimatePresence>
+                            {isSelected && !isSkipped && assignments && (
+                              <m.div
+                                ref={setPopoverElement}
+                                class="rotation-no-print absolute z-20 theme-border theme-shadow-sm p-2.5 min-w-[min(160px,80vw)]"
+                                style={{
+                                  backgroundColor: "var(--dt-card-bg)",
+                                  borderRadius: "var(--dt-border-radius-sm)",
+                                  top: "100%",
+                                  left: dow >= 5 ? "auto" : "0",
+                                  right: dow >= 5 ? "0" : "auto",
+                                  marginTop: "4px",
+                                }}
+                                initial={{ opacity: 0, y: -4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -4 }}
+                                transition={{ duration: 0.15 }}
+                                onClick={e => e.stopPropagation()}
+                              >
+                                <div
+                                  class="text-xs mb-1.5"
+                                  style={{
+                                    color: "var(--dt-text)",
+                                    fontWeight: "var(--dt-font-weight-extra)",
+                                  }}
+                                >
+                                  {t("cal.dayLabel", {
+                                    month: day.getMonth() + 1,
+                                    day: day.getDate(),
+                                    weekday: weekdayLabels[dow],
+                                  })}
+                                  {holidayName && (
+                                    <span style={{ color: HOLIDAY_COLOR }}>
+                                      {" "}
+                                      {holidayName}
+                                    </span>
+                                  )}
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                  {assignments.map(({ group, member }) => (
+                                    <div
+                                      key={group.id}
+                                      class="flex items-center gap-1.5"
+                                    >
+                                      <span
+                                        class="text-xs font-bold px-1.5 py-0.5 rounded"
+                                        style={{
+                                          backgroundColor: member.bgColor,
+                                          color: member.textColor,
+                                        }}
+                                      >
+                                        {member.name}
+                                      </span>
+                                      <span
+                                        class="text-xs"
+                                        style={{
+                                          color: "var(--dt-text-secondary)",
+                                        }}
+                                      >
+                                        {group.emoji}{" "}
+                                        {formatTaskNames(group.tasks, locale)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </m.div>
+                            )}
+                          </AnimatePresence>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      key={cellKey}
+                      class="min-h-[68px] sm:min-h-[84px] p-1 sm:p-1.5 flex flex-col relative"
+                      style={cellStyle}
+                    >
+                      {day && (
+                        <DayNumber
+                          date={day}
+                          dow={dow}
+                          isToday={isToday}
+                          holidayName={holidayName}
+                          locale={locale}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
-          {/* 凡例：セルは絵文字＋担当者名だけなので、当番名のフルテキストをここで補う。 */}
-          <TaskLegend groups={groups} />
-        </m.div>
-      </div>
-    </div>
-  );
-}
+              {/* 凡例：セルは絵文字＋担当者名だけなので、当番名のフルテキストをここで補う。 */}
+              <TaskLegend groups={groups} />
+            </m.div>
+          </div>
+        </div>
+      );
+    };
+  }
+);

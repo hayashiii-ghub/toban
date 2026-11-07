@@ -1,12 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  type SetStateAction,
-} from "react";
-import { flushSync } from "react-dom";
+import { computed, nextTick, onMounted, reactive } from "vue";
 import { useAutoSync } from "@/hooks/useAutoSync";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useModalManager } from "@/hooks/useModalManager";
@@ -18,10 +10,12 @@ import { useScheduleManager } from "@/hooks/useScheduleManager";
 import { useShareFlow } from "@/hooks/useShareFlow";
 import { useViewTab } from "@/hooks/useViewTab";
 import { getTemplates } from "@shared/template-localization";
-import { toast } from "sonner";
+import { toast } from "vue-sonner";
 import { useLocale, useT } from "@/i18n";
 import { computeAssignments, getEffectiveRotation } from "@/rotation/utils";
 import type { AppState, Schedule } from "@/rotation/types";
+import type { StateAction } from "@/lib/vue";
+import { useLocation } from "@/lib/router";
 import {
   applyLocalizedGuideUpdate,
   localizeGuide,
@@ -29,361 +23,221 @@ import {
 } from "@/rotation/guide-localization";
 
 export function useHomeState() {
+  const [, navigate] = useLocation();
   const today = useLocalToday();
   const { locale } = useLocale();
   const t = useT();
-  const toolEditingRef = useRef(false);
-  const shareVisibleRef = useRef(false);
-  const {
-    state: storedState,
-    setState,
-    activeSchedule: storedSchedule,
-    updateActiveSchedule,
-    updateScheduleById,
-    handleAddSchedule,
-    handleDeleteSchedule,
-    handleDuplicateSchedule,
-    handleSaveSettings,
-    selectSchedule,
-    handleTabDrop,
-    addScheduleFromTemplateIndex,
-    getToolState: getStoredState,
-    commitToolState: commitManagerState,
-    localSaveStatus,
-  } = useScheduleManager();
-
-  // The untouched guide is help content. Translate its presentation without
-  // turning a language switch into a saved edit to an existing shared roster.
-  const state = useMemo(
-    () => localizeGuideState(storedState, locale),
-    [storedState, locale]
+  const manager = useScheduleManager();
+  // The untouched guide is translated presentation, never an implicit saved edit.
+  const state = computed(() => localizeGuideState(manager.state, locale.value));
+  const activeSchedule = computed(() =>
+    state.value.schedules.find(
+      schedule => schedule.id === manager.activeSchedule?.id
+    )
   );
-  const activeSchedule = state.schedules.find(s => s.id === storedSchedule?.id);
-  const getToolState = useCallback(
-    () => localizeGuideState(getStoredState(), locale),
-    [getStoredState, locale]
+  const getToolState = () =>
+    localizeGuideState(manager.getToolState(), locale.value);
+  const modals = useModalManager();
+  const updateCurrentSchedule = (
+    updater: (schedule: Schedule) => Schedule,
+    scheduleId?: string
+  ) => {
+    const target = scheduleId ?? activeSchedule.value?.id;
+    if (target) manager.updateScheduleById(target, updater);
+  };
+  const getScheduleById = (id: string) =>
+    manager.getToolState().schedules.find(schedule => schedule.id === id);
+  const sync = useAutoSync(
+    () => manager.activeSchedule,
+    updateCurrentSchedule,
+    {
+      isEditing: () => modals.modal.type !== null,
+      getScheduleById,
+    }
   );
-
-  const {
-    modal,
-    openSettings: openSettingsModal,
-    openNewSchedule: openNewScheduleModal,
-    openConfirmDelete: openConfirmDeleteModal,
-    closeModal,
-  } = useModalManager();
-
-  // Async sync/share work keeps the target that was active when it started.
-  // It must not attach a late response to whichever tab is active afterward.
-  const activeScheduleId = activeSchedule?.id;
-  const updateCurrentSchedule = useCallback(
-    (updater: (schedule: Schedule) => Schedule) => {
-      if (activeScheduleId) updateScheduleById(activeScheduleId, updater);
-    },
-    [activeScheduleId, updateScheduleById]
-  );
-  const getScheduleById = useCallback(
-    (id: string) =>
-      getStoredState().schedules.find(schedule => schedule.id === id),
-    [getStoredState]
-  );
-
-  const { syncStatus, prepareForManualSave: prepareStoredForManualSave } =
-    useAutoSync(
-      storedSchedule,
-      updateCurrentSchedule,
-      // モーダルが開いている間は下書きを持っているので、引き直しで土台を入れ替えない
-      { isEditing: modal.type !== null, getScheduleById }
-    );
-  const prepareForManualSave = useCallback(async () => {
-    const prepared = await prepareStoredForManualSave();
+  async function prepareForManualSave() {
+    const requestedLocale = locale.value;
+    const prepared = await sync.prepareForManualSave();
     if (!prepared) return prepared;
-    const localized = localizeGuide(prepared, locale);
+    const localized = localizeGuide(prepared, requestedLocale);
     if (localized !== prepared) {
-      // Sharing is an explicit save: publish the language the user sees, and
-      // keep that same content in storage so a later sync cannot undo it.
-      flushSync(() => {
-        setState(current => ({
-          ...current,
-          schedules: current.schedules.map(schedule =>
-            schedule.id === prepared.id
-              ? localizeGuide(schedule, locale)
-              : schedule
-          ),
-        }));
-      });
+      manager.setState(current => ({
+        ...current,
+        schedules: current.schedules.map(schedule =>
+          schedule.id === prepared.id
+            ? localizeGuide(schedule, requestedLocale)
+            : schedule
+        ),
+      }));
+      // Explicit sharing must persist the same language that was confirmed.
+      await nextTick();
     }
     return localized;
-  }, [prepareStoredForManualSave, locale, setState]);
-  const {
-    isSharing,
-    showShare,
-    shareConfirmation,
-    showShareConfirmation,
-    requestShareConfirmation: requestConfirmation,
-    confirmShare: confirmSharing,
-    cancelShareConfirmation,
-    setShowShare: setShareVisible,
-    handleShare: shareSchedule,
-  } = useShareFlow({
+  }
+  const share = useShareFlow({
     activeSchedule,
     prepareForManualSave,
     updateActiveSchedule: updateCurrentSchedule,
   });
-
-  useLayoutEffect(() => {
-    toolEditingRef.current =
-      modal.type !== null || showShare || showShareConfirmation || isSharing;
-    shareVisibleRef.current = showShare;
-  }, [modal.type, showShare, showShareConfirmation, isSharing]);
-
-  // Set the guard at invocation too: opening an editor and receiving a tool
-  // call can happen before React commits the editor's state.
-  const openSettings = useCallback(() => {
-    toolEditingRef.current = true;
-    openSettingsModal();
-  }, [openSettingsModal]);
-  const openNewSchedule = useCallback(() => {
-    toolEditingRef.current = true;
-    openNewScheduleModal();
-  }, [openNewScheduleModal]);
-  const openConfirmDelete = useCallback(
-    (scheduleId: string) => {
-      toolEditingRef.current = true;
-      openConfirmDeleteModal(scheduleId);
-    },
-    [openConfirmDeleteModal]
-  );
-  const setShowShare = useCallback(
-    (action: SetStateAction<boolean>) => {
-      const next =
-        typeof action === "function" ? action(shareVisibleRef.current) : action;
-      shareVisibleRef.current = next;
-      if (next) toolEditingRef.current = true;
-      setShareVisible(next);
-    },
-    [setShareVisible]
-  );
-  const handleShare = useCallback(() => {
-    if (!activeSchedule) return Promise.resolve();
-    let pending = Promise.resolve();
-    // Commit the busy state before an immediate API failure can clear it in
-    // the same batch, so the editing guard is also reset on completion.
-    flushSync(() => {
-      toolEditingRef.current = true;
-      pending = shareSchedule();
-    });
-    return pending;
-  }, [activeSchedule, shareSchedule]);
-  const requestShareConfirmation = useCallback(() => {
-    let response!: ReturnType<typeof requestConfirmation>;
-    flushSync(() => {
-      response = requestConfirmation();
-      if (response.status === "confirmation_required")
-        toolEditingRef.current = true;
-    });
-    return response;
-  }, [requestConfirmation]);
-  const confirmShare = useCallback(() => {
-    let pending = Promise.resolve();
-    flushSync(() => {
-      pending = confirmSharing();
-    });
-    return pending;
-  }, [confirmSharing]);
-  const isToolEditing = useCallback(() => toolEditingRef.current, []);
-  const commitToolState = useCallback(
-    async (updater: (state: AppState) => AppState) => {
-      const outcome = await commitManagerState(
-        current => applyLocalizedGuideUpdate(current, locale, updater),
-        () => toolEditingRef.current
-      );
-      return {
-        ...outcome,
-        state: localizeGuideState(outcome.state, locale),
-        storedState: outcome.state,
-      };
-    },
-    [commitManagerState, locale]
-  );
-  const { isAnimating, direction, handleRotate } =
-    useRotationAnimation(setState);
+  const isToolEditing = () =>
+    modals.modal.type !== null ||
+    share.showShare ||
+    share.showShareConfirmation ||
+    share.isSharing;
+  const openSettings = () => modals.openSettings();
+  const openNewSchedule = () => modals.openNewSchedule();
+  const openConfirmDelete = (scheduleId: string) =>
+    modals.openConfirmDelete(scheduleId);
+  const setShowShare = (action: StateAction<boolean>) =>
+    share.setShowShare(action);
+  const handleShare = () =>
+    activeSchedule.value ? share.handleShare() : Promise.resolve();
+  const requestShareConfirmation = () => share.requestShareConfirmation();
+  async function commitToolState(updater: (state: AppState) => AppState) {
+    const requestedLocale = locale.value;
+    const outcome = await manager.commitToolState(
+      current => applyLocalizedGuideUpdate(current, requestedLocale, updater),
+      isToolEditing
+    );
+    return {
+      ...outcome,
+      state: localizeGuideState(outcome.state, requestedLocale),
+      storedState: outcome.state,
+    };
+  }
+  const animation = useRotationAnimation(manager.setState);
   const { handlePrint } = usePrintMode();
-  const {
-    viewTab,
-    changeTab,
-    changeTabForTool,
-    calendarMonth,
-    setCalendarMonth,
-  } = useViewTab();
-  const { showOnboarding, handleOnboardingComplete } = useOnboarding({
-    hasSchedule: !!activeSchedule,
-    isModalOpen: modal.type !== null,
-    isShareOpen: showShare || showShareConfirmation,
+  const view = useViewTab();
+  const onboarding = useOnboarding({
+    hasSchedule: () => !!activeSchedule.value,
+    isModalOpen: () => modals.modal.type !== null,
+    isShareOpen: () => share.showShare || share.showShareConfirmation,
   });
-
-  const mountedRef = useRef(false);
-
-  const groups = useMemo(() => activeSchedule?.groups ?? [], [activeSchedule]);
-  const members = useMemo(
-    () => activeSchedule?.members ?? [],
-    [activeSchedule]
+  const groups = computed(() => activeSchedule.value?.groups ?? []);
+  const members = computed(() => activeSchedule.value?.members ?? []);
+  const effectiveRotation = computed(() =>
+    activeSchedule.value
+      ? getEffectiveRotation(activeSchedule.value, today.value)
+      : 0
   );
-  const effectiveRotation = useMemo(
-    () => (activeSchedule ? getEffectiveRotation(activeSchedule, today) : 0),
-    [activeSchedule, today]
+  const isDateMode = computed(
+    () => activeSchedule.value?.rotationConfig?.mode === "date"
   );
-  const isDateMode = activeSchedule?.rotationConfig?.mode === "date";
-  const assignments = useMemo(
+  const assignments = computed(() =>
+    activeSchedule.value
+      ? computeAssignments(
+          groups.value,
+          members.value,
+          effectiveRotation.value,
+          activeSchedule.value.assignmentMode
+        )
+      : []
+  );
+  useBodyScrollLock(
     () =>
-      activeSchedule
-        ? computeAssignments(
-            groups,
-            members,
-            effectiveRotation,
-            activeSchedule.assignmentMode
-          )
-        : [],
-    [groups, members, effectiveRotation, activeSchedule]
+      modals.modal.type !== null ||
+      share.showShare ||
+      share.showShareConfirmation
   );
 
-  useBodyScrollLock(modal.type !== null || showShare || showShareConfirmation);
-
-  // /templates からの ?template=N 着地だけをここで処理する。
-  // 保存データが無い初回訪問は loadState が defaultState（「はじめてガイド」）を
-  // seed する設計で、モーダルは出さない（出すと useOnboarding のツアーが
-  // isModalOpen で抑制されてしまう）。
-  useEffect(() => {
-    if (mountedRef.current) return;
-    mountedRef.current = true;
-    const params = new URLSearchParams(window.location.search);
-    const templateParam = params.get("template");
-    if (templateParam !== null) {
-      const idx = parseInt(templateParam, 10);
-      if (addScheduleFromTemplateIndex(idx, getTemplates(locale))) {
-        closeModal();
-      }
-    }
-    window.history.replaceState({}, "", window.location.pathname);
-  }, [addScheduleFromTemplateIndex, closeModal, locale]);
-
-  const onAddSchedule = useCallback(
-    (template: Parameters<typeof handleAddSchedule>[0]) => {
-      handleAddSchedule(template);
-      closeModal();
-    },
-    [handleAddSchedule, closeModal]
-  );
-
-  const onDeleteSchedule = useCallback(
-    (scheduleId: string) => {
-      handleDeleteSchedule(scheduleId);
-      closeModal();
-    },
-    [handleDeleteSchedule, closeModal]
-  );
-
-  const onDuplicateSchedule = useCallback(() => {
-    handleDuplicateSchedule(locale);
-    closeModal();
-  }, [handleDuplicateSchedule, closeModal, locale]);
-
-  const onSaveSettings = useCallback(
-    (...args: Parameters<typeof handleSaveSettings>) => {
-      handleSaveSettings(...args);
-      closeModal();
-      toast.success(t("settings.saved"));
-    },
-    [handleSaveSettings, closeModal, t]
-  );
-
-  const onTogglePin = useCallback(
-    (scheduleId: string) =>
-      updateScheduleById(scheduleId, schedule => ({
-        ...schedule,
-        pinned: !schedule.pinned,
-      })),
-    [updateScheduleById]
-  );
-
-  const onReorderTab = useCallback(
-    (scheduleId: string, dir: "left" | "right") => {
-      const { schedules } = state;
-      const pinned = schedules.filter(s => s.pinned);
-      const unpinned = schedules.filter(s => !s.pinned);
-      const sorted = [...pinned, ...unpinned];
-      const idx = sorted.findIndex(s => s.id === scheduleId);
-      if (idx < 0) return;
-      if (sorted[idx].pinned) return;
-      if (dir === "right") {
-        const neighbor = sorted[idx + 1];
-        if (!neighbor) return;
-        handleTabDrop(scheduleId, neighbor.id);
-      } else {
-        const neighbor = sorted[idx - 1];
-        if (!neighbor || neighbor.pinned) return;
-        handleTabDrop(scheduleId, neighbor.id);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- state.schedules is the only used property
-    [state.schedules, handleTabDrop]
-  );
-
-  return {
+  onMounted(() => {
+    const templateParam = new URLSearchParams(window.location.search).get(
+      "template"
+    );
+    if (
+      templateParam !== null &&
+      manager.addScheduleFromTemplateIndex(
+        parseInt(templateParam, 10),
+        getTemplates(locale.value)
+      )
+    )
+      modals.closeModal();
+    if (window.location.search)
+      void navigate(window.location.pathname, { replace: true });
+  });
+  const onAddSchedule = (
+    template: Parameters<typeof manager.handleAddSchedule>[0]
+  ) => {
+    manager.handleAddSchedule(template);
+    modals.closeModal();
+  };
+  const onDeleteSchedule = (scheduleId: string) => {
+    manager.handleDeleteSchedule(scheduleId);
+    modals.closeModal();
+  };
+  const onDuplicateSchedule = () => {
+    manager.handleDuplicateSchedule(locale.value);
+    modals.closeModal();
+  };
+  const onSaveSettings = (
+    ...args: Parameters<typeof manager.handleSaveSettings>
+  ) => {
+    manager.handleSaveSettings(...args);
+    modals.closeModal();
+    toast.success(t("settings.saved"));
+  };
+  const onTogglePin = (scheduleId: string) =>
+    manager.updateScheduleById(scheduleId, schedule => ({
+      ...schedule,
+      pinned: !schedule.pinned,
+    }));
+  function onReorderTab(scheduleId: string, direction: "left" | "right") {
+    const sorted = [
+      ...state.value.schedules.filter(schedule => schedule.pinned),
+      ...state.value.schedules.filter(schedule => !schedule.pinned),
+    ];
+    const index = sorted.findIndex(schedule => schedule.id === scheduleId);
+    if (index < 0 || sorted[index].pinned) return;
+    const neighbor = sorted[index + (direction === "right" ? 1 : -1)];
+    if (!neighbor || (direction === "left" && neighbor.pinned)) return;
+    manager.handleTabDrop(scheduleId, neighbor.id);
+  }
+  return reactive({
     state,
     getToolState,
     commitToolState,
     isToolEditing,
-    localSaveStatus,
+    localSaveStatus: computed(() => manager.localSaveStatus),
     activeSchedule,
-    updateActiveSchedule,
-    selectSchedule,
-    // Sync
-    syncStatus,
-    // Share
-    isSharing,
-    showShare,
+    updateActiveSchedule: manager.updateActiveSchedule,
+    selectSchedule: manager.selectSchedule,
+    syncStatus: computed(() => sync.syncStatus),
+    isSharing: computed(() => share.isSharing),
+    showShare: computed(() => share.showShare),
     setShowShare,
     handleShare,
-    shareConfirmation,
-    showShareConfirmation,
+    shareConfirmation: computed(() => share.shareConfirmation),
+    showShareConfirmation: computed(() => share.showShareConfirmation),
     requestShareConfirmation,
-    confirmShare,
-    cancelShareConfirmation,
-    // Modal
-    modal,
+    confirmShare: computed(() => share.confirmShare),
+    cancelShareConfirmation: share.cancelShareConfirmation,
+    modal: computed(() => modals.modal),
     openSettings,
     openNewSchedule,
     openConfirmDelete,
-    closeModal,
-    // Animation
-    isAnimating,
-    direction,
-    handleRotate,
-    // Tab drag（ScheduleTabs が指でもマウスでも動かし、落としたらここで並べ替える）
-    onMoveTab: handleTabDrop,
-    // Print
+    closeModal: modals.closeModal,
+    isAnimating: computed(() => animation.isAnimating),
+    direction: computed(() => animation.direction),
+    handleRotate: animation.handleRotate,
+    onMoveTab: manager.handleTabDrop,
     handlePrint,
-    // View
-    viewTab,
-    changeTab,
-    changeTabForTool,
-    calendarMonth,
-    setCalendarMonth,
-    // Onboarding
-    showOnboarding,
-    handleOnboardingComplete,
-    // Derived
+    viewTab: computed(() => view.viewTab),
+    changeTab: view.changeTab,
+    changeTabForTool: view.changeTabForTool,
+    calendarMonth: computed(() => view.calendarMonth),
+    setCalendarMonth: view.setCalendarMonth,
+    showOnboarding: computed(() => onboarding.showOnboarding),
+    handleOnboardingComplete: onboarding.handleOnboardingComplete,
     groups,
     members,
     effectiveRotation,
     isDateMode,
     assignments,
-    // Callbacks
     onAddSchedule,
     onDeleteSchedule,
     onDuplicateSchedule,
     onSaveSettings,
     onReorderTab,
     onTogglePin,
-  };
+  });
 }

@@ -1,19 +1,16 @@
-import { useState, type ComponentProps } from "react";
+import { defineComponent, shallowRef } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor } from "@/test/vue";
 import { SettingsModal } from "./SettingsModal";
 import { DesignThemeProvider } from "@/contexts/DesignThemeContext";
 import { createScheduleSchema } from "../../../../server/schemas/schedule";
-
-type SettingsProps = ComponentProps<typeof SettingsModal>;
+type SettingsProps = InstanceType<typeof SettingsModal>["$props"];
 type ExitAction = "close" | "duplicate" | "delete";
-
 const exits = [
   ["close", "閉じる"],
   ["duplicate", "複製"],
   ["delete", "削除"],
 ] as const;
-
 function createProps() {
   return {
     scheduleName: "掃除当番",
@@ -49,7 +46,6 @@ function createProps() {
     onClose: vi.fn(),
   } satisfies SettingsProps;
 }
-
 function readRootAppearance() {
   const style = document.documentElement.style;
   return {
@@ -61,7 +57,6 @@ function readRootAppearance() {
     fontWeight: style.getPropertyValue("--dt-font-weight-bold"),
   };
 }
-
 function renderEditor(props = createProps()) {
   const view = render(
     <DesignThemeProvider themeId={props.designThemeId} fontId={props.fontId}>
@@ -70,33 +65,31 @@ function renderEditor(props = createProps()) {
   );
   return { ...view, props, savedAppearance: readRootAppearance() };
 }
-
 type EditorView = ReturnType<typeof renderEditor>;
-
-function previewAppearance(view: Pick<EditorView, "getByRole">) {
-  fireEvent.click(view.getByRole("tab", { name: "見た目" }));
-  fireEvent.click(view.getByRole("button", { name: "こくばんテーマを選択" }));
-  fireEvent.click(view.getByRole("button", { name: "エレガントの文字を選択" }));
+async function previewAppearance(view: Pick<EditorView, "getByRole">) {
+  await fireEvent.click(view.getByRole("tab", { name: "見た目" }));
+  await fireEvent.click(
+    view.getByRole("button", { name: "こくばんテーマを選択" })
+  );
+  await fireEvent.click(
+    view.getByRole("button", { name: "エレガントの文字を選択" })
+  );
 }
-
-function clickExit(
+async function clickExit(
   view: Pick<EditorView, "getByRole">,
   action: ExitAction,
   label: string
 ) {
   if (action !== "close") {
-    fireEvent.click(view.getByRole("tab", { name: "くわしい設定" }));
+    await fireEvent.click(view.getByRole("tab", { name: "くわしい設定" }));
   }
-  fireEvent.click(view.getByRole("button", { name: label }));
+  await fireEvent.click(view.getByRole("button", { name: label }));
 }
-
 let originalRootStyle: string | null;
-
 beforeEach(() => {
   originalRootStyle = document.documentElement.getAttribute("style");
   vi.spyOn(window, "confirm").mockReturnValue(true);
 });
-
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -106,7 +99,6 @@ afterEach(() => {
     document.documentElement.setAttribute("style", originalRootStyle);
   }
 });
-
 describe("SettingsModal の下書きと保存", () => {
   it.each([
     ["仕事", "掃除", "窓ふき"],
@@ -116,18 +108,15 @@ describe("SettingsModal の下書きと保存", () => {
     async (_field, original, corrected) => {
       const view = renderEditor();
       const input = view.getByDisplayValue(original);
-      fireEvent.change(input, { target: { value: "   " } });
-      fireEvent.click(view.getByRole("button", { name: "保存する" }));
-
+      await fireEvent.input(input, { target: { value: "   " } });
+      await fireEvent.click(view.getByRole("button", { name: "保存する" }));
       expect(view.props.onSave).not.toHaveBeenCalled();
       await waitFor(() => expect(view.getByRole("alert")).toBeVisible());
       expect(input).toHaveValue("   ");
       expect(view.getByDisplayValue("配膳")).toHaveValue("配膳");
       expect(view.getByDisplayValue("鈴木")).toHaveValue("鈴木");
-
-      fireEvent.change(input, { target: { value: corrected } });
-      fireEvent.click(view.getByRole("button", { name: "保存する" }));
-
+      await fireEvent.input(input, { target: { value: corrected } });
+      await fireEvent.click(view.getByRole("button", { name: "保存する" }));
       expect(view.props.onSave).toHaveBeenCalledOnce();
       expect(view.queryByRole("alert")).not.toBeInTheDocument();
       const saved = view.props.onSave.mock.calls[0][0];
@@ -152,28 +141,27 @@ describe("SettingsModal の下書きと保存", () => {
     }
   );
 });
-
 describe("SettingsModal の見た目プレビューを終了するとき", () => {
   it.each(exits)(
     "%sでは、親が編集画面を消す前に保存済みの色と文字に戻る",
-    (action, label) => {
+    async (action, label) => {
       const props = createProps();
       const appearanceAtExit = vi.fn();
-      function Parent() {
-        const [open, setOpen] = useState(true);
+      const Parent = defineComponent(() => {
+        const open = shallowRef(true);
         const exit = (next: ExitAction) => {
           appearanceAtExit(next, readRootAppearance());
           if (next === "close") props.onClose();
           else if (next === "duplicate") props.onDuplicate();
           else props.onDelete();
-          setOpen(false);
+          open.value = false;
         };
-        return (
+        return () => (
           <DesignThemeProvider
             themeId={props.designThemeId}
             fontId={props.fontId}
           >
-            {open && (
+            {open.value && (
               <SettingsModal
                 {...props}
                 onClose={() => exit("close")}
@@ -183,15 +171,13 @@ describe("SettingsModal の見た目プレビューを終了するとき", () =>
             )}
           </DesignThemeProvider>
         );
-      }
+      });
       const view = render(<Parent />);
       const savedAppearance = readRootAppearance();
-      previewAppearance(view);
+      await previewAppearance(view);
       expect(readRootAppearance().page).not.toBe(savedAppearance.page);
       expect(readRootAppearance().font).not.toBe(savedAppearance.font);
-
-      clickExit(view, action, label);
-
+      await clickExit(view, action, label);
       expect(window.confirm).toHaveBeenCalledOnce();
       expect(appearanceAtExit).toHaveBeenCalledOnce();
       expect(appearanceAtExit).toHaveBeenCalledWith(action, savedAppearance);
@@ -205,20 +191,17 @@ describe("SettingsModal の見た目プレビューを終了するとき", () =>
       expect(props.onDelete).toHaveBeenCalledTimes(action === "delete" ? 1 : 0);
     }
   );
-
   it.each(exits)(
     "%sの確認を取り消すと、下書きとプレビューを残して終了しない",
-    (action, label) => {
+    async (action, label) => {
       const view = renderEditor();
-      fireEvent.change(view.getByLabelText("当番表の名前"), {
+      await fireEvent.input(view.getByLabelText("当番表の名前"), {
         target: { value: "書きかけの当番表" },
       });
-      previewAppearance(view);
+      await previewAppearance(view);
       const preview = readRootAppearance();
       vi.mocked(window.confirm).mockReturnValue(false);
-
-      clickExit(view, action, label);
-
+      await clickExit(view, action, label);
       expect(window.confirm).toHaveBeenCalledOnce();
       expect(view.props.onClose).not.toHaveBeenCalled();
       expect(view.props.onDuplicate).not.toHaveBeenCalled();
@@ -229,7 +212,7 @@ describe("SettingsModal の見た目プレビューを終了するとき", () =>
         "書きかけの当番表"
       );
       expect(readRootAppearance()).toEqual(preview);
-      fireEvent.click(view.getByRole("tab", { name: "見た目" }));
+      await fireEvent.click(view.getByRole("tab", { name: "見た目" }));
       expect(
         view.getByRole("button", { name: "こくばんテーマを選択" })
       ).toHaveAttribute("aria-pressed", "true");
