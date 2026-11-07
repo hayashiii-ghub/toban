@@ -142,6 +142,25 @@ describe("SettingsModal の下書きと保存", () => {
   );
 });
 describe("SettingsModal の見た目プレビューを終了するとき", () => {
+  it("fontId のない旧表では、保存済みフォントへプレビューを戻す", async () => {
+    localStorage.setItem("toban-font", "handwriting");
+    const props = createProps();
+    const view = render(
+      <DesignThemeProvider themeId={props.designThemeId} fontId={undefined}>
+        <SettingsModal {...props} fontId={undefined} />
+      </DesignThemeProvider>
+    );
+    const savedAppearance = readRootAppearance();
+    expect(savedAppearance.font).toContain("Klee One");
+    await previewAppearance(view);
+    expect(readRootAppearance().font).not.toBe(savedAppearance.font);
+
+    await clickExit(view, "close", "閉じる");
+
+    expect(props.onClose).toHaveBeenCalledOnce();
+    expect(readRootAppearance()).toEqual(savedAppearance);
+  });
+
   it.each(exits)(
     "%sでは、親が編集画面を消す前に保存済みの色と文字に戻る",
     async (action, label) => {

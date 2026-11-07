@@ -1,4 +1,4 @@
-import { computed, nextTick, onMounted, reactive } from "vue";
+import { computed, nextTick, onMounted, onScopeDispose, reactive } from "vue";
 import { useAutoSync } from "@/hooks/useAutoSync";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useModalManager } from "@/hooks/useModalManager";
@@ -23,6 +23,11 @@ import {
 } from "@/rotation/guide-localization";
 
 export function useHomeState() {
+  let mounted = true;
+  let settingsSaveRequest = 0;
+  onScopeDispose(() => {
+    mounted = false;
+  });
   const [, navigate] = useLocation();
   const today = useLocalToday();
   const { locale } = useLocale();
@@ -169,12 +174,30 @@ export function useHomeState() {
     manager.handleDuplicateSchedule(locale.value);
     modals.closeModal();
   };
-  const onSaveSettings = (
+  const onSaveSettings = async (
     ...args: Parameters<typeof manager.handleSaveSettings>
   ) => {
-    manager.handleSaveSettings(...args);
-    modals.closeModal();
-    toast.success(t("settings.saved"));
+    const request = ++settingsSaveRequest;
+    const modal = modals.modal;
+    const scheduleId = activeSchedule.value?.id;
+    const isCurrentSave = () =>
+      mounted &&
+      request === settingsSaveRequest &&
+      modals.modal === modal &&
+      activeSchedule.value?.id === scheduleId;
+    try {
+      const outcome = await manager.handleSaveSettings(...args);
+      if (!isCurrentSave() || !outcome.applied) return outcome;
+      if (outcome.local === "saved") {
+        modals.closeModal();
+        toast.success(t("settings.saved"));
+      } else {
+        toast.error(t("summary.saveFailed"));
+      }
+      return outcome;
+    } catch {
+      if (isCurrentSave()) toast.error(t("summary.saveFailed"));
+    }
   };
   const onTogglePin = (scheduleId: string) =>
     manager.updateScheduleById(scheduleId, schedule => ({
