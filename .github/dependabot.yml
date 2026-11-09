@@ -9,32 +9,22 @@ updates:
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 3
     cooldown:
-      default-days: 7
+      default-days: 3
     labels:
       - "dependencies"
     groups:
-      react:
+      development:
         applies-to: version-updates
+        dependency-type: development
         update-types:
-          - "minor"
-          - "patch"
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
-      dev-minor:
+          - minor
+          - patch
+      production:
         applies-to: version-updates
-        dependency-type: "development"
+        dependency-type: production
         update-types:
-          - "minor"
-          - "patch"
-      prod-minor:
-        applies-to: version-updates
-        dependency-type: "production"
-        update-types:
-          - "minor"
-          - "patch"
+          - minor
+          - patch
       security-updates:
         applies-to: security-updates
         patterns:
@@ -50,6 +40,8 @@ updates:
     labels:
       - "dependencies"
     open-pull-requests-limit: 3
+    cooldown:
+      default-days: 3
     groups:
       minor-and-patch:
         applies-to: version-updates
