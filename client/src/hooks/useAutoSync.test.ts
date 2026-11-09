@@ -12,7 +12,7 @@ vi.mock("@/lib/api", async importOriginal => ({
 vi.mock("@/lib/syncManager", () => ({
   scheduleSyncDebounced: vi.fn(),
   setSyncStatusCallback: vi.fn(),
-  flushPendingSync: vi.fn(),
+  flushAllPendingSync: vi.fn(),
   isScheduleSyncPaused: vi.fn(() => false),
   hasPendingSync: vi.fn(() => false),
   restorePendingScheduleSync: vi.fn(() => false),

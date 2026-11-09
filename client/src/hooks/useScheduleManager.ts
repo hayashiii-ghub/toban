@@ -10,10 +10,9 @@ import {
 import type { AppState, Schedule, ScheduleTemplate } from "@/rotation/types";
 import {
   createScheduleFromTemplate,
-  deepClone,
-  generateId,
   normalizeRotation,
 } from "@/rotation/utils";
+import { copySchedule } from "@/rotation/scheduleCopy";
 import { loadState, saveState } from "@/lib/appState";
 import { deleteSchedule } from "@/lib/api";
 import { clearPendingSync } from "@/lib/syncManager";
@@ -31,7 +30,7 @@ export type ScheduleSettings = Omit<
   Schedule,
   "id" | "rotation" | "slug" | "editToken"
 >;
-export interface ToolStateCommitResult {
+export interface StateCommitResult {
   applied: boolean;
   local: "saved" | "failed";
   state: AppState;
@@ -41,9 +40,9 @@ interface StateSnapshot {
   state: AppState;
   revision: number;
 }
-interface PendingToolCommit {
+interface PendingCommit {
   revision: number | null;
-  resolve: (result: ToolStateCommitResult) => void;
+  resolve: (result: StateCommitResult) => void;
 }
 export function useScheduleManager() {
   const t = useT();
@@ -56,8 +55,8 @@ export function useScheduleManager() {
   let committed = snapshot.value;
   let mounted = false;
   let saved: "saved" | "failed" = "failed";
-  const pending = new Set<PendingToolCommit>();
-  let toolQueue = Promise.resolve();
+  const pending = new Set<PendingCommit>();
+  let commitQueue = Promise.resolve();
   function applyState(action: StateAction<AppState>, forceCommit = false) {
     const previous = snapshot.value;
     const next = typeof action === "function" ? action(previous.state) : action;
@@ -77,7 +76,7 @@ export function useScheduleManager() {
     saved = local;
     localSaveStatus.value =
       snapshot.value.revision === value.revision ? local : "pending";
-    // Post-flush persistence makes a tool receipt observe the same rendered revision.
+    // Both UI saves and tool receipts must observe the rendered, persisted revision.
     for (const commit of pending) {
       if (commit.revision !== null && commit.revision <= value.revision) {
         pending.delete(commit);
@@ -102,13 +101,13 @@ export function useScheduleManager() {
     }
     pending.clear();
   });
-  function commitToolState(
+  function commitState(
     updater: (state: AppState) => AppState,
     isEditing: () => boolean = () => false
-  ): Promise<ToolStateCommitResult> {
+  ): Promise<StateCommitResult> {
     const blocked = (
       code: "EDIT_IN_PROGRESS" | "UNMOUNTED"
-    ): ToolStateCommitResult => ({
+    ): StateCommitResult => ({
       applied: false,
       local: code === "UNMOUNTED" ? "failed" : saved,
       state: committed.state,
@@ -117,9 +116,9 @@ export function useScheduleManager() {
     if (!mounted) return Promise.resolve(blocked("UNMOUNTED"));
     if (isEditing()) return Promise.resolve(blocked("EDIT_IN_PROGRESS"));
     return new Promise((resolve, reject) => {
-      const commit: PendingToolCommit = { revision: null, resolve };
+      const commit: PendingCommit = { revision: null, resolve };
       pending.add(commit);
-      toolQueue = toolQueue.then(async () => {
+      commitQueue = commitQueue.then(async () => {
         if (!pending.has(commit)) return;
         if (!mounted || isEditing()) {
           pending.delete(commit);
@@ -209,25 +208,17 @@ export function useScheduleManager() {
     );
     if (!savedSource) return;
     const source = locale ? localizeGuide(savedSource, locale) : savedSource;
-    const clone: Schedule = {
-      id: generateId("s"),
-      name: t("schedule.copyName", { name: source.name }),
-      rotation: 0,
-      groups: deepClone(source.groups),
-      members: deepClone(source.members),
-      rotationConfig: source.rotationConfig
-        ? deepClone(source.rotationConfig)
-        : undefined,
-      assignmentMode: source.assignmentMode,
-      designThemeId: source.designThemeId,
-      fontId: source.fontId,
-    };
+    const clone = copySchedule(
+      source,
+      t("schedule.copyName", { name: source.name })
+    );
     setState(prev => ({
       schedules: [...prev.schedules, clone],
       activeScheduleId: clone.id,
     }));
   };
   const handleSaveSettings = (settings: ScheduleSettings) => {
+    const scheduleId = activeSchedule.value?.id;
     const {
       name,
       groups,
@@ -238,20 +229,27 @@ export function useScheduleManager() {
       designThemeId,
       fontId,
     } = settings;
-    updateActiveSchedule(schedule => ({
-      ...schedule,
-      name,
-      groups,
-      members,
-      rotation: normalizeRotation(
-        schedule.rotation,
-        members.filter(m => !m.skipped).length || members.length
+    return commitState(current => ({
+      ...current,
+      schedules: current.schedules.map(schedule =>
+        schedule.id !== scheduleId
+          ? schedule
+          : {
+              ...schedule,
+              name,
+              groups,
+              members,
+              rotation: normalizeRotation(
+                schedule.rotation,
+                members.filter(m => !m.skipped).length || members.length
+              ),
+              rotationConfig: rotationConfig ?? schedule.rotationConfig,
+              pinned,
+              assignmentMode,
+              designThemeId,
+              fontId,
+            }
       ),
-      rotationConfig: rotationConfig ?? schedule.rotationConfig,
-      pinned,
-      assignmentMode,
-      designThemeId,
-      fontId,
     }));
   };
   const selectSchedule = (scheduleId: string) => {
@@ -297,7 +295,7 @@ export function useScheduleManager() {
     state,
     setState,
     getToolState,
-    commitToolState,
+    commitToolState: commitState,
     localSaveStatus,
     activeSchedule,
     updateScheduleById,

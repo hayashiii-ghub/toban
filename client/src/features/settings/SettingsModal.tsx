@@ -20,7 +20,7 @@ import { DesignThemePicker } from "./DesignThemePicker";
 import { FontPicker } from "./FontPicker";
 import { RotationConfigEditor } from "./RotationConfigEditor";
 import { getThemeById, getThemeLabel } from "@/rotation/designThemes";
-import { applyFont, getFontById } from "@/fonts";
+import { applyFont, getFontById, getSavedFontId } from "@/fonts";
 import type { FontId } from "@shared/appearance";
 import { applyThemeToRoot } from "@/contexts/DesignThemeContext";
 import { SheetHandle } from "@/components/SheetHandle";
@@ -100,8 +100,8 @@ export const SettingsModal = defineView<Props>(
     const discardAndRun = (action: () => void) => {
       if (_editor0.isDirty && !window.confirm(t("settings.confirmClose")))
         return false;
-      applyThemeToRoot(getThemeById(_editor0.initial.designThemeId));
-      applyFont(getFontById(_editor0.initial.fontId));
+      applyThemeToRoot(getThemeById(props.designThemeId));
+      applyFont(getFontById(props.fontId ?? getSavedFontId()));
       action();
       return true;
     };

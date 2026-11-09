@@ -1,7 +1,7 @@
 import { onMounted, onScopeDispose, toValue, type MaybeRefOrGetter } from "vue";
 import { z } from "zod";
 import { LIMITS } from "@shared/limits";
-import type { useHomeState } from "@/hooks/useHomeState";
+import type { ShareConfirmationRequestResult } from "@/hooks/useShareFlow";
 import type {
   AppState,
   Member,
@@ -15,7 +15,6 @@ import {
   computeAssignments,
   computeDateRotationForDate,
   createScheduleFromTemplate,
-  deepClone,
   generateId,
   getEffectiveRotation,
   listDateTurns,
@@ -39,18 +38,48 @@ import {
   scheduleEditsSchema,
   ScheduleEditError,
 } from "@/rotation/scheduleEdits";
-import { VIEW_VALUES } from "@/features/home/viewTabsConfig";
+import { VIEW_VALUES, type ViewTabValue } from "@/features/home/viewTabsConfig";
 import { ApiError, getSchedule, toScheduleData } from "@/lib/api";
 import { calendarFeedUrl, calendarLinks } from "@/lib/calendarLinks";
-import { hasPendingSync, scheduleSyncDebounced } from "@/lib/syncManager";
+import {
+  hasPendingSync,
+  scheduleSyncDebounced,
+  type SyncStatus,
+} from "@/lib/syncManager";
 import {
   formatIsoDateLocal,
   parseIsoDateLocal,
   startOfLocalDay,
 } from "@/rotation/dateUtils";
 import { isSkippedDate } from "@/rotation/holidays";
+import { copySchedule } from "@/rotation/scheduleCopy";
 
-type HomeState = ReturnType<typeof useHomeState>;
+export interface TobanToolHost {
+  getToolState(): AppState;
+  commitToolState(updater: (current: AppState) => AppState): Promise<{
+    applied: boolean;
+    local: "saved" | "failed";
+    state: AppState;
+    storedState?: AppState;
+    code?: string;
+  }>;
+  localSaveStatus: "saved" | "failed" | "pending";
+  syncStatus: SyncStatus;
+  isToolEditing(): boolean;
+  modal: { type: string | null };
+  showShare: boolean;
+  showShareConfirmation: boolean;
+  isSharing: boolean;
+  requestShareConfirmation(): ShareConfirmationRequestResult;
+  viewTab: ViewTabValue;
+  calendarMonth: string;
+  changeTabForTool(view: ViewTabValue, month?: string): Promise<boolean>;
+  handlePrint(
+    view: string,
+    scheduleName?: string,
+    rotationLabel?: string
+  ): void | Promise<void>;
+}
 type Data = Record<string, unknown>;
 const MAX_OUTPUT_LENGTH = 1500;
 const id = z.string().trim().min(1).max(200);
@@ -158,10 +187,9 @@ function page(base: Data, rows: Data[], cursor = 0): Data {
   return make();
 }
 
-/** Build once per page registration. The queue includes reads, so a read cannot
- * overtake a pending write. get() is refreshed in a layout effect before replies. */
+/** The queue includes reads so they cannot overtake pending writes. */
 export function buildTobanTools(
-  get: () => HomeState,
+  get: () => TobanToolHost,
   signal?: AbortSignal
 ): WebMCPTool[] {
   let queue: Promise<unknown> = Promise.resolve();
@@ -217,7 +245,7 @@ export function buildTobanTools(
       );
     const h = get();
     if (
-      h.isToolEditing?.() ||
+      h.isToolEditing() ||
       h.modal.type !== null ||
       h.showShare ||
       h.showShareConfirmation ||
@@ -1067,18 +1095,10 @@ export function buildTobanTools(
       false,
       input => {
         const source = selected(input);
-        const clone: Schedule = {
-          ...deepClone(source),
-          id: generateId("s"),
-          name: say(`${source.name} のコピー`, `${source.name} (copy)`).slice(
-            0,
-            LIMITS.scheduleName
-          ),
-          rotation: 0,
-          slug: undefined,
-          editToken: undefined,
-          pinned: undefined,
-        };
+        const clone = copySchedule(
+          source,
+          say(`${source.name} のコピー`, `${source.name} (copy)`)
+        );
         return commit(
           current => ({
             schedules: [...current.schedules, clone],
@@ -1294,7 +1314,7 @@ export function buildTobanTools(
   ];
 }
 
-export function useTobanTools(source: MaybeRefOrGetter<HomeState>): void {
+export function useTobanTools(source: MaybeRefOrGetter<TobanToolHost>): void {
   const controller = new AbortController();
   onMounted(() => {
     const mc = document.modelContext ?? navigator.modelContext;

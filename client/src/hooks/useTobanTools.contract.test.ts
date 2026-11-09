@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "@/test/vue";
-import { buildTobanTools, useTobanTools } from "./useTobanTools";
-import type { useHomeState } from "@/hooks/useHomeState";
+import {
+  buildTobanTools,
+  useTobanTools,
+  type TobanToolHost,
+} from "./useTobanTools";
 import { ApiError, getSchedule } from "@/lib/api";
 import { hasPendingSync, scheduleSyncDebounced } from "@/lib/syncManager";
 import { LIMITS } from "@shared/limits";
@@ -16,19 +19,13 @@ vi.mock("@/lib/syncManager", () => ({
   hasPendingSync: vi.fn(() => false),
   scheduleSyncDebounced: vi.fn(),
 }));
-type HomeState = ReturnType<typeof useHomeState>;
 type Row = Record<string, unknown>;
 type Response = Row & {
   ok: boolean;
   code: string;
   applied: boolean;
 };
-type CommitOutcome = {
-  state: AppState;
-  applied: boolean;
-  local: "saved" | "failed";
-  code?: string;
-};
+type CommitOutcome = Awaited<ReturnType<TobanToolHost["commitToolState"]>>;
 const member = (id: string, name: string): Member => ({
   id,
   name,
@@ -120,6 +117,7 @@ function harness(schedules: Schedule[] = [sched()], signal?: AbortSignal) {
       };
     }),
     viewTab: "cards" as ViewTabValue,
+    calendarMonth: "2026-09",
     commitToolState: vi.fn(
       async (
         updater: (value: AppState) => AppState
@@ -136,13 +134,14 @@ function harness(schedules: Schedule[] = [sched()], signal?: AbortSignal) {
         return { state: current, applied: true, local, ...outcome };
       }
     ),
-    changeTabForTool: vi.fn((view: ViewTabValue) => {
+    changeTabForTool: vi.fn(async (view: ViewTabValue, month?: string) => {
       home.viewTab = view;
+      if (view === "calendar" && month) home.calendarMonth = month;
       return true;
     }),
     handlePrint: vi.fn(),
   };
-  const get = () => home as unknown as HomeState;
+  const get = (): TobanToolHost => home;
   const tools = buildTobanTools(get, signal);
   const tool = (name: string) => {
     const found = tools.find(item => item.name === name);
@@ -1072,7 +1071,7 @@ describe("view, print and publication", () => {
   );
   it("reports an unsaved view preference and unavailable browser printing", async () => {
     const h = harness();
-    h.home.changeTabForTool.mockImplementation(view => {
+    h.home.changeTabForTool.mockImplementation(async view => {
       h.home.viewTab = view;
       return false;
     });
@@ -1689,6 +1688,15 @@ describe("dated assignment lookup and calendar targeting", () => {
       expect.any(String),
       expect.any(String)
     );
+  });
+  it("reports the selected calendar month when a later view change omits it", async () => {
+    const h = harness();
+    await h.run("change_view", { view: "calendar", month: "2026-12" });
+    await h.run("change_view", { view: "table" });
+    expect(await h.run("change_view", { view: "calendar" })).toMatchObject({
+      ok: true,
+      month: "2026-12",
+    });
   });
 });
 describe("atomic task edits and explicit sharing confirmation", () => {
