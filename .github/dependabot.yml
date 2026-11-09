@@ -4,6 +4,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "saturday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
     open-pull-requests-limit: 3
     cooldown:
       default-days: 7
@@ -41,6 +44,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "saturday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
     labels:
       - "dependencies"
     open-pull-requests-limit: 3
