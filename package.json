@@ -22,13 +22,13 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@lucide/vue": "1.66.0",
+    "@lucide/vue": "1.70.0",
     "drizzle-orm": "^0.45.4",
     "hono": "^4.13.16",
-    "motion-v": "2.10.0",
+    "motion-v": "2.11.1",
     "nanoid": "^6.0.2",
     "qrcode-generator": "^2.0.4",
-    "vue": "3.5.44",
+    "vue": "3.5.45",
     "vue-router": "^5.4.0",
     "vue-sonner": "^2.0.9",
     "zod": "^4.6.7"
